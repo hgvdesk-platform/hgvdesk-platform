@@ -128,4 +128,72 @@ async function inspectionSummarySafe(payload) {
   }
 }
 
-module.exports = { defectSuggestion, inspectionSummarySafe };
+// ── Predictive maintenance (Feature 2) ──────────────────────────────
+
+const PREDICTION_SYSTEM_PROMPT = [
+  'You are a UK HGV fleet maintenance analyst. Your job is to look at a vehicle\'s',
+  'recent inspection history and predict what is most likely to need attention at',
+  'the next PMI / safety inspection. The output goes to a workshop manager planning',
+  'the next service.',
+  '',
+  'Rules:',
+  '- Respond in 3-5 short bullet lines, each starting with "• ".',
+  '- Each bullet: one specific area to watch, with one-line reasoning from the history.',
+  '- Prioritise items that have recurred, escalated in severity, or progressed from',
+  '  advisory toward fail across inspections.',
+  '- If fewer than 2 inspections are available, say so honestly in one line and give',
+  '  at most 1-2 generic watch points for the vehicle type.',
+  '- Plain British English. HGV terminology OK (PMI, LOLER, roller brake test, tread',
+  '  depth, brake chamber, air leak, etc.) when the input uses it.',
+  '- Do not invent defects that are not in the inspection history.',
+  '- No preamble, no markdown headings, no "based on the data". Start with the bullets.',
+].join('\n');
+
+function buildPredictionPrompt({ vehicleReg, inspections }) {
+  const lines = [`Vehicle: ${vehicleReg}`, `Inspections available: ${inspections.length}`, ''];
+  for (const insp of inspections) {
+    const date = insp.created_at ? new Date(insp.created_at).toISOString().slice(0, 10) : 'unknown-date';
+    const result = (insp.result || 'pending').toUpperCase();
+    lines.push(`── ${date} — ${insp.inspection_type || 'T50'} — result ${result} — mileage ${insp.overall_mileage || 'n/a'}`);
+    const defs = insp.defects || [];
+    if (defs.length === 0) {
+      lines.push('   (no defects recorded)');
+    } else {
+      for (const d of defs) {
+        const sev = (d.severity || 'advisory').toUpperCase();
+        const resolved = d.resolved ? ' [rectified]' : '';
+        lines.push(`   • [${sev}] ${d.title || d.description || 'unnamed'}${resolved}`);
+      }
+    }
+  }
+  lines.push('', 'Write the prediction.');
+  return lines.join('\n');
+}
+
+async function maintenancePrediction({ vehicleReg, inspections }) {
+  if (!client) {
+    throw { status: 503, message: 'AI assistant not configured (ANTHROPIC_API_KEY missing)' };
+  }
+  if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
+  if (!Array.isArray(inspections)) throw { status: 400, message: 'inspections must be an array' };
+
+  const message = await client.messages.create({
+    model: 'claude-haiku-4-5',
+    max_tokens: 400,
+    system: [
+      { type: 'text', text: PREDICTION_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+    ],
+    messages: [
+      { role: 'user', content: buildPredictionPrompt({ vehicleReg, inspections }) },
+    ],
+  });
+
+  return {
+    prediction: extractText(message),
+    inspectionsAnalysed: inspections.length,
+    model: message.model,
+    usage: message.usage,
+  };
+}
+
+module.exports = { defectSuggestion, inspectionSummarySafe, maintenancePrediction };

@@ -383,9 +383,43 @@ async function handleParts(ctx, res) {
 }
 
 async function handleAi(ctx, res) {
-  const { p, method, body } = ctx;
+  const { p, method, body, caller } = ctx;
   if (p === '/api/ai/defect-suggestion' && method === 'POST') {
     ok(res, await ai.defectSuggestion(body));
+    return true;
+  }
+  // /api/vehicles/:reg/maintenance-prediction — last 5 inspections for reg,
+  // org-scoped, passed to Claude for a next-inspection prediction.
+  const predMatch = p.match(/^\/api\/vehicles\/([^/]+)\/maintenance-prediction$/);
+  if (predMatch && method === 'GET') {
+    const reg = decodeURIComponent(predMatch[1]).toUpperCase().trim();
+    const orgId = caller.id || caller.org_id;
+    const db = require('./db');
+    const inspections = await db.queryAll(
+      `SELECT id, inspection_id, inspection_type, result, overall_mileage, nil_defect, created_at
+       FROM inspections
+       WHERE org_id = $1 AND UPPER(REPLACE(vehicle_reg, ' ', '')) = UPPER(REPLACE($2, ' ', ''))
+       ORDER BY created_at DESC
+       LIMIT 5`,
+      [orgId, reg]
+    );
+    // Fetch defects for each inspection in one batch.
+    if (inspections.length) {
+      const ids = inspections.map(i => i.id);
+      const defectRows = await db.queryAll(
+        `SELECT inspection_id, title, description, severity, category, resolved
+         FROM defects
+         WHERE inspection_id = ANY($1::int[])`,
+        [ids]
+      );
+      const byInsp = {};
+      for (const d of defectRows) {
+        (byInsp[d.inspection_id] ||= []).push(d);
+      }
+      for (const insp of inspections) insp.defects = byInsp[insp.id] || [];
+    }
+    const result = await ai.maintenancePrediction({ vehicleReg: reg, inspections });
+    ok(res, result);
     return true;
   }
   return false;

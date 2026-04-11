@@ -777,8 +777,42 @@ function renderDvlaResult(v, targetEl) {
   if (historyRows) {
     card += '<div style="padding:0 14px 14px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:6px;">Test History</div><table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;"><thead><tr style="background:#e5e5e7;"><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Date</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Result</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Mileage</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Fails</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Adv</th></tr></thead><tbody>' + historyRows + '</tbody></table></div>';
   }
+  card += '<div id="ai-pred-slot" style="border-top:1px solid rgba(0,0,0,0.06);"></div>';
   card += '</div>';
   targetEl.innerHTML = card;
+}
+
+function renderMaintenancePrediction(reg) {
+  var slot = document.getElementById('ai-pred-slot');
+  if (!slot) return;
+  slot.innerHTML =
+    '<div style="padding:14px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+        '<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#FF6B00;">AI Maintenance Prediction</div>' +
+        '<div style="font-size:10px;color:#888;">Based on inspection history</div>' +
+      '</div>' +
+      '<div id="ai-pred-body" style="font-size:12px;color:#3a3a3c;line-height:1.55;">Analysing recent inspections…</div>' +
+    '</div>';
+  fetch('/api/vehicles/' + encodeURIComponent(reg) + '/maintenance-prediction', {
+    headers: { 'X-API-Key': KEY }
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    var body = document.getElementById('ai-pred-body');
+    if (!body) return;
+    var data = d && (d.data || d);
+    if (!data || !data.prediction) {
+      body.textContent = 'No prediction available.';
+      return;
+    }
+    // Render bullet lines as a list
+    var lines = String(data.prediction).split(/\n+/).filter(function(l) { return l.trim(); });
+    body.innerHTML = lines.map(function(l) {
+      var clean = l.replace(/^[•\-\*]\s*/, '');
+      return '<div style="padding:4px 0;display:flex;gap:8px;align-items:flex-start;"><span style="color:#FF6B00;flex-shrink:0;">•</span><span>' + clean.replace(/</g, '&lt;') + '</span></div>';
+    }).join('') + '<div style="font-size:10px;color:#aeaeb2;margin-top:6px;">Analysed ' + (data.inspectionsAnalysed || 0) + ' inspection(s)</div>';
+  }).catch(function() {
+    var body = document.getElementById('ai-pred-body');
+    if (body) body.textContent = 'AI prediction unavailable.';
+  });
 }
 
 function dvlaLookup(regVal, targetEl) {
@@ -792,6 +826,7 @@ function dvlaLookup(regVal, targetEl) {
   }).then(function(r) { return r.json(); }).then(function(d) {
     if (d && d.data && d.data.make) {
       renderDvlaResult(d.data, targetEl);
+      renderMaintenancePrediction(reg);
     } else if (targetEl) {
       targetEl.innerHTML = '<div style="margin-top:10px;padding:10px;background:#fff0f0;border-radius:10px;font-size:12px;color:#ff3b30;">Vehicle not found in DVSA database</div>';
     }
