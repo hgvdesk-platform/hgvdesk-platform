@@ -24,6 +24,7 @@ const dvsa    = require('./routes/dvsa');
 const parts = require('./routes/parts');
 const command = require('./routes/command');
 const ai = require('./routes/ai');
+const stripeRoutes = require('./routes/stripe');
 
 const PORT = process.env.PORT || 3000;
 const FRONTEND = path.join(__dirname, '..', 'frontend');
@@ -41,6 +42,16 @@ function readBody(req) {
       try { resolve(JSON.parse(body || '{}')); }
       catch (e) { resolve({}); }
     });
+    req.on('error', reject);
+  });
+}
+
+// Stripe webhooks require the exact request bytes for signature verification.
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', c => chunks.push(c));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
@@ -90,6 +101,8 @@ async function getAuth(req) {
 const PAGES = {
   '/': 'landing.html',
   '/login': 'login.html',
+  '/signup': 'signup.html',
+  '/signup-success': 'signup-success.html',
   '/workshop': 'workshop.html',
   '/inspect': 'inspect.html',
   '/parts': 'parts.html',
@@ -179,7 +192,35 @@ async function handlePublicRoutes(ctx, req, res) {
     return handleTechnicianJobs(req, res);
   }
 
+  if (p === '/api/billing/plans' && method === 'GET') {
+    ok(res, { plans: stripeRoutes.publicPlans() });
+    return true;
+  }
+
+  if (p === '/api/auth/signup' && method === 'POST') {
+    const body = await readBody(req);
+    ok(res, await stripeRoutes.signup(body));
+    return true;
+  }
+
+  if (p === '/api/stripe/webhook' && method === 'POST') {
+    return handleStripeWebhook(req, res);
+  }
+
   return false;
+}
+
+async function handleStripeWebhook(req, res) {
+  const raw = await readRawBody(req);
+  const sig = req.headers['stripe-signature'];
+  try {
+    const result = await stripeRoutes.webhook(raw, sig);
+    json(res, 200, result);
+  } catch (e) {
+    console.error('[STRIPE WEBHOOK]', e.message || e);
+    json(res, e.status || 400, { error: e.message || 'Webhook error' });
+  }
+  return true;
 }
 
 async function handleDvsaLookup(req, res) {
@@ -327,6 +368,15 @@ async function handleAi(ctx, res) {
   const { p, method, body } = ctx;
   if (p === '/api/ai/defect-suggestion' && method === 'POST') {
     ok(res, await ai.defectSuggestion(body));
+    return true;
+  }
+  return false;
+}
+
+async function handleBilling(ctx, res) {
+  const { p, method, caller } = ctx;
+  if (p === '/api/billing/me' && method === 'GET') {
+    ok(res, await stripeRoutes.getMyBilling(caller));
     return true;
   }
   return false;
@@ -545,6 +595,7 @@ async function router(req, res) {
   if (await handleWorkshop(ctx, req, res)) return;
   if (await handleInspect(ctx, res)) return;
   if (await handleAi(ctx, res)) return;
+  if (await handleBilling(ctx, res)) return;
   if (await handleParts(ctx, res)) return;
   if (await handleCommand(ctx, res)) return;
   if (await handleInspectionReports(ctx, res)) return;

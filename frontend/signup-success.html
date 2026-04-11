@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk — Welcome</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #0f2040;
+    --orange: #e8520a;
+    --orange-light: #ff6b2b;
+    --steel: #4a6080;
+    --mist: #b8c8d8;
+    --pure: #ffffff;
+    --line: rgba(255,255,255,0.08);
+    --green: #1d9e75;
+  }
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--navy);
+    color: var(--mist);
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 2rem;
+  }
+  .card {
+    background: var(--navy-mid);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 3rem 2.5rem;
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+  }
+  .check {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: rgba(29,158,117,0.15);
+    border: 2px solid rgba(29,158,117,0.4);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: var(--green);
+    font-size: 2rem;
+    font-weight: 700;
+  }
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 2rem;
+    text-transform: uppercase;
+    color: var(--pure);
+    line-height: 1; margin-bottom: 0.75rem;
+  }
+  p { line-height: 1.6; margin-bottom: 1rem; }
+  .meta { color: var(--steel); font-size: 0.85rem; margin-top: 1.5rem; }
+  .btn {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 0.85rem 2rem;
+    background: var(--orange);
+    color: var(--pure);
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: var(--orange-light); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="check">✓</div>
+    <h1>You're in</h1>
+    <p>Payment confirmed. Your HGVDesk account is being activated.</p>
+    <p>Activation usually takes a few seconds — log in to start using the platform.</p>
+    <a class="btn" href="/login">Go to login →</a>
+    <div class="meta">If you don't see your account active within a minute, refresh the login page.</div>
+  </div>
+</body>
+</html>

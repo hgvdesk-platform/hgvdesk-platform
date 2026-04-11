@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk — Start your trial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #0f2040;
+    --navy-light: #1a3055;
+    --orange: #e8520a;
+    --orange-light: #ff6b2b;
+    --steel: #4a6080;
+    --mist: #b8c8d8;
+    --white: #f4f7fa;
+    --pure: #ffffff;
+    --line: rgba(255,255,255,0.08);
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    display: flex; flex-direction: column;
+    min-height: 100vh;
+  }
+  .bg {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  }
+  .bg-glow {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 50% 60% at 50% 40%, rgba(232,82,10,0.1) 0%, transparent 70%);
+  }
+  nav {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 1.4rem;
+    color: var(--pure); text-decoration: none;
+  }
+  .nav-logo span { color: var(--orange); }
+  .nav-back {
+    font-size: 0.85rem; color: var(--mist);
+    text-decoration: none; font-weight: 500;
+  }
+  .nav-back:hover { color: var(--pure); }
+
+  .wrap {
+    position: relative; z-index: 10;
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 3rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    width: 100%;
+  }
+
+  .pitch {
+    padding-right: 1rem;
+  }
+  .pitch-label {
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 0.75rem;
+  }
+  .pitch-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 2.4rem;
+    text-transform: uppercase; color: var(--pure);
+    line-height: 1; margin-bottom: 1rem;
+  }
+  .pitch-sub { color: var(--mist); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem; }
+
+  .plan-cards { display: flex; flex-direction: column; gap: 0.75rem; }
+  .plan-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .plan-card:hover { background: var(--navy-light); }
+  .plan-card.selected {
+    border-color: var(--orange);
+    background: rgba(232,82,10,0.06);
+  }
+  .plan-radio {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid var(--steel);
+    flex-shrink: 0; position: relative;
+  }
+  .plan-card.selected .plan-radio { border-color: var(--orange); }
+  .plan-card.selected .plan-radio::after {
+    content: ''; position: absolute; inset: 3px;
+    border-radius: 50%; background: var(--orange);
+  }
+  .plan-info { flex: 1; }
+  .plan-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 1.05rem;
+    text-transform: uppercase; color: var(--pure);
+    letter-spacing: 0.04em;
+  }
+  .plan-meta { font-size: 0.78rem; color: var(--mist); margin-top: 0.15rem; }
+  .plan-price {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 1.4rem;
+    color: var(--pure);
+  }
+  .plan-price small { font-size: 0.7rem; color: var(--steel); font-weight: 500; }
+
+  .form-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 2rem;
+    align-self: flex-start;
+  }
+  .form-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 1.5rem;
+    text-transform: uppercase; color: var(--pure);
+    margin-bottom: 1.5rem;
+  }
+  .form-group { margin-bottom: 1.1rem; }
+  .form-group label {
+    display: block; font-size: 0.78rem; font-weight: 600;
+    color: var(--mist); margin-bottom: 0.4rem;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .form-group input {
+    width: 100%; padding: 0.7rem 0.9rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; color: var(--pure);
+    font-family: 'Barlow', sans-serif; font-size: 0.95rem;
+    outline: none;
+  }
+  .form-group input:focus {
+    border-color: rgba(232,82,10,0.5);
+    background: rgba(255,255,255,0.06);
+  }
+  .form-group input::placeholder { color: var(--steel); }
+
+  .err-box {
+    display: none;
+    background: rgba(232,82,10,0.1);
+    border: 1px solid rgba(232,82,10,0.3);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    font-size: 0.85rem; color: var(--orange-light);
+    margin-bottom: 1rem;
+  }
+  .err-box.show { display: block; }
+
+  .btn {
+    width: 100%; padding: 0.9rem;
+    background: var(--orange); color: var(--pure);
+    border: none; border-radius: 6px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .btn:hover:not(:disabled) { background: var(--orange-light); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .form-foot {
+    margin-top: 1rem;
+    font-size: 0.78rem; color: var(--steel); text-align: center;
+    line-height: 1.5;
+  }
+  .form-foot a { color: var(--mist); text-decoration: none; }
+  .form-foot a:hover { color: var(--pure); }
+
+  @media (max-width: 820px) {
+    .wrap { grid-template-columns: 1fr; padding: 2rem 1.25rem; gap: 2rem; }
+    .pitch { padding-right: 0; }
+    .pitch-title { font-size: 2rem; }
+    nav { padding: 1rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="bg-glow"></div>
+
+<nav>
+  <a href="/" class="nav-logo">HGV<span>Desk</span></a>
+  <a href="/login" class="nav-back">Already have an account? Log in →</a>
+</nav>
+
+<div class="wrap">
+  <div class="pitch">
+    <div class="pitch-label">Start your subscription</div>
+    <h1 class="pitch-title">Pick a plan and you're live in 60 seconds</h1>
+    <p class="pitch-sub">All plans include the full HGVDesk platform — workshop, inspect, parts, dispatch, billing, AI defect assistant, DVSA lookups. Cancel any time. UK pricing, ex VAT.</p>
+    <div class="plan-cards" id="plans"></div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-title">Your details</div>
+    <div class="err-box" id="err"></div>
+
+    <div class="form-group">
+      <label for="orgName">Company name</label>
+      <input type="text" id="orgName" placeholder="Stobart Logistics Ltd" autocomplete="organization">
+    </div>
+    <div class="form-group">
+      <label for="fullName">Your name</label>
+      <input type="text" id="fullName" placeholder="James Smith" autocomplete="name">
+    </div>
+    <div class="form-group">
+      <label for="email">Work email</label>
+      <input type="email" id="email" placeholder="you@company.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password">
+    </div>
+
+    <button class="btn" id="submit">Continue to payment →</button>
+    <div class="form-foot">
+      You'll enter your card on the next screen (Stripe secure checkout). No charge until you confirm.
+    </div>
+  </div>
+</div>
+
+<script>
+var selectedPlan = 'professional';
+
+function fmtLimit(n) { return n == null ? 'Unlimited vehicles' : 'Up to ' + n + ' vehicles'; }
+
+function renderPlans(plans) {
+  var html = plans.map(function(p) {
+    var sel = p.key === selectedPlan ? ' selected' : '';
+    return '<div class="plan-card' + sel + '" data-key="' + p.key + '">' +
+      '<div class="plan-radio"></div>' +
+      '<div class="plan-info">' +
+        '<div class="plan-name">' + p.name + '</div>' +
+        '<div class="plan-meta">' + fmtLimit(p.vehicleLimit) + '</div>' +
+      '</div>' +
+      '<div class="plan-price">£' + p.amountGbp + '<small>/mo</small></div>' +
+    '</div>';
+  }).join('');
+  document.getElementById('plans').innerHTML = html;
+  document.querySelectorAll('.plan-card').forEach(function(el) {
+    el.addEventListener('click', function() {
+      selectedPlan = el.dataset.key;
+      document.querySelectorAll('.plan-card').forEach(function(c) { c.classList.remove('selected'); });
+      el.classList.add('selected');
+    });
+  });
+}
+
+fetch('/api/billing/plans').then(function(r) { return r.json(); }).then(function(d) {
+  var plans = (d.data && d.data.plans) || (d.plans) || [];
+  if (!plans.length) {
+    document.getElementById('plans').innerHTML = '<div style="color:var(--steel);">Could not load plans.</div>';
+    return;
+  }
+  renderPlans(plans);
+});
+
+function showErr(msg) {
+  var e = document.getElementById('err');
+  e.textContent = msg;
+  e.classList.add('show');
+}
+function hideErr() { document.getElementById('err').classList.remove('show'); }
+
+document.getElementById('submit').addEventListener('click', function() {
+  hideErr();
+  var orgName = document.getElementById('orgName').value.trim();
+  var fullName = document.getElementById('fullName').value.trim();
+  var email = document.getElementById('email').value.trim();
+  var password = document.getElementById('password').value;
+
+  if (!orgName) return showErr('Company name is required.');
+  if (!fullName) return showErr('Your name is required.');
+  if (!email || !email.includes('@')) return showErr('Enter a valid work email.');
+  if (!password || password.length < 8) return showErr('Password must be at least 8 characters.');
+
+  var btn = document.getElementById('submit');
+  btn.disabled = true;
+  btn.textContent = 'Creating your account…';
+
+  fetch('/api/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orgName: orgName, fullName: fullName, email: email, password: password, plan: selectedPlan })
+  }).then(function(r) { return r.json().then(function(d) { return { status: r.status, body: d }; }); })
+    .then(function(res) {
+      if (res.status >= 400) {
+        var msg = (res.body && (res.body.error || (res.body.data && res.body.data.error))) || 'Signup failed.';
+        showErr(msg);
+        btn.disabled = false;
+        btn.textContent = 'Continue to payment →';
+        return;
+      }
+      var data = res.body && (res.body.data || res.body);
+      if (data && data.checkoutUrl) {
+        window.location = data.checkoutUrl;
+      } else {
+        showErr('Checkout URL missing. Try again.');
+        btn.disabled = false;
+        btn.textContent = 'Continue to payment →';
+      }
+    }).catch(function(e) {
+      showErr('Network error: ' + (e && e.message || e));
+      btn.disabled = false;
+      btn.textContent = 'Continue to payment →';
+    });
+});
+</script>
+</body>
+</html>

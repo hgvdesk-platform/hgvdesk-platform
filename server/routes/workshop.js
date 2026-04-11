@@ -34,16 +34,20 @@ async function createJob(body, org) {
   if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
   if (!customerName) throw { status: 400, message: 'customerName is required' };
 
+  const reg = vehicleReg.toUpperCase().trim();
+  const { enforceVehicleLimit } = require('./stripe');
+  await enforceVehicleLimit(orgId, org.plan, reg);
+
   const jobNumber = 'WS-' + Date.now().toString().slice(-6);
   const job = await queryOne(
     `INSERT INTO jobs (org_id, job_number, vehicle_reg, inspection_type, customer_name, technician_name, priority, status, notes, scheduled_date, customer_id)
      VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10) RETURNING *`,
-    [orgId, jobNumber, vehicleReg.toUpperCase().trim(),
+    [orgId, jobNumber, reg,
      inspectionType || 'T50', customerName,
      technicianName || null, priority || 'normal',
      notes || null, scheduledDate || null, customerId || null]
   );
-  await logActivity(orgId, 'WORKSHOP', 'JOB_CREATED', vehicleReg + ' — ' + jobNumber, 'job', job.id);
+  await logActivity(orgId, 'WORKSHOP', 'JOB_CREATED', reg + ' — ' + jobNumber, 'job', job.id);
   return { job };
 }
 
