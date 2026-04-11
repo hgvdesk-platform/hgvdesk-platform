@@ -43,7 +43,8 @@ async function requireAuth(req) {
   }
 
   const user = await queryOne(
-    `SELECT u.id, u.org_id, u.email, u.full_name, u.role, o.name as org_name, o.plan, o.api_key
+    `SELECT u.id, u.org_id, u.email, u.full_name, u.role, u.is_platform_admin AS user_platform_admin,
+            o.name as org_name, o.plan, o.api_key, o.is_platform_admin AS org_platform_admin
      FROM users u JOIN organisations o ON u.org_id = o.id
      WHERE u.id = $1 AND u.active = true AND o.active = true`,
     [decoded.userId]
@@ -51,6 +52,7 @@ async function requireAuth(req) {
 
   if (!user) throw { status: 401, message: 'User not found or inactive' };
 
+  user.is_platform_admin = !!(user.user_platform_admin && user.org_platform_admin);
   return user;
 }
 
@@ -63,13 +65,20 @@ async function requireApiKey(req) {
   if (!apiKey) throw { status: 401, message: 'Missing X-API-Key header' };
 
   const org = await queryOne(
-    `SELECT id, name, plan, active FROM organisations WHERE api_key = $1`,
+    `SELECT id, name, plan, active, is_platform_admin FROM organisations WHERE api_key = $1`,
     [apiKey]
   );
 
   if (!org || !org.active) throw { status: 401, message: 'Invalid or inactive API key' };
 
   return org;
+}
+
+// Caller must be a platform admin (HGVDesk staff). Works for both auth modes.
+function requirePlatformAdmin(caller) {
+  if (!caller || !caller.is_platform_admin) {
+    throw { status: 403, message: 'Platform admin access required' };
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -111,4 +120,4 @@ async function login(email, password) {
   };
 }
 
-module.exports = { requireAuth, requireApiKey, login, signToken, verifyToken };
+module.exports = { requireAuth, requireApiKey, requirePlatformAdmin, login, signToken, verifyToken };

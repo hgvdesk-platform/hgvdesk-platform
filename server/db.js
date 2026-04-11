@@ -58,29 +58,31 @@ async function initSchema() {
 
   await query(`
     CREATE TABLE IF NOT EXISTS organisations (
-      id          SERIAL PRIMARY KEY,
-      name        VARCHAR(255) NOT NULL,
-      slug        VARCHAR(100) NOT NULL UNIQUE,
-      plan        VARCHAR(50) NOT NULL DEFAULT 'starter',
-      api_key     VARCHAR(64) NOT NULL UNIQUE,
-      active      BOOLEAN NOT NULL DEFAULT true,
-      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      id                 SERIAL PRIMARY KEY,
+      name               VARCHAR(255) NOT NULL,
+      slug               VARCHAR(100) NOT NULL UNIQUE,
+      plan               VARCHAR(50) NOT NULL DEFAULT 'starter',
+      api_key            VARCHAR(64) NOT NULL UNIQUE,
+      active             BOOLEAN NOT NULL DEFAULT true,
+      is_platform_admin  BOOLEAN NOT NULL DEFAULT false,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
 
   await query(`
     CREATE TABLE IF NOT EXISTS users (
-      id              SERIAL PRIMARY KEY,
-      org_id          INTEGER NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
-      email           VARCHAR(255) NOT NULL UNIQUE,
-      password_hash   VARCHAR(255) NOT NULL,
-      full_name       VARCHAR(255) NOT NULL,
-      role            VARCHAR(50) NOT NULL DEFAULT 'technician',
-      active          BOOLEAN NOT NULL DEFAULT true,
-      last_login      TIMESTAMPTZ,
-      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      id                 SERIAL PRIMARY KEY,
+      org_id             INTEGER NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+      email              VARCHAR(255) NOT NULL UNIQUE,
+      password_hash      VARCHAR(255) NOT NULL,
+      full_name          VARCHAR(255) NOT NULL,
+      role               VARCHAR(50) NOT NULL DEFAULT 'technician',
+      is_platform_admin  BOOLEAN NOT NULL DEFAULT false,
+      active             BOOLEAN NOT NULL DEFAULT true,
+      last_login         TIMESTAMPTZ,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
 

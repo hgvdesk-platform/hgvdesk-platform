@@ -139,7 +139,11 @@ async function receivePartsUpdate(body, org) {
 
 async function getJobLibrary(caller) {
   const { queryAll } = require('../db');
-  const jobs = await queryAll('SELECT * FROM job_library ORDER BY category, name ASC', []);
+  const orgId = caller.org_id || caller.id;
+  const jobs = await queryAll(
+    'SELECT * FROM job_library WHERE org_id = $1 ORDER BY category, name ASC',
+    [orgId]
+  );
   return { jobs };
 }
 
