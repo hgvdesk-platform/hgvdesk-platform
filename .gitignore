@@ -3,3 +3,4 @@ server/.env
 *.sql
 /var/backups/
 .env
+CLAUDE.md
