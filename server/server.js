@@ -157,6 +157,17 @@ async function handlePublicRoutes(ctx, req, res) {
     return true;
   }
 
+  // Static assets under /images/ — public, served from frontend/images
+  if (method === 'GET' && p.startsWith('/images/')) {
+    const rel = p.slice(1); // strip leading /
+    if (rel.includes('..')) { json(res, 400, { error: 'bad path' }); return true; }
+    const ext = path.extname(rel).toLowerCase();
+    const types = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif' };
+    const ct = types[ext] || 'application/octet-stream';
+    serveStatic(res, rel, ct);
+    return true;
+  }
+
   if (p === '/config.js' && method === 'GET') {
     const apiKey = process.env.PUBLIC_API_KEY || '';
     const cfg = 'window.HGV_CONFIG = { apiKey: ' + JSON.stringify(apiKey) + ' };\n';

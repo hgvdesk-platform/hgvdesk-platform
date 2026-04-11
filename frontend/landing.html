@@ -70,42 +70,6 @@
   }
   .nav-link:hover { color: var(--pure); }
 
-  /* iStock image placeholder — replace with real <img> when assets land */
-  .img-placeholder {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background:
-      repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0 14px, transparent 14px 28px),
-      var(--navy-mid);
-    border: 1px dashed rgba(255,255,255,0.18);
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    color: var(--steel);
-    text-align: center;
-    padding: 1.5rem;
-  }
-  .img-placeholder-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700;
-    font-size: 0.85rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--orange);
-  }
-  .img-placeholder-hint {
-    font-size: 0.78rem;
-    color: var(--steel);
-  }
-  .hero-image {
-    max-width: 800px;
-    margin: 3rem auto 0;
-    width: 100%;
-  }
-
   .nav-cta {
     background: var(--orange); color: var(--pure) !important;
     padding: 0.5rem 1.25rem; border-radius: 4px;
@@ -120,14 +84,21 @@
     padding: 8rem 2.5rem 4rem;
     position: relative;
     overflow: hidden;
+    background-image: url('/images/hero.jpg');
+    background-size: cover;
+    background-position: center 40%;
+    background-repeat: no-repeat;
   }
 
+  /* Dark overlay: keeps the text readable over the photo. Layered so the
+     bottom is slightly darker (where headline sits) with an orange accent
+     from the top-right corner to match the rest of the site. */
   .hero::before {
     content: '';
     position: absolute; inset: 0;
     background:
-      radial-gradient(ellipse 60% 50% at 70% 40%, rgba(232,82,10,0.12) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(15,32,64,0.8) 0%, transparent 60%);
+      linear-gradient(180deg, rgba(10,22,40,0.55) 0%, rgba(10,22,40,0.78) 60%, rgba(10,22,40,0.88) 100%),
+      radial-gradient(ellipse 60% 50% at 70% 30%, rgba(232,82,10,0.18) 0%, transparent 70%);
   }
 
   .hero-grid {
@@ -137,7 +108,11 @@
       linear-gradient(90deg, var(--line) 1px, transparent 1px);
     background-size: 60px 60px;
     mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    opacity: 0.35;
   }
+
+  /* Make sure every hero child sits above the dark overlay */
+  .hero > *:not(.hero-grid) { position: relative; z-index: 1; }
 
   .hero-badge {
     display: inline-flex; align-items: center; gap: 0.5rem;
@@ -606,14 +581,6 @@
   <div class="hero-actions">
     <a href="/signup" class="btn-primary">Start free trial</a>
     <a href="#modules" class="btn-secondary">See how it works</a>
-  </div>
-
-  <div class="hero-image" aria-hidden="true">
-    <!-- iStock placeholder: HGV truck or workshop scene, ~1600x900, dark/moody to match brand -->
-    <div class="img-placeholder">
-      <span class="img-placeholder-label">iStock image</span>
-      <span class="img-placeholder-hint">HGV cab + workshop floor — 1600&times;900</span>
-    </div>
   </div>
 
   <div class="hero-stats">
