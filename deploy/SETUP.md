@@ -1,14 +1,14 @@
-# FLEETCOMMAND — COMPLETE DEPLOYMENT GUIDE
+# HGVDESK — COMPLETE DEPLOYMENT GUIDE
 # Zero experience needed. Copy and paste every command exactly as written.
 # Estimated time: 45–60 minutes
 # ══════════════════════════════════════════════════════════════════════
 
 ## WHAT YOU'LL HAVE AT THE END
-  fleetcommand.co.uk          → Command (master dashboard)
-  app.fleetcommand.co.uk      → Workshop
-  inspect.fleetcommand.co.uk  → Inspect
-  parts.fleetcommand.co.uk    → Parts
-  api.fleetcommand.co.uk/api  → Backend API
+  hgvdesk.co.uk          → Command (master dashboard)
+  app.hgvdesk.co.uk      → Workshop
+  inspect.hgvdesk.co.uk  → Inspect
+  parts.hgvdesk.co.uk    → Parts
+  api.hgvdesk.co.uk/api  → Backend API
 
   All on your own server. No AI companies. No shared hosting.
   £4/month. Your data. Your machine.
@@ -18,7 +18,7 @@
 ═══════════════════════════════════════════════════════════════════════
 
 1. Go to https://www.namecheap.com
-2. Search: fleetcommand.co.uk
+2. Search: hgvdesk.co.uk
 3. Buy it (around £10/year)
 4. Log in to Namecheap dashboard → Manage → Advanced DNS
 5. DELETE all existing DNS records
@@ -31,18 +31,18 @@
 1. Go to https://www.hetzner.com/cloud
 2. Create a free account (no card needed yet)
 3. Add a payment method (they charge monthly in arrears, £4/month)
-4. Click "New Project" → name it "fleetcommand"
+4. Click "New Project" → name it "hgvdesk"
 5. Click "Add Server":
    - Location: Nuremberg (or Helsinki for UK — both fine)
    - Image: Ubuntu 24.04
    - Type: CX22 (2 vCPU, 4GB RAM) — £4.19/month
    - SSH Keys: click "Add SSH Key"
      - On your computer open Terminal (Mac) or PowerShell (Windows)
-     - Run: ssh-keygen -t ed25519 -C "fleetcommand"
+     - Run: ssh-keygen -t ed25519 -C "hgvdesk"
      - Press Enter 3 times (accept defaults)
      - Run: cat ~/.ssh/id_ed25519.pub
      - Copy the entire output and paste it into Hetzner
-   - Name: fleetcommand-prod
+   - Name: hgvdesk-prod
 6. Click "Create & Buy"
 7. WRITE DOWN YOUR SERVER IP ADDRESS (shown after creation, e.g. 65.21.xxx.xxx)
 
@@ -193,8 +193,8 @@ View live logs:
 ## STEP 11 — CONFIGURE NGINX
 ═══════════════════════════════════════════════════════════════════════
 
-    cp /var/www/hgv-platform/deploy/nginx.conf /etc/nginx/sites-available/fleetcommand
-    ln -s /etc/nginx/sites-available/fleetcommand /etc/nginx/sites-enabled/
+    cp /var/www/hgv-platform/deploy/nginx.conf /etc/nginx/sites-available/hgvdesk
+    ln -s /etc/nginx/sites-available/hgvdesk /etc/nginx/sites-enabled/
     rm -f /etc/nginx/sites-enabled/default
 
 Test nginx config:
@@ -206,9 +206,9 @@ If it says "test is successful", continue.
 ## STEP 12 — GET FREE SSL CERTIFICATE
 ═══════════════════════════════════════════════════════════════════════
 
-WAIT until your DNS has propagated (test: ping fleetcommand.co.uk — should return your server IP)
+WAIT until your DNS has propagated (test: ping hgvdesk.co.uk — should return your server IP)
 
-    certbot --nginx -d fleetcommand.co.uk -d www.fleetcommand.co.uk -d app.fleetcommand.co.uk -d inspect.fleetcommand.co.uk -d parts.fleetcommand.co.uk
+    certbot --nginx -d hgvdesk.co.uk -d www.hgvdesk.co.uk -d app.hgvdesk.co.uk -d inspect.hgvdesk.co.uk -d parts.hgvdesk.co.uk
 
 Follow the prompts:
 - Enter your email
@@ -237,16 +237,16 @@ Restart nginx:
 
 Open your browser and visit:
 
-  https://fleetcommand.co.uk         → Should show Command dashboard
-  https://app.fleetcommand.co.uk     → Should show Workshop
-  https://inspect.fleetcommand.co.uk → Should show Inspect
-  https://parts.fleetcommand.co.uk   → Should show Parts
-  https://fleetcommand.co.uk/api/health → Should show {"status":"healthy"}
+  https://hgvdesk.co.uk         → Should show Command dashboard
+  https://app.hgvdesk.co.uk     → Should show Workshop
+  https://inspect.hgvdesk.co.uk → Should show Inspect
+  https://parts.hgvdesk.co.uk   → Should show Parts
+  https://hgvdesk.co.uk/api/health → Should show {"status":"healthy"}
 
 Log in with the admin email and password you set in Step 9.
 
 ═══════════════════════════════════════════════════════════════════════
-## YOU'RE LIVE. FLEETCOMMAND IS RUNNING ON YOUR SERVER.
+## YOU'RE LIVE. HGVDESK IS RUNNING ON YOUR SERVER.
 ═══════════════════════════════════════════════════════════════════════
 
 ═══════════════════════════════════════════════════════════════════════
@@ -293,7 +293,7 @@ Nginx error:
     journalctl -u nginx -n 20
 
 Can't reach the site:
-    - Check DNS has propagated: nslookup fleetcommand.co.uk
+    - Check DNS has propagated: nslookup hgvdesk.co.uk
     - Check firewall: ufw status
     - Check nginx is running: systemctl status nginx
 

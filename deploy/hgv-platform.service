@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════
-# HGV PLATFORM — SYSTEMD SERVICE
+# HGVDESK PLATFORM — SYSTEMD SERVICE
 # File: /etc/systemd/system/hgv-platform.service
 #
 # Keeps the server running 24/7
@@ -8,8 +8,8 @@
 # ══════════════════════════════════════════════
 
 [Unit]
-Description=HGV Platform — FleetCommand
-Documentation=https://fleetcommand.co.uk
+Description=HGVDesk Platform
+Documentation=https://hgvdesk.co.uk
 After=network.target postgresql.service
 Wants=postgresql.service
 
@@ -17,10 +17,10 @@ Wants=postgresql.service
 Type=simple
 User=hgv
 Group=hgv
-WorkingDirectory=/var/www/hgv-platform/server
+WorkingDirectory=/var/www/hgvmanager/hgv-platform/server
 
 # Load environment from .env file
-EnvironmentFile=/var/www/hgv-platform/server/.env
+EnvironmentFile=/var/www/hgvmanager/hgv-platform/server/.env
 
 # Start command
 ExecStart=/usr/bin/node server.js
@@ -40,7 +40,7 @@ SyslogIdentifier=hgv-platform
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/www/hgv-platform
+ReadWritePaths=/var/www/hgvmanager/hgv-platform
 
 # Resource limits
 LimitNOFILE=65536
