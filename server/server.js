@@ -147,34 +147,40 @@ function serveStatic(res, filePath, contentType) {
 // Each returns `true` if it handled the request, falsy otherwise.
 // ══════════════════════════════════════════════
 
-async function handlePublicRoutes(ctx, req, res) {
+const IMAGE_MIME = {
+  '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+  '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif',
+};
+
+function serveImage(ctx, res) {
+  const rel = ctx.p.slice(1);
+  if (rel.includes('..')) { json(res, 400, { error: 'bad path' }); return true; }
+  const ct = IMAGE_MIME[path.extname(rel).toLowerCase()] || 'application/octet-stream';
+  serveStatic(res, rel, ct);
+  return true;
+}
+
+function serveConfigJs(res) {
+  const apiKey = process.env.PUBLIC_API_KEY || '';
+  const cfg = 'window.HGV_CONFIG = { apiKey: ' + JSON.stringify(apiKey) + ' };\n';
+  res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.end(cfg);
+  return true;
+}
+
+function handleStaticPublic(ctx, res) {
   const { p, method } = ctx;
+  if (method !== 'GET') return false;
+  if (PAGES[p]) { servePage(res, PAGES[p]); return true; }
+  if (p === '/api.js') { serveStatic(res, 'api.js', 'application/javascript'); return true; }
+  if (p === '/config.js') return serveConfigJs(res);
+  if (p.startsWith('/images/')) return serveImage(ctx, res);
+  return false;
+}
 
-  if (PAGES[p] && method === 'GET') { servePage(res, PAGES[p]); return true; }
-
-  if (p === '/api.js' && method === 'GET') {
-    serveStatic(res, 'api.js', 'application/javascript');
-    return true;
-  }
-
-  // Static assets under /images/ — public, served from frontend/images
-  if (method === 'GET' && p.startsWith('/images/')) {
-    const rel = p.slice(1); // strip leading /
-    if (rel.includes('..')) { json(res, 400, { error: 'bad path' }); return true; }
-    const ext = path.extname(rel).toLowerCase();
-    const types = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif' };
-    const ct = types[ext] || 'application/octet-stream';
-    serveStatic(res, rel, ct);
-    return true;
-  }
-
-  if (p === '/config.js' && method === 'GET') {
-    const apiKey = process.env.PUBLIC_API_KEY || '';
-    const cfg = 'window.HGV_CONFIG = { apiKey: ' + JSON.stringify(apiKey) + ' };\n';
-    res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
-    res.end(cfg);
-    return true;
-  }
+async function handlePublicApi(ctx, res) {
+  const { p, method } = ctx;
+  const req = ctx.req;
 
   if (p === '/api/health') {
     ok(res, {
@@ -184,40 +190,40 @@ async function handlePublicRoutes(ctx, req, res) {
     });
     return true;
   }
-
   if ((p === '/api/dvla/lookup' || p === '/api/dvsa/lookup') && method === 'POST') {
     return handleDvsaLookup(req, res);
   }
-
   if (p === '/api/auth/login' && method === 'POST') {
     const body = await readBody(req);
     ok(res, await command.handleLogin(body));
     return true;
   }
+  if (p === '/api/technician/login' && method === 'POST') return handleTechnicianLogin(req, res);
+  if (p === '/api/technician/jobs' && method === 'GET') return handleTechnicianJobs(req, res);
+  return false;
+}
 
-  if (p === '/api/technician/login' && method === 'POST') {
-    return handleTechnicianLogin(req, res);
-  }
-
-  if (p === '/api/technician/jobs' && method === 'GET') {
-    return handleTechnicianJobs(req, res);
-  }
+async function handlePublicBilling(ctx, res) {
+  const { p, method } = ctx;
+  const req = ctx.req;
 
   if (p === '/api/billing/plans' && method === 'GET') {
     ok(res, { plans: stripeRoutes.publicPlans() });
     return true;
   }
-
   if (p === '/api/auth/signup' && method === 'POST') {
     const body = await readBody(req);
     ok(res, await stripeRoutes.signup(body));
     return true;
   }
+  if (p === '/api/stripe/webhook' && method === 'POST') return handleStripeWebhook(req, res);
+  return false;
+}
 
-  if (p === '/api/stripe/webhook' && method === 'POST') {
-    return handleStripeWebhook(req, res);
-  }
-
+async function handlePublicRoutes(ctx, res) {
+  if (handleStaticPublic(ctx, res)) return true;
+  if (await handlePublicApi(ctx, res)) return true;
+  if (await handlePublicBilling(ctx, res)) return true;
   return false;
 }
 
@@ -301,8 +307,9 @@ async function handleAdmin(ctx, res) {
   return false;
 }
 
-async function handleWorkshop(ctx, req, res) {
+async function handleWorkshop(ctx, res) {
   const { p, method, body, caller, qs } = ctx;
+  const req = ctx.req;
 
   if (p === '/api/jobs' && method === 'GET') { ok(res, await workshop.getJobs(req, caller, qs)); return true; }
   if (p === '/api/jobs' && method === 'POST') { created(res, await workshop.createJob(body, caller)); return true; }
@@ -574,10 +581,17 @@ async function handleInvoices(ctx, res) {
 // ROUTER
 // ══════════════════════════════════════════════
 
+const AUTHED_HANDLERS = [
+  handleAdmin, handleWorkshop, handleInspect, handleAi, handleBilling,
+  handleParts, handleCommand, handleInspectionReports, handleTechnicians,
+  handleJobLibrary, handleCustomers, handleInvoices,
+];
+
 async function router(req, res) {
   res._cors = buildCors(req);
   const parsed = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const ctx = {
+    req,
     p: parsed.pathname.replace(/\/+$/, '') || '/',
     method: req.method,
     qs: Object.fromEntries(parsed.searchParams),
@@ -591,7 +605,7 @@ async function router(req, res) {
     return;
   }
 
-  if (await handlePublicRoutes(ctx, req, res)) return;
+  if (await handlePublicRoutes(ctx, res)) return;
 
   // ── ALL OTHER ROUTES REQUIRE AUTH ──
   try {
@@ -602,18 +616,9 @@ async function router(req, res) {
 
   ctx.body = ['POST', 'PUT', 'PATCH'].includes(ctx.method) ? await readBody(req) : {};
 
-  if (await handleAdmin(ctx, res)) return;
-  if (await handleWorkshop(ctx, req, res)) return;
-  if (await handleInspect(ctx, res)) return;
-  if (await handleAi(ctx, res)) return;
-  if (await handleBilling(ctx, res)) return;
-  if (await handleParts(ctx, res)) return;
-  if (await handleCommand(ctx, res)) return;
-  if (await handleInspectionReports(ctx, res)) return;
-  if (await handleTechnicians(ctx, res)) return;
-  if (await handleJobLibrary(ctx, res)) return;
-  if (await handleCustomers(ctx, res)) return;
-  if (await handleInvoices(ctx, res)) return;
+  for (const handler of AUTHED_HANDLERS) {
+    if (await handler(ctx, res)) return;
+  }
 
   json(res, 404, { success: false, error: 'Not found' });
 }
