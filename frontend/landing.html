@@ -61,6 +61,51 @@
   }
   .nav-links a:hover { color: var(--pure); }
 
+  .nav-link {
+    font-size: 0.85rem;
+    color: var(--mist);
+    text-decoration: none;
+    padding: 0.45rem 0.9rem;
+    transition: color 0.2s;
+  }
+  .nav-link:hover { color: var(--pure); }
+
+  /* iStock image placeholder — replace with real <img> when assets land */
+  .img-placeholder {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0 14px, transparent 14px 28px),
+      var(--navy-mid);
+    border: 1px dashed rgba(255,255,255,0.18);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    color: var(--steel);
+    text-align: center;
+    padding: 1.5rem;
+  }
+  .img-placeholder-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--orange);
+  }
+  .img-placeholder-hint {
+    font-size: 0.78rem;
+    color: var(--steel);
+  }
+  .hero-image {
+    max-width: 800px;
+    margin: 3rem auto 0;
+    width: 100%;
+  }
+
   .nav-cta {
     background: var(--orange); color: var(--pure) !important;
     padding: 0.5rem 1.25rem; border-radius: 4px;
@@ -506,27 +551,37 @@
   footer a:hover { color: var(--mist); }
 
   /* RESPONSIVE */
-  @media (max-width: 700px) {
-    nav { padding: 1rem 1.25rem; }
-    .nav-links { display: none; }
-    .hero { padding: 7rem 1.25rem 3rem; }
-    .hero-stats { flex-direction: column; gap: 1.5rem; }
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.25rem; flex-wrap: wrap; gap: 0.5rem; }
+    .nav-links { gap: 0.5rem; }
+    .nav-links a:not(.nav-cta):not(.nav-link) { display: none; }
+    .hero { padding: 6rem 1.25rem 3rem; }
+    .hero-headline { font-size: clamp(2rem, 8vw, 3.5rem); }
+    .hero-stats { flex-wrap: wrap; gap: 1.25rem; justify-content: center; }
     .modules, .features, .compliance, .pricing, .cta-section { padding: 4rem 1.25rem; }
     .compliance-grid { grid-template-columns: 1fr; }
+    .features-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
     footer { flex-direction: column; text-align: center; }
+  }
+  @media (max-width: 480px) {
+    .hero-actions { flex-direction: column; align-items: stretch; }
+    .hero-actions a { text-align: center; }
+    .pricing-grid { gap: 1rem; }
+    .price-card { padding: 1.5rem; }
   }
 </style>
 </head>
 <body>
 
 <nav>
-  <a href="/" class="nav-logo">HGV<span>Manager</span></a>
+  <a href="/" class="nav-logo">HGV<span>Desk</span></a>
   <div class="nav-links">
     <a href="#modules">Systems</a>
     <a href="#features">Features</a>
     <a href="#compliance">Compliance</a>
     <a href="#pricing">Pricing</a>
-    <a href="/login" class="nav-cta">Operator Login</a>
+    <a href="/login" class="nav-link">Log in</a>
+    <a href="/signup" class="nav-cta">Start free trial</a>
   </div>
 </nav>
 
@@ -549,8 +604,16 @@
   </p>
 
   <div class="hero-actions">
-    <a href="/login" class="btn-primary">Access Your Fleet</a>
-    <a href="#modules" class="btn-secondary">See How It Works</a>
+    <a href="/signup" class="btn-primary">Start free trial</a>
+    <a href="#modules" class="btn-secondary">See how it works</a>
+  </div>
+
+  <div class="hero-image" aria-hidden="true">
+    <!-- iStock placeholder: HGV truck or workshop scene, ~1600x900, dark/moody to match brand -->
+    <div class="img-placeholder">
+      <span class="img-placeholder-label">iStock image</span>
+      <span class="img-placeholder-hint">HGV cab + workshop floor — 1600&times;900</span>
+    </div>
   </div>
 
   <div class="hero-stats">
@@ -580,7 +643,7 @@
 
   <div class="modules-grid">
 
-    <a href="/command" class="module-card">
+    <a href="#features" class="module-card">
       <div class="module-icon">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       </div>
@@ -589,7 +652,7 @@
       <div class="module-tag">Live stats</div>
     </a>
 
-    <a href="/workshop" class="module-card">
+    <a href="#features" class="module-card">
       <div class="module-icon">
         <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
       </div>
@@ -598,7 +661,7 @@
       <div class="module-tag">Job management</div>
     </a>
 
-    <a href="/inspect" class="module-card">
+    <a href="#features" class="module-card">
       <div class="module-icon">
         <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       </div>
@@ -607,7 +670,7 @@
       <div class="module-tag">DVSA-ready</div>
     </a>
 
-    <a href="/parts" class="module-card">
+    <a href="#features" class="module-card">
       <div class="module-icon">
         <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
       </div>
@@ -627,7 +690,7 @@
         <div class="section-label">Built for real operators</div>
         <h2 class="section-title">No fluff. Just the tools that matter.</h2>
       </div>
-      <a href="/login" class="btn-primary">Start free trial</a>
+      <a href="/signup" class="btn-primary">Start free trial</a>
     </div>
 
     <div class="feature-list">
@@ -703,46 +766,47 @@
     <div class="price-card">
       <div class="price-plan">Starter</div>
       <div class="price-amount"><span>£</span>49</div>
-      <div class="price-period">per month · up to 5 vehicles</div>
+      <div class="price-period">per month · up to 10 vehicles</div>
       <ul class="price-features">
         <li>Command centre dashboard</li>
-        <li>Digital inspections</li>
+        <li>Digital inspections + photos</li>
         <li>Workshop job management</li>
         <li>Parts tracking queue</li>
-        <li>PostgreSQL data storage</li>
+        <li>AI defect description assistant</li>
+        <li>Email reports</li>
       </ul>
-      <a href="/login" class="price-cta cta-outline">Get started free</a>
+      <a href="/signup?plan=starter" class="price-cta cta-outline">Start free trial</a>
     </div>
 
     <div class="price-card featured">
       <div class="featured-badge">Most popular</div>
-      <div class="price-plan">Operator</div>
-      <div class="price-amount"><span>£</span>149</div>
-      <div class="price-period">per month · up to 25 vehicles</div>
+      <div class="price-plan">Professional</div>
+      <div class="price-amount"><span>£</span>99</div>
+      <div class="price-period">per month · up to 50 vehicles</div>
       <ul class="price-features">
         <li>Everything in Starter</li>
-        <li>Email alerts — failed inspections</li>
+        <li>Custom job library</li>
         <li>Trailer (T60) management</li>
-        <li>Photo evidence storage</li>
         <li>Full audit trail export</li>
         <li>Priority support</li>
+        <li>SLA: 99.9% uptime</li>
       </ul>
-      <a href="/login" class="price-cta cta-fill">Start free trial</a>
+      <a href="/signup?plan=professional" class="price-cta cta-fill">Start free trial</a>
     </div>
 
     <div class="price-card">
       <div class="price-plan">Enterprise</div>
-      <div class="price-amount" style="font-size:2rem; padding-top:0.4rem;">Custom</div>
-      <div class="price-period">multi-site · unlimited vehicles</div>
+      <div class="price-amount"><span>£</span>199</div>
+      <div class="price-period">per month · unlimited vehicles</div>
       <ul class="price-features">
-        <li>Everything in Operator</li>
-        <li>Multiple depot support</li>
-        <li>White-label option</li>
+        <li>Everything in Professional</li>
+        <li>Unlimited fleet size</li>
+        <li>Multi-site support</li>
+        <li>Dedicated onboarding</li>
+        <li>Account manager</li>
         <li>Custom integrations</li>
-        <li>Dedicated account manager</li>
-        <li>SLA-backed uptime</li>
       </ul>
-      <a href="mailto:hello@hgvdesk.co.uk" class="price-cta cta-outline">Contact us</a>
+      <a href="/signup?plan=enterprise" class="price-cta cta-outline">Start free trial</a>
     </div>
   </div>
 </section>
@@ -751,15 +815,15 @@
 <section class="cta-section">
   <div class="section-label">Get started today</div>
   <h2 class="section-title">Stop managing on spreadsheets. Start managing in real time.</h2>
-  <p>HGVDesk is live and taking on UK operators now. No contract, no setup fee. Full platform access from day one.</p>
+  <p>HGVDesk is live and taking on UK operators now. No contract, no setup fee. Full platform access from day one — cancel any time.</p>
   <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
-    <a href="/login" class="btn-primary">Access the platform</a>
+    <a href="/signup" class="btn-primary">Start free trial</a>
     <a href="mailto:hello@hgvdesk.co.uk" class="btn-secondary">Talk to us first</a>
   </div>
 </section>
 
 <footer>
-  <div class="footer-logo">HGV<span>Manager</span>.co.uk</div>
+  <div class="footer-logo">HGV<span>Desk</span>.co.uk</div>
   <div class="footer-text">
     &copy; 2026 HGVDesk Ltd &nbsp;·&nbsp;
     <a href="/privacy">Privacy</a> &nbsp;·&nbsp;
