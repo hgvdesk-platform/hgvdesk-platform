@@ -44,14 +44,24 @@ function readBody(req) {
   });
 }
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
-};
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://hgvdesk.co.uk,https://www.hgvdesk.co.uk')
+  .split(',').map(s => s.trim()).filter(Boolean);
+
+function buildCors(req) {
+  const origin = req && req.headers && req.headers.origin;
+  const headers = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
+    'Vary': 'Origin',
+  };
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
+  return headers;
+}
 
 function json(res, status, data) {
-  const headers = { 'Content-Type': 'application/json', ...CORS };
+  const headers = { 'Content-Type': 'application/json', ...(res._cors || {}) };
   res.writeHead(status, headers);
   res.end(JSON.stringify(data));
 }
@@ -130,6 +140,14 @@ async function handlePublicRoutes(ctx, req, res) {
 
   if (p === '/api.js' && method === 'GET') {
     serveStatic(res, 'api.js', 'application/javascript');
+    return true;
+  }
+
+  if (p === '/config.js' && method === 'GET') {
+    const apiKey = process.env.PUBLIC_API_KEY || '';
+    const cfg = 'window.HGV_CONFIG = { apiKey: ' + JSON.stringify(apiKey) + ' };\n';
+    res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
+    res.end(cfg);
     return true;
   }
 
@@ -486,6 +504,7 @@ async function handleInvoices(ctx, res) {
 // ══════════════════════════════════════════════
 
 async function router(req, res) {
+  res._cors = buildCors(req);
   const parsed = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const ctx = {
     p: parsed.pathname.replace(/\/+$/, '') || '/',
@@ -496,7 +515,7 @@ async function router(req, res) {
   };
 
   if (ctx.method === 'OPTIONS') {
-    res.writeHead(204, CORS);
+    res.writeHead(204, res._cors);
     res.end();
     return;
   }
@@ -543,7 +562,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
     console.log('\n╔══════════════════════════════════════════════╗');
-    console.log('║     HGV PLATFORM — FLEETCOMMAND.CO.UK        ║');
+    console.log('║         HGVDESK PLATFORM — hgvdesk.co.uk     ║');
     console.log('╠══════════════════════════════════════════════╣');
     console.log('║  Environment: production                   ║');
     console.log(`║  Port:        ${PORT}                         ║`);

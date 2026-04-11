@@ -1,8 +1,8 @@
 const https = require('https');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = 'noreply@hgvdesk.co.uk';
-const ALERT_EMAIL = 'james.m.smith54@outlook.com';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk';
+const ALERT_EMAIL = process.env.ALERT_EMAIL || 'james.m.smith54@outlook.com';
 
 function resendSend(payload) {
   return new Promise((resolve, reject) => {
@@ -48,11 +48,11 @@ async function sendFailedInspectionAlert({ vehicleReg, inspectorName, inspection
             <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Inspector</td><td style="padding:8px 0;font-size:14px;">${inspectorName || 'Unknown'}</td></tr>
             <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Inspection ID</td><td style="padding:8px 0;font-size:14px;">${inspectionId}</td></tr>
             <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Result</td><td style="padding:8px 0;font-size:14px;font-weight:700;color:#ff3b30;">${result ? result.toUpperCase() : 'FAIL'}</td></tr>
-            <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Organisation</td><td style="padding:8px 0;font-size:14px;">${orgName || 'HGV Manager'}</td></tr>
+            <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Organisation</td><td style="padding:8px 0;font-size:14px;">${orgName || 'HGVDesk'}</td></tr>
             ${notes ? '<tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;vertical-align:top;">Notes</td><td style="padding:8px 0;font-size:14px;">' + notes + '</td></tr>' : ''}
           </table>
           <div style="margin-top:20px;">
-            <a href="https://hgvmanager.co.uk/inspect" style="background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View in HGV Manager</a>
+            <a href="https://hgvdesk.co.uk/inspect" style="background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View in HGVDesk</a>
           </div>
         </div>
         <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">HGVDesk &bull; hgvdesk.co.uk</p>
@@ -93,7 +93,7 @@ async function sendInspectionReport({ to, vehicleReg, inspectionId, result, insp
             ${notes ? '<tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;vertical-align:top;">Notes</td><td style="padding:8px 0;font-size:14px;">' + notes + '</td></tr>' : ''}
           </table>
           <div style="margin-top:20px;">
-            <a href="https://hgvmanager.co.uk/inspect" style="background:#FF6B00;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View Full Report</a>
+            <a href="https://hgvdesk.co.uk/inspect" style="background:#FF6B00;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View Full Report</a>
           </div>
         </div>
         <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">HGVDesk &bull; hgvdesk.co.uk</p>

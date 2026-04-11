@@ -304,7 +304,7 @@ async function seedInitialData() {
   await query(`
     INSERT INTO users (org_id, email, password_hash, full_name, role)
     VALUES ($1, $2, $3, $4, $5)
-  `, [orgId, process.env.ADMIN_EMAIL || 'admin@fleetcommand.co.uk', passwordHash, 'Admin User', 'admin']);
+  `, [orgId, process.env.ADMIN_EMAIL || 'admin@hgvdesk.co.uk', passwordHash, 'Admin User', 'admin']);
 
   await seedDemoJobs(orgId);
 
@@ -315,7 +315,7 @@ async function seedInitialData() {
 
   console.log(`[DB] Seed complete ✓`);
   console.log(`[DB] API Key: ${apiKey}`);
-  console.log(`[DB] Admin: ${process.env.ADMIN_EMAIL || 'admin@fleetcommand.co.uk'}`);
+  console.log(`[DB] Admin: ${process.env.ADMIN_EMAIL || 'admin@hgvdesk.co.uk'}`);
 }
 
 module.exports = { query, queryOne, queryAll, initSchema, seedInitialData, pool };

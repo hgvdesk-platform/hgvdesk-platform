@@ -93,6 +93,7 @@ tr:hover td{background:rgba(0,0,0,0.015);cursor:pointer;}
 .inv-field-val{font-size:14px;font-weight:600;}
 .action-bar{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
 </style>
+  <script src="/config.js"></script>
 </head>
 <body>
 <div class="layout">
@@ -261,7 +262,7 @@ tr:hover td{background:rgba(0,0,0,0.015);cursor:pointer;}
 </div>
 
 <script>
-var KEY = '13940e4c045e4b2691354522b103d7be';
+var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
 var allInvoices = [];
 var allCustomers = [];
 var currentFilter = 'all';

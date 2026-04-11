@@ -1,7 +1,7 @@
 {
   "name": "hgv-platform",
   "version": "1.0.0",
-  "description": "FleetCommand — HGV Workshop Management Platform",
+  "description": "HGVDesk — HGV Workshop Management Platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -16,7 +16,7 @@
     "jsonwebtoken": "^9.0.2",
     "uuid": "^9.0.0"
   },
-  "author": "FleetCommand",
+  "author": "HGVDesk",
   "license": "UNLICENSED",
   "private": true
 }

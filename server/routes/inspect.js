@@ -140,7 +140,7 @@ async function createInspection(body, org) {
       inspectionId: inspection.inspection_id,
       result: inspection.result,
       notes: inspection.notes,
-      orgName: org.org_name || org.name || 'HGV Manager'
+      orgName: org.org_name || org.name || 'HGVDesk'
     }).catch(() => {});
   }
 
@@ -187,7 +187,7 @@ async function updateInspection(body, org, inspectionId) {
       inspectionId: inspection.inspection_id,
       result: inspection.result,
       notes: inspection.notes,
-      orgName: org.org_name || org.name || 'HGV Manager'
+      orgName: org.org_name || org.name || 'HGVDesk'
     }).catch(() => {});
   }
 

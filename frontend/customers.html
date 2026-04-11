@@ -60,6 +60,7 @@ tr:hover td{background:rgba(0,0,0,0.02);}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity 0.3s;}
 .toast.show{opacity:1;}
 </style>
+  <script src="/config.js"></script>
 </head>
 <body>
 <div class="layout">
@@ -171,7 +172,7 @@ tr:hover td{background:rgba(0,0,0,0.02);}
 <div class="toast" id="toast"></div>
 
 <script>
-var KEY = '13940e4c045e4b2691354522b103d7be';
+var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
 var customers = [];
 
 function api(method, path, body) {

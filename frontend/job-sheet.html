@@ -79,6 +79,7 @@ body{font-family:"Helvetica Neue",Arial,sans-serif;background:#fff;color:#1d1d1f
 .no-data{color:#aeaeb2;font-style:italic;}
 @media print{.print-btn{display:none;}@page{size:A4;margin:15mm;}}
 </style>
+  <script src="/config.js"></script>
 </head>
 <body>
 <div class="page" id="sheet">
@@ -110,7 +111,7 @@ body{font-family:"Helvetica Neue",Arial,sans-serif;background:#fff;color:#1d1d1f
 
 <script>
 (function() {
-  var KEY = '13940e4c045e4b2691354522b103d7be';
+  var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
   var params = new URLSearchParams(window.location.search);
   var jobId = params.get('job');
 

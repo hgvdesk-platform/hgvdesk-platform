@@ -1,4 +1,4 @@
-const API_KEY = '13940e4c045e4b2691354522b103d7be';
+const API_KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
 const BASE = '';
 
 async function apiCall(method, path, body) {
