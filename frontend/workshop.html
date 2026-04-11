@@ -188,6 +188,19 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 
 <!-- DASHBOARD -->
 <div class="page on" id="page-dash">
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-hd">
+      <div class="card-title">Ask your fleet</div>
+      <span style="font-size:10px;color:#FF6B00;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">AI search</span>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:8px;">
+      <input id="ai-q" type="text" placeholder="e.g. show failed inspections this month, vehicles with brake defects, urgent jobs"
+             style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px;background:var(--surface);outline:none;">
+      <button class="btn btn-p" id="ai-q-go">Search</button>
+    </div>
+    <div id="ai-q-result" style="padding:0 16px 16px;display:none;"></div>
+  </div>
+
   <div class="stats">
     <div class="sc o"><div class="sc-lbl">Active Jobs</div><div class="sc-val" id="s-active">0</div></div>
     <div class="sc a"><div class="sc-lbl">On Floor</div><div class="sc-val" id="s-floor">0</div></div>
@@ -839,6 +852,81 @@ function dvlaLookup(regVal, targetEl) {
   var timer;
   inp.addEventListener('input', function() { clearTimeout(timer); timer = setTimeout(function() { dvlaLookup(inp.value, info); }, 800); });
   inp.addEventListener('blur', function() { dvlaLookup(inp.value, info); });
+})();
+
+// ── AI NL SEARCH ──
+function escAi(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderAiSearchRows(data) {
+  var cols = data.columns || [];
+  var rows = data.rows || [];
+  if (!rows.length) {
+    return '<div style="padding:16px;text-align:center;color:var(--t5);font-size:13px;">No matches.</div>';
+  }
+  var visibleCols = cols.filter(function(c) { return c !== 'id'; }).slice(0, 6);
+  var thead = '<thead><tr style="background:var(--bg);">' +
+    visibleCols.map(function(c) {
+      return '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--t4);border-bottom:1px solid var(--border);">' + escAi(c.replace(/_/g, ' ')) + '</th>';
+    }).join('') + '</tr></thead>';
+  var tbody = '<tbody>' + rows.map(function(r) {
+    return '<tr>' + visibleCols.map(function(c) {
+      var val = r[c];
+      if (val == null) val = '—';
+      else if (c === 'created_at' || c.endsWith('_at')) val = new Date(val).toLocaleDateString('en-GB');
+      else if (typeof val === 'boolean') val = val ? 'yes' : 'no';
+      return '<td style="padding:8px 12px;font-size:12px;border-bottom:1px solid var(--border);">' + escAi(val) + '</td>';
+    }).join('') + '</tr>';
+  }).join('') + '</tbody>';
+  return '<table style="width:100%;border-collapse:collapse;">' + thead + tbody + '</table>';
+}
+
+function runAiSearch() {
+  var inp = document.getElementById('ai-q');
+  var out = document.getElementById('ai-q-result');
+  var btn = document.getElementById('ai-q-go');
+  var query = (inp.value || '').trim();
+  if (!query) return;
+  out.style.display = 'block';
+  out.innerHTML = '<div style="padding:14px 0;color:var(--t4);font-size:12px;">Thinking...</div>';
+  btn.disabled = true;
+  fetch('/api/ai/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY },
+    body: JSON.stringify({ query: query })
+  }).then(function(r) { return r.json().then(function(d) { return { status: r.status, body: d }; }); })
+    .then(function(res) {
+      btn.disabled = false;
+      if (res.status >= 400 || !res.body || !res.body.success) {
+        var err = (res.body && res.body.error) || 'Search failed.';
+        out.innerHTML = '<div style="padding:12px 14px;background:var(--rs);border:1px solid rgba(255,59,48,0.2);border-radius:8px;color:var(--red);font-size:12px;">' + escAi(err) + '</div>';
+        return;
+      }
+      var data = res.body.data || {};
+      var header =
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;">' +
+          '<div style="font-size:11px;color:var(--t4);">' +
+            '<span style="color:#FF6B00;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">' + escAi(data.entity || '') + '</span>' +
+            ' · ' + (data.rowCount || 0) + ' result' + ((data.rowCount === 1) ? '' : 's') +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--t5);font-style:italic;max-width:60%;text-align:right;">' + escAi(data.reasoning || '') + '</div>' +
+        '</div>';
+      out.innerHTML = header + renderAiSearchRows(data);
+    })
+    .catch(function(e) {
+      btn.disabled = false;
+      out.innerHTML = '<div style="padding:12px 14px;background:var(--rs);border:1px solid rgba(255,59,48,0.2);border-radius:8px;color:var(--red);font-size:12px;">Network error: ' + escAi(e && e.message || e) + '</div>';
+    });
+}
+
+(function() {
+  var inp = document.getElementById('ai-q');
+  var btn = document.getElementById('ai-q-go');
+  if (!inp || !btn) return;
+  btn.addEventListener('click', runAiSearch);
+  inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') runAiSearch(); });
 })();
 
 // ── TECHNICIANS ──

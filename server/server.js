@@ -388,6 +388,10 @@ async function handleAi(ctx, res) {
     ok(res, await ai.defectSuggestion(body));
     return true;
   }
+  if (p === '/api/ai/search' && method === 'POST') {
+    ok(res, await ai.nlSearch({ query: body && body.query, caller }));
+    return true;
+  }
   // /api/vehicles/:reg/maintenance-prediction — last 5 inspections for reg,
   // org-scoped, passed to Claude for a next-inspection prediction.
   const predMatch = p.match(/^\/api\/vehicles\/([^/]+)\/maintenance-prediction$/);
