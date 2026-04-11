@@ -11,9 +11,10 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "pg": "^8.11.3",
+    "@anthropic-ai/sdk": "^0.88.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
     "uuid": "^9.0.0"
   },
   "author": "HGVDesk",

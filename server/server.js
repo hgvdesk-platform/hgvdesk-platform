@@ -23,6 +23,7 @@ const billing = require('./routes/billing');
 const dvsa    = require('./routes/dvsa');
 const parts = require('./routes/parts');
 const command = require('./routes/command');
+const ai = require('./routes/ai');
 
 const PORT = process.env.PORT || 3000;
 const FRONTEND = path.join(__dirname, '..', 'frontend');
@@ -322,6 +323,15 @@ async function handleParts(ctx, res) {
   return false;
 }
 
+async function handleAi(ctx, res) {
+  const { p, method, body } = ctx;
+  if (p === '/api/ai/defect-suggestion' && method === 'POST') {
+    ok(res, await ai.defectSuggestion(body));
+    return true;
+  }
+  return false;
+}
+
 async function handleCommand(ctx, res) {
   const { p, method, caller, qs } = ctx;
   if (p === '/api/overview' && method === 'GET') { ok(res, await command.getOverview(caller)); return true; }
@@ -534,6 +544,7 @@ async function router(req, res) {
   if (await handleAdmin(ctx, res)) return;
   if (await handleWorkshop(ctx, req, res)) return;
   if (await handleInspect(ctx, res)) return;
+  if (await handleAi(ctx, res)) return;
   if (await handleParts(ctx, res)) return;
   if (await handleCommand(ctx, res)) return;
   if (await handleInspectionReports(ctx, res)) return;
