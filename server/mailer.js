@@ -71,9 +71,19 @@ async function sendFailedInspectionAlert({ vehicleReg, inspectorName, inspection
   }
 }
 
-async function sendInspectionReport({ to, vehicleReg, inspectionId, result, inspectorName, notes, orgName }) {
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function sendInspectionReport({ to, vehicleReg, inspectionId, result, inspectorName, notes, orgName, aiSummary }) {
   if (!RESEND_API_KEY) { console.error('[MAILER] No RESEND_API_KEY set'); return { sent: false }; }
   const resultColor = result === 'pass' ? '#1d9e75' : result === 'advisory' ? '#ff9500' : '#ff3b30';
+  const summaryBlock = aiSummary ? `
+        <div style="background:#fff8f3;border:1px solid #FFD9BF;border-left:4px solid #FF6B00;border-radius:10px;padding:16px 18px;margin-bottom:14px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#FF6B00;margin-bottom:6px;">AI Summary</div>
+          <div style="font-size:14px;line-height:1.55;color:#1d1d1f;">${escapeHtml(aiSummary)}</div>
+        </div>` : '';
   const payload = {
     from: FROM_EMAIL,
     to: [to],
@@ -85,6 +95,7 @@ async function sendInspectionReport({ to, vehicleReg, inspectionId, result, insp
           <span style="background:${resultColor};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${(result||'Pending').toUpperCase()}</span>
         </div>
         <div style="background:#f5f5f7;padding:20px;border-radius:0 0 10px 10px;border:1px solid #e5e5e7;border-top:none;">
+          ${summaryBlock}
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Vehicle</td><td style="padding:8px 0;font-size:14px;font-weight:700;font-family:monospace;">${vehicleReg}</td></tr>
             <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Inspection ID</td><td style="padding:8px 0;font-size:14px;">${inspectionId}</td></tr>

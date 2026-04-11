@@ -428,8 +428,29 @@ async function sendInspectionReportRoute(inspId, body, caller, res) {
   const { email } = body;
   if (!email) { json(res, 400, { error: 'email required' }); return true; }
   const db = require('./db');
-  const insp = await db.queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspId, caller.id || caller.org_id]);
+  const orgId = caller.id || caller.org_id;
+  const insp = await db.queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspId, orgId]);
   if (!insp) { json(res, 404, { error: 'Inspection not found' }); return true; }
+
+  // Pull defects for the AI summary. If this fails we still send the email.
+  let defects = [];
+  try {
+    defects = await db.queryAll('SELECT title, description, severity, category, resolved FROM defects WHERE inspection_id = $1', [insp.id]);
+  } catch (e) {
+    console.error('[REPORT] defect fetch failed:', e.message || e);
+  }
+
+  // Best-effort AI summary — inspectionSummarySafe never throws.
+  const { summary } = await ai.inspectionSummarySafe({
+    vehicleReg: insp.vehicle_reg,
+    inspectionType: insp.inspection_type,
+    result: insp.result,
+    inspectorName: insp.inspector_name,
+    nilDefect: insp.nil_defect,
+    notes: insp.notes,
+    defects,
+  });
+
   const { sendInspectionReport } = require('./mailer');
   const result2 = await sendInspectionReport({
     to: email,
@@ -438,9 +459,10 @@ async function sendInspectionReportRoute(inspId, body, caller, res) {
     result: insp.result,
     inspectorName: insp.inspector_name,
     notes: insp.notes,
-    orgName: caller.org_name || 'HGVDesk'
+    orgName: caller.org_name || 'HGVDesk',
+    aiSummary: summary,
   });
-  ok(res, { sent: result2.sent, to: email });
+  ok(res, { sent: result2.sent, to: email, aiSummary: summary });
   return true;
 }
 
