@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk - Parts</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--t5:#aeaeb2;--green:#34c759;--gs:rgba(52,199,89,0.1);--red:#ff3b30;--rs:rgba(255,59,48,0.1);--amber:#ff9500;--ams:rgba(255,149,0,0.1);--indigo:#5856d6;--is:rgba(88,86,214,0.1);--teal:#0071e3;--ts:rgba(0,113,227,0.1);--orange:#FF6B00;--sw:230px;}
+body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:200;}
+.sb-top{padding:20px 16px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sb-icon{width:36px;height:36px;border-radius:9px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-name{font-size:14px;font-weight:700;color:var(--t1);}
+.sb-sub{font-size:11px;color:var(--t4);}
+.sb-sect{padding:16px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t5);}
+.sb-nav{list-style:none;padding:0 8px;}
+.sbi{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--t3);cursor:pointer;margin-bottom:1px;transition:all 0.12s;}
+.sbi:hover{background:rgba(0,0,0,0.04);color:var(--t1);}
+.sbi.on{background:var(--is);color:var(--indigo);font-weight:600;}
+.sb-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;color:#fff;}
+.sb-badge.r{background:var(--red);}
+.sb-badge.g{background:var(--green);}
+.sb-badge.b{background:var(--teal);}
+.sb-badge.a{background:var(--amber);}
+.sb-badge.i{background:var(--indigo);}
+.sb-foot{margin-top:auto;border-top:1px solid var(--border);padding:12px 8px;}
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
+.topbar{height:52px;position:sticky;top:0;z-index:100;background:rgba(245,245,247,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;}
+.tb-title{font-size:16px;font-weight:600;}
+.tb-sub{font-size:12px;color:var(--t4);}
+.sp{flex:1;}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green);padding:4px 10px;background:var(--gs);border-radius:20px;border:1px solid rgba(52,199,89,0.2);}
+.pill::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:980px;font-size:13px;font-weight:500;font-family:inherit;border:none;cursor:pointer;transition:all 0.2s;}
+.btn-p{background:var(--indigo);color:#fff;}
+.btn-p:hover{background:#4340c0;}
+.btn-s{background:var(--surface);color:var(--t1);border:1px solid var(--bs);}
+.btn-g{background:var(--green);color:#fff;}
+.btn-a{background:var(--amber);color:#fff;}
+.content{padding:24px 28px;flex:1;}
+.page{display:none;}
+.page.on{display:block;}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;}
+.sc::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;}
+.sc.g::after{background:linear-gradient(90deg,var(--green),transparent);}
+.sc.a::after{background:linear-gradient(90deg,var(--amber),transparent);}
+.sc.r::after{background:linear-gradient(90deg,var(--red),transparent);}
+.sc.b::after{background:linear-gradient(90deg,var(--teal),transparent);}
+.sc.i::after{background:linear-gradient(90deg,var(--indigo),transparent);}
+.sc-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t5);margin-bottom:10px;}
+.sc-val{font-size:34px;font-weight:700;letter-spacing:-0.05em;line-height:1;}
+.sc.g .sc-val{color:var(--green);}
+.sc.a .sc-val{color:var(--amber);}
+.sc.r .sc-val{color:var(--red);}
+.sc.b .sc-val{color:var(--teal);}
+.sc.i .sc-val{color:var(--indigo);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.card-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.012);}
+.card-title{font-size:14px;font-weight:600;}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid;}
+.bg-b{background:var(--ts);color:var(--teal);border-color:rgba(0,113,227,0.2);}
+.bg-g{background:var(--gs);color:#248a3d;border-color:rgba(52,199,89,0.2);}
+.bg-r{background:var(--rs);color:var(--red);border-color:rgba(255,59,48,0.2);}
+.bg-a{background:var(--ams);color:#bf5900;border-color:rgba(255,149,0,0.2);}
+.bg-i{background:var(--is);color:var(--indigo);border-color:rgba(88,86,214,0.2);}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--t5);padding:10px 18px;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.012);}
+.tbl td{padding:12px 18px;border-bottom:1px solid var(--border);font-size:13px;color:var(--t2);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tbody tr:hover td{background:rgba(0,0,0,0.018);cursor:pointer;}
+.reg{font-family:monospace;font-size:13px;font-weight:700;letter-spacing:0.06em;color:var(--t1);}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid;}
+.chip::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.c-p{background:var(--gs);color:#248a3d;border-color:rgba(52,199,89,0.2);}
+.c-a{background:var(--ams);color:#bf5900;border-color:rgba(255,149,0,0.2);}
+.c-f{background:var(--rs);color:var(--red);border-color:rgba(255,59,48,0.2);}
+.c-q{background:var(--ts);color:var(--teal);border-color:rgba(0,113,227,0.2);}
+.c-i{background:var(--is);color:var(--indigo);border-color:rgba(88,86,214,0.2);}
+.phd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;}
+.ptitle{font-size:26px;font-weight:700;letter-spacing:-0.04em;}
+.pdesc{font-size:13px;color:var(--t4);margin-top:3px;}
+.pacts{display:flex;gap:8px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.fg{margin-bottom:14px;}
+.fl{font-size:12px;font-weight:600;color:var(--t2);display:block;margin-bottom:5px;}
+.fi,.fsel,.fta{width:100%;padding:9px 12px;border:1.5px solid var(--bs);border-radius:8px;font-size:13px;font-family:inherit;color:var(--t1);background:var(--surface);outline:none;transition:border-color 0.2s;}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--indigo);}
+.fta{min-height:70px;resize:vertical;}
+.mwrap{position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.mwrap.on{display:flex;}
+.modal{background:var(--surface);border-radius:18px;width:100%;max-width:500px;box-shadow:0 24px 80px rgba(0,0,0,0.2);overflow:hidden;}
+.mhd{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.mhd-title{font-size:17px;font-weight:700;}
+.mclose{width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.06);border:none;cursor:pointer;font-size:16px;color:var(--t4);display:flex;align-items:center;justify-content:center;}
+.mbody{padding:20px 22px;}
+.mfoot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:rgba(0,0,0,0.018);}
+.part-detail{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.pd-item label{font-size:11px;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:3px;}
+.pd-item .pd-val{font-size:14px;font-weight:600;color:var(--t1);}
+.toast{position:fixed;bottom:24px;right:24px;background:#1d1d1f;color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.25);z-index:9999;display:flex;align-items:center;gap:9px;transform:translateY(80px);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+.toast.v{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="sb-icon">
+      <svg viewBox="0 0 22 22" fill="none" width="22" height="22">
+        <rect x="10" y="2" width="2" height="18" rx="1" fill="#FF6B00"/>
+        <path d="M10,11 Q5,8 2,4 L2,7 Q5,10 9,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <path d="M12,11 Q17,8 20,4 L20,7 Q17,10 13,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <circle cx="11" cy="11" r="2.5" fill="#fff"/>
+        <circle cx="11" cy="11" r="1.2" fill="#FF6B00"/>
+      </svg>
+    </div>
+    <div><div class="sb-name">HGVDesk</div><div class="sb-sub">Parts System</div></div>
+  </div>
+  <div class="sb-sect">Parts</div>
+  <ul class="sb-nav">
+    <li><div class="sbi on" id="nav-dash" data-page="dash">Dashboard</div></li>
+    <li><div class="sbi" id="nav-pending" data-page="pending">Pending <span class="sb-badge a" id="pending-cnt">0</span></div></li>
+    <li><div class="sbi" id="nav-ordered" data-page="ordered">Ordered <span class="sb-badge b" id="ordered-cnt">0</span></div></li>
+    <li><div class="sbi" id="nav-ready" data-page="ready">Ready <span class="sb-badge g" id="ready-cnt">0</span></div></li>
+    <li><div class="sbi" id="nav-all" data-page="all">All Parts <span class="sb-badge i" id="all-cnt">0</span></div></li>
+    <li><div class="sbi" id="nav-new" data-page="new">+ Add Part</div></li>
+  </ul>
+  <div class="sb-sect">Systems</div>
+  <ul class="sb-nav">
+    <li><div class="sbi" data-href="/workshop">Workshop</div></li>
+    <li><div class="sbi" data-href="/inspect">Inspect</div></li>
+    <li><div class="sbi" data-href="/command">Command</div></li>
+  </ul>
+  <div class="sb-foot">
+    <div style="padding:8px 10px;font-size:11px;color:var(--t5);">API: <span id="api-st" style="color:var(--amber);">Connecting...</span></div>
+  </div>
+</aside>
+
+<div class="main">
+<header class="topbar">
+  <div><span class="tb-title" id="tbt">Dashboard</span><span class="tb-sub" id="tbs"> - Parts Overview</span></div>
+  <div class="sp"></div>
+  <div class="pill">Workshop Live</div>
+  <div class="pill">Inspect Live</div>
+  <button class="btn btn-p" id="btn-new-top">+ Add Part</button>
+</header>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div class="page on" id="page-dash">
+  <div class="stats">
+    <div class="sc a"><div class="sc-lbl">Pending</div><div class="sc-val" id="s-pending">0</div></div>
+    <div class="sc b"><div class="sc-lbl">Ordered</div><div class="sc-val" id="s-ordered">0</div></div>
+    <div class="sc g"><div class="sc-lbl">Ready</div><div class="sc-val" id="s-ready">0</div></div>
+    <div class="sc r"><div class="sc-lbl">Urgent</div><div class="sc-val" id="s-urgent">0</div></div>
+    <div class="sc i"><div class="sc-lbl">Total</div><div class="sc-val" id="s-total">0</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Parts Queue</div><span class="badge bg-i" id="dash-tot">0 Parts</span></div>
+    <table class="tbl">
+      <thead><tr><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Auto-Raised</th><th></th></tr></thead>
+      <tbody id="dash-tb"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No parts yet</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PENDING -->
+<div class="page" id="page-pending">
+  <div class="phd"><div><div class="ptitle">Pending Parts</div><div class="pdesc">Parts waiting to be ordered</div></div></div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Pending</div><span class="badge bg-a" id="pending-tot">0</span></div>
+    <table class="tbl">
+      <thead><tr><th>Part Name</th><th>Vehicle</th><th>Priority</th><th>Supplier</th><th>Cost</th><th></th></tr></thead>
+      <tbody id="pending-tb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ORDERED -->
+<div class="page" id="page-ordered">
+  <div class="phd"><div><div class="ptitle">Ordered Parts</div><div class="pdesc">Parts on order from suppliers</div></div></div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Ordered</div><span class="badge bg-b" id="ordered-tot">0</span></div>
+    <table class="tbl">
+      <thead><tr><th>Part Name</th><th>Vehicle</th><th>Supplier</th><th>Ordered</th><th>Cost</th><th></th></tr></thead>
+      <tbody id="ordered-tb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- READY -->
+<div class="page" id="page-ready">
+  <div class="phd"><div><div class="ptitle">Ready to Fit</div><div class="pdesc">Parts received and ready for installation</div></div></div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Ready</div><span class="badge bg-g" id="ready-tot">0</span></div>
+    <table class="tbl">
+      <thead><tr><th>Part Name</th><th>Vehicle</th><th>Received</th><th>Cost</th><th></th></tr></thead>
+      <tbody id="ready-tb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ALL PARTS -->
+<div class="page" id="page-all">
+  <div class="phd">
+    <div><div class="ptitle">All Parts</div><div class="pdesc">Complete parts history</div></div>
+    <div class="pacts"><button class="btn btn-p" id="btn-new-all">+ Add Part</button></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">All Parts</div><span class="badge bg-i" id="all-tot">0</span></div>
+    <table class="tbl">
+      <thead><tr><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Cost</th><th></th></tr></thead>
+      <tbody id="all-tb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADD PART -->
+<div class="page" id="page-new">
+  <div class="phd">
+    <div><div class="ptitle">Add Part</div><div class="pdesc">Manually add a part to the queue</div></div>
+    <div class="pacts">
+      <button class="btn btn-s" id="btn-back">Cancel</button>
+      <button class="btn btn-p" id="btn-create">Add Part</button>
+    </div>
+  </div>
+  <div class="card" style="padding:24px;">
+    <div class="fr">
+      <div class="fg"><label class="fl">Part Name *</label><input class="fi" id="f-name" placeholder="e.g. Brake Caliper Set"></div>
+      <div class="fg"><label class="fl">Vehicle Registration *</label><input class="fi" id="f-reg" placeholder="e.g. LK23 XPT" style="text-transform:uppercase;font-family:monospace;font-weight:700;"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Category</label>
+        <select class="fsel" id="f-cat">
+          <option value="General">General</option>
+          <option value="Brakes">Brakes</option>
+          <option value="Tyres">Tyres</option>
+          <option value="Engine">Engine</option>
+          <option value="Electrical">Electrical</option>
+          <option value="Body">Body</option>
+          <option value="Suspension">Suspension</option>
+          <option value="Exhaust">Exhaust</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Priority</label>
+        <select class="fsel" id="f-priority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Supplier</label><input class="fi" id="f-supplier" placeholder="e.g. Euro Car Parts"></div>
+      <div class="fg"><label class="fl">Part Number</label><input class="fi" id="f-partno" placeholder="e.g. ECP-12345"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Quantity</label><input class="fi" id="f-qty" type="number" min="1" value="1"></div>
+      <div class="fg"><label class="fl">Unit Cost (GBP)</label><input class="fi" id="f-cost" type="number" min="0" step="0.01" placeholder="0.00"></div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="fta" id="f-notes" placeholder="Additional notes..."></textarea></div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- PART DETAIL MODAL -->
+<div class="mwrap" id="part-modal">
+  <div class="modal">
+    <div class="mhd"><div class="mhd-title" id="pm-title">Part Details</div><button class="mclose" id="pm-close">x</button></div>
+    <div class="mbody">
+      <div class="part-detail" id="pm-detail"></div>
+      <div id="pm-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-s" id="pm-close2">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="ti"></span><span id="tm"></span></div>
+
+<script>
+var KEY = '13940e4c045e4b2691354522b103d7be';
+var currentPart = null;
+var allParts = [];
+
+function api(method, path, body) {
+  var opts = {method: method, headers: {'Content-Type': 'application/json', 'X-API-Key': KEY}};
+  if (body) opts.body = JSON.stringify(body);
+  return fetch('/api' + path, opts).then(function(r) { return r.json(); }).catch(function() { return null; });
+}
+
+var tt;
+function toast(icon, msg) {
+  document.getElementById('ti').textContent = icon;
+  document.getElementById('tm').textContent = msg;
+  var t = document.getElementById('toast');
+  t.classList.add('v');
+  clearTimeout(tt);
+  tt = setTimeout(function() { t.classList.remove('v'); }, 3200);
+}
+
+function ago(iso) {
+  if (!iso) return '';
+  var m = Math.floor((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  if (m < 1440) return Math.floor(m/60) + 'h ago';
+  return Math.floor(m/1440) + 'd ago';
+}
+
+function statusChip(s) {
+  if (s === 'ready' || s === 'received') return '<span class="chip c-p">Ready</span>';
+  if (s === 'ordered') return '<span class="chip c-q">Ordered</span>';
+  if (s === 'pending') return '<span class="chip c-a">Pending</span>';
+  return '<span class="chip c-i">' + s + '</span>';
+}
+
+function priorityChip(p) {
+  if (p === 'urgent') return '<span class="chip c-f">Urgent</span>';
+  if (p === 'high') return '<span class="chip c-a">High</span>';
+  return '<span class="chip c-q">Normal</span>';
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(function(x) { x.classList.remove('on'); });
+  document.querySelectorAll('.sbi[data-page]').forEach(function(x) { x.classList.remove('on'); });
+  document.getElementById('page-' + p).classList.add('on');
+  var nav = document.getElementById('nav-' + p);
+  if (nav) nav.classList.add('on');
+  var titles = {
+    dash: ['Dashboard', ' - Parts Overview'],
+    pending: ['Pending Parts', ' - To Order'],
+    ordered: ['Ordered Parts', ' - On Order'],
+    ready: ['Ready to Fit', ' - Received'],
+    all: ['All Parts', ' - History'],
+    new: ['Add Part', ' - Manual Entry']
+  };
+  var t = titles[p] || [p, ''];
+  document.getElementById('tbt').textContent = t[0];
+  document.getElementById('tbs').textContent = t[1];
+  if (p !== 'new') loadParts();
+}
+
+function loadParts() {
+  api('GET', '/parts').then(function(d) {
+    if (!d) return;
+    allParts = (d.data ? d.data.parts : d.parts) || [];
+    renderParts();
+  });
+}
+
+function renderParts() {
+  var parts = allParts;
+  var pending = parts.filter(function(p) { return p.status === 'pending'; });
+  var ordered = parts.filter(function(p) { return p.status === 'ordered'; });
+  var ready = parts.filter(function(p) { return p.status === 'ready' || p.status === 'received'; });
+  var urgent = parts.filter(function(p) { return p.priority === 'urgent' && p.status === 'pending'; });
+
+  document.getElementById('s-pending').textContent = pending.length;
+  document.getElementById('s-ordered').textContent = ordered.length;
+  document.getElementById('s-ready').textContent = ready.length;
+  document.getElementById('s-urgent').textContent = urgent.length;
+  document.getElementById('s-total').textContent = parts.length;
+  document.getElementById('dash-tot').textContent = parts.length + ' Parts';
+  document.getElementById('pending-cnt').textContent = pending.length;
+  document.getElementById('ordered-cnt').textContent = ordered.length;
+  document.getElementById('ready-cnt').textContent = ready.length;
+  document.getElementById('all-cnt').textContent = parts.length;
+  document.getElementById('pending-tot').textContent = pending.length;
+  document.getElementById('ordered-tot').textContent = ordered.length;
+  document.getElementById('ready-tot').textContent = ready.length;
+  document.getElementById('all-tot').textContent = parts.length;
+
+  function viewBtn(id) {
+    return '<div style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="row-cb" data-pid="' + id + '" style="width:16px;height:16px;cursor:pointer;"><button class="btn btn-s" style="padding:4px 10px;font-size:11px;" data-pid="' + id + '">View</button><button class="btn" style="padding:4px 10px;font-size:11px;background:#fff0f0;color:#ff3b30;border:1px solid rgba(255,59,48,0.2);" onclick="deletePart(' + id + ')">Delete</button></div>';
+  }
+
+  var empty = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No parts found</td></tr>';
+
+  var dashRows = parts.slice(0, 20).map(function(p) {
+    return '<tr data-pid="' + p.id + '"><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:12px;">' + (p.category || '-') + '</td><td>' + priorityChip(p.priority) + '</td><td>' + statusChip(p.status) + '</td><td style="font-size:11px;">' + (p.auto_raised ? '<span class="chip c-i">Auto</span>' : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+  }).join('');
+  document.getElementById('dash-tb').innerHTML = dashRows || empty;
+
+  var pendingRows = pending.map(function(p) {
+    return '<tr data-pid="' + p.id + '"><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td>' + priorityChip(p.priority) + '</td><td style="font-size:12px;">' + (p.supplier || '-') + '</td><td style="font-size:12px;">' + (p.unit_cost ? 'GBP' + p.unit_cost : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+  }).join('');
+  document.getElementById('pending-tb').innerHTML = pendingRows || '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--t5);">No pending parts</td></tr>';
+
+  var orderedRows = ordered.map(function(p) {
+    return '<tr data-pid="' + p.id + '"><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:12px;">' + (p.supplier || '-') + '</td><td style="font-size:11px;color:var(--t5);">' + ago(p.ordered_at) + '</td><td style="font-size:12px;">' + (p.unit_cost ? 'GBP' + p.unit_cost : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+  }).join('');
+  document.getElementById('ordered-tb').innerHTML = orderedRows || '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--t5);">No ordered parts</td></tr>';
+
+  var readyRows = ready.map(function(p) {
+    return '<tr data-pid="' + p.id + '"><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(p.received_at) + '</td><td style="font-size:12px;">' + (p.unit_cost ? 'GBP' + p.unit_cost : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+  }).join('');
+  document.getElementById('ready-tb').innerHTML = readyRows || '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--t5);">No ready parts</td></tr>';
+
+  var allRows = parts.map(function(p) {
+    return '<tr data-pid="' + p.id + '"><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:12px;">' + (p.category || '-') + '</td><td>' + priorityChip(p.priority) + '</td><td>' + statusChip(p.status) + '</td><td style="font-size:12px;">' + (p.unit_cost ? 'GBP' + p.unit_cost : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+  }).join('');
+  document.getElementById('all-tb').innerHTML = allRows || empty;
+
+  document.querySelectorAll('[data-pid]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var id = parseInt(el.dataset.pid);
+      var part = allParts.find(function(p) { return p.id === id; });
+      if (part) openPartModal(part);
+    });
+  });
+}
+
+function openPartModal(part) {
+  currentPart = part;
+  document.getElementById('pm-title').textContent = part.name;
+  document.getElementById('pm-detail').innerHTML =
+    '<div class="pd-item"><label>Part Name</label><div class="pd-val">' + part.name + '</div></div>' +
+    '<div class="pd-item"><label>Vehicle</label><div class="pd-val reg">' + part.vehicle_reg + '</div></div>' +
+    '<div class="pd-item"><label>Status</label><div class="pd-val">' + statusChip(part.status) + '</div></div>' +
+    '<div class="pd-item"><label>Priority</label><div class="pd-val">' + priorityChip(part.priority) + '</div></div>' +
+    '<div class="pd-item"><label>Category</label><div class="pd-val">' + (part.category || '-') + '</div></div>' +
+    '<div class="pd-item"><label>Supplier</label><div class="pd-val">' + (part.supplier || 'Not set') + '</div></div>' +
+    '<div class="pd-item"><label>Part Number</label><div class="pd-val">' + (part.part_number || '-') + '</div></div>' +
+    '<div class="pd-item"><label>Unit Cost</label><div class="pd-val">' + (part.unit_cost ? 'GBP ' + part.unit_cost : '-') + '</div></div>';
+
+  var actions = document.getElementById('pm-actions');
+  actions.innerHTML = '';
+
+  if (part.status === 'pending') {
+    var orderBtn = document.createElement('button');
+    orderBtn.className = 'btn btn-a';
+    orderBtn.textContent = 'Mark Ordered';
+    orderBtn.addEventListener('click', function() { updatePartStatus(part.id, 'ordered'); });
+    actions.appendChild(orderBtn);
+  }
+  if (part.status === 'ordered') {
+    var readyBtn = document.createElement('button');
+    readyBtn.className = 'btn btn-g';
+    readyBtn.textContent = 'Mark Ready';
+    readyBtn.addEventListener('click', function() { updatePartStatus(part.id, 'ready'); });
+    actions.appendChild(readyBtn);
+  }
+
+  document.getElementById('part-modal').classList.add('on');
+}
+
+function updatePartStatus(id, status) {
+  api('PUT', '/parts/' + id, {status: status}).then(function(res) {
+    if (res && res.part) {
+      toast('Done', 'Part marked as ' + status);
+      document.getElementById('part-modal').classList.remove('on');
+      loadParts();
+    } else {
+      toast('Error', 'Update failed');
+    }
+  });
+}
+
+document.getElementById('pm-close').addEventListener('click', function() { document.getElementById('part-modal').classList.remove('on'); });
+document.getElementById('pm-close2').addEventListener('click', function() { document.getElementById('part-modal').classList.remove('on'); });
+document.getElementById('part-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('on'); });
+
+document.getElementById('btn-create').addEventListener('click', function() {
+  var name = document.getElementById('f-name').value.trim();
+  var reg = document.getElementById('f-reg').value.trim().toUpperCase();
+  if (!name || !reg) { toast('Warning', 'Part name and registration are required'); return; }
+  var body = {
+    name: name, vehicleReg: reg,
+    category: document.getElementById('f-cat').value,
+    priority: document.getElementById('f-priority').value,
+    supplier: document.getElementById('f-supplier').value.trim() || null,
+    partNumber: document.getElementById('f-partno').value.trim() || null,
+    qty: parseInt(document.getElementById('f-qty').value) || 1,
+    unitCost: parseFloat(document.getElementById('f-cost').value) || null,
+    notes: document.getElementById('f-notes').value.trim() || null
+  };
+  toast('Adding', 'Adding part...');
+  api('POST', '/parts', body).then(function(res) {
+    if (res && res.part) {
+      toast('Done', name + ' added to queue');
+      ['f-name','f-reg','f-supplier','f-partno','f-notes'].forEach(function(id) { document.getElementById(id).value = ''; });
+      document.getElementById('f-qty').value = '1';
+      document.getElementById('f-cost').value = '';
+      showPage('pending');
+    } else {
+      toast('Error', 'Failed to add part');
+    }
+  });
+});
+
+document.getElementById('btn-new-top').addEventListener('click', function() { showPage('new'); });
+document.getElementById('btn-new-all').addEventListener('click', function() { showPage('new'); });
+document.getElementById('btn-back').addEventListener('click', function() { showPage('dash'); });
+
+document.querySelectorAll('.sbi[data-page]').forEach(function(el) {
+  el.addEventListener('click', function() { showPage(el.dataset.page); });
+});
+document.querySelectorAll('.sbi[data-href]').forEach(function(el) {
+  el.addEventListener('click', function() { window.location.href = el.dataset.href; });
+});
+
+function init() {
+  api('GET', '/health').then(function(h) {
+    if (h && h.status === 'healthy') {
+      document.getElementById('api-st').textContent = 'Connected';
+      document.getElementById('api-st').style.color = 'var(--green)';
+    }
+  });
+  loadParts();
+  setInterval(loadParts, 30000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+
+
+
+
+
+<script>
+function dvlaLookup(regVal, targetEl) {
+  var reg = (regVal || '').trim().toUpperCase().replace(/\s/g,'');
+  if (reg.length < 2) return;
+  fetch('/api/dvla/lookup', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-API-Key':'13940e4c045e4b2691354522b103d7be'},
+    body: JSON.stringify({reg: reg})
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d && d.data && d.data.make) {
+      var info = d.data;
+      var html = '<div style="margin-top:6px;padding:8px 12px;background:#f5f5f7;border-radius:8px;font-size:12px;color:#636366;">' +
+        '<b style="color:#1d1d1f;">' + info.make + '</b>' +
+        (info.colour ? ' &middot; ' + info.colour : '') +
+        (info.year ? ' &middot; ' + info.year : '') +
+        (info.fuelType ? ' &middot; ' + info.fuelType : '') +
+        (info.motStatus ? ' &middot; MOT: <span style="color:' + (info.motStatus === 'Valid' ? '#34c759' : '#ff3b30') + ';">' + info.motStatus + '</span>' : '') +
+        '</div>';
+      if (targetEl) targetEl.innerHTML = html;
+    }
+  }).catch(function(){});
+}
+
+function dvlaSetup(inputId, infoId) {
+  var inp = document.getElementById(inputId);
+  var info = infoId ? document.getElementById(infoId) : null;
+  if (!inp) return;
+  var timer;
+  inp.addEventListener('input', function() {
+    clearTimeout(timer);
+    timer = setTimeout(function(){ dvlaLookup(inp.value, info); }, 800);
+  });
+  inp.addEventListener('blur', function() { dvlaLookup(inp.value, info); });
+}
+</script>
+
+<script>
+function deleteJob(id) {
+  if (!confirm('Delete this job?')) return;
+  fetch('/api/jobs/' + id, {
+    method: 'DELETE',
+    headers: {'X-API-Key': '13940e4c045e4b2691354522b103d7be'}
+  }).then(function(r) {
+    if (r.ok) { if (typeof loadJobs === 'function') loadJobs(); }
+    else { alert('Delete failed'); }
+  }).catch(function(e){ alert('Error: ' + e.message); });
+}
+
+function deleteInspection(id) {
+  if (!confirm('Delete this inspection?')) return;
+  fetch('/api/inspections/' + id, {
+    method: 'DELETE',
+    headers: {'X-API-Key': '13940e4c045e4b2691354522b103d7be'}
+  }).then(function(r) {
+    if (r.ok) { if (typeof loadData === 'function') loadData(); }
+    else { alert('Delete failed'); }
+  }).catch(function(e){ alert('Error: ' + e.message); });
+}
+
+function deleteSelectedParts() {
+  var cbs = document.querySelectorAll('.row-cb:checked');
+  if (!cbs.length) { alert('No items selected'); return; }
+  if (!confirm('Delete ' + cbs.length + ' selected part(s)?')) return;
+  var ids = Array.from(cbs).map(function(c){ return c.dataset.pid; });
+  Promise.all(ids.map(function(id){
+    return fetch('/api/parts/'+id,{method:'DELETE',headers:{'X-API-Key':'13940e4c045e4b2691354522b103d7be'}});
+  })).then(function(){ loadParts(); });
+}
+function deletePart(id) {
+  if (!confirm('Delete this part?')) return;
+  fetch('/api/parts/' + id, {
+    method: 'DELETE',
+    headers: {'X-API-Key': '13940e4c045e4b2691354522b103d7be'}
+  }).then(function(r) {
+    if (r.ok) { if (typeof loadParts === 'function') loadParts(); }
+    else { alert('Delete failed'); }
+  }).catch(function(e){ alert('Error: ' + e.message); });
+}
+</script>
+</body>
+</html>

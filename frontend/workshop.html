@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk - Workshop</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--t5:#aeaeb2;--green:#34c759;--gs:rgba(52,199,89,0.1);--red:#ff3b30;--rs:rgba(255,59,48,0.1);--amber:#ff9500;--ams:rgba(255,149,0,0.1);--orange:#FF6B00;--ors:rgba(255,107,0,0.1);--teal:#0071e3;--ts:rgba(0,113,227,0.1);--sw:230px;}
+body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:200;}
+.sb-top{padding:20px 16px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sb-icon{width:36px;height:36px;border-radius:9px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-name{font-size:14px;font-weight:700;color:var(--t1);}
+.sb-sub{font-size:11px;color:var(--t4);}
+.sb-sect{padding:16px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t5);}
+.sb-nav{list-style:none;padding:0 8px;}
+.sbi{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--t3);cursor:pointer;margin-bottom:1px;transition:all 0.12s;}
+.sbi:hover{background:rgba(0,0,0,0.04);color:var(--t1);}
+.sbi.on{background:var(--ors);color:var(--orange);font-weight:600;}
+.sb-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;color:#fff;}
+.sb-badge.r{background:var(--red);}
+.sb-badge.g{background:var(--green);}
+.sb-badge.b{background:var(--teal);}
+.sb-badge.a{background:var(--amber);}
+.sb-foot{margin-top:auto;border-top:1px solid var(--border);padding:12px 8px;}
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
+.topbar{height:52px;position:sticky;top:0;z-index:100;background:rgba(245,245,247,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;}
+.tb-title{font-size:16px;font-weight:600;}
+.tb-sub{font-size:12px;color:var(--t4);}
+.sp{flex:1;}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green);padding:4px 10px;background:var(--gs);border-radius:20px;border:1px solid rgba(52,199,89,0.2);}
+.pill::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:980px;font-size:13px;font-weight:500;font-family:inherit;border:none;cursor:pointer;transition:all 0.2s;}
+.btn-p{background:var(--orange);color:#fff;}
+.btn-p:hover{background:#e05f00;}
+.btn-s{background:var(--surface);color:var(--t1);border:1px solid var(--bs);}
+.btn-g{background:var(--green);color:#fff;}
+.btn-r{background:var(--red);color:#fff;}
+.content{padding:24px 28px;flex:1;}
+.page{display:none;}
+.page.on{display:block;}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;transition:transform 0.2s;}
+.sc:hover{transform:translateY(-2px);}
+.sc::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;}
+.sc.g::after{background:linear-gradient(90deg,var(--green),transparent);}
+.sc.a::after{background:linear-gradient(90deg,var(--amber),transparent);}
+.sc.r::after{background:linear-gradient(90deg,var(--red),transparent);}
+.sc.b::after{background:linear-gradient(90deg,var(--teal),transparent);}
+.sc.o::after{background:linear-gradient(90deg,var(--orange),transparent);}
+.sc-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t5);margin-bottom:10px;}
+.sc-val{font-size:34px;font-weight:700;letter-spacing:-0.05em;line-height:1;margin-bottom:6px;}
+.sc.g .sc-val{color:var(--green);}
+.sc.a .sc-val{color:var(--amber);}
+.sc.r .sc-val{color:var(--red);}
+.sc.b .sc-val{color:var(--teal);}
+.sc.o .sc-val{color:var(--orange);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.card-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.012);}
+.card-title{font-size:14px;font-weight:600;}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid;}
+.bg-b{background:var(--ts);color:var(--teal);border-color:rgba(0,113,227,0.2);}
+.bg-g{background:var(--gs);color:#248a3d;border-color:rgba(52,199,89,0.2);}
+.bg-r{background:var(--rs);color:var(--red);border-color:rgba(255,59,48,0.2);}
+.bg-a{background:var(--ams);color:#bf5900;border-color:rgba(255,149,0,0.2);}
+.bg-o{background:var(--ors);color:var(--orange);border-color:rgba(255,107,0,0.2);}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--t5);padding:10px 18px;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.012);}
+.tbl td{padding:12px 18px;border-bottom:1px solid var(--border);font-size:13px;color:var(--t2);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tbody tr:hover td{background:rgba(0,0,0,0.018);cursor:pointer;}
+.reg{font-family:monospace;font-size:13px;font-weight:700;letter-spacing:0.06em;color:var(--t1);}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid;}
+.chip::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.c-p{background:var(--gs);color:#248a3d;border-color:rgba(52,199,89,0.2);}
+.c-a{background:var(--ams);color:#bf5900;border-color:rgba(255,149,0,0.2);}
+.c-f{background:var(--rs);color:var(--red);border-color:rgba(255,59,48,0.2);}
+.c-q{background:var(--ts);color:var(--teal);border-color:rgba(0,113,227,0.2);}
+.c-o{background:var(--ors);color:var(--orange);border-color:rgba(255,107,0,0.2);}
+.phd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;}
+.ptitle{font-size:26px;font-weight:700;letter-spacing:-0.04em;}
+.pdesc{font-size:13px;color:var(--t4);margin-top:3px;}
+.pacts{display:flex;gap:8px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.fg{margin-bottom:14px;}
+.fl{font-size:12px;font-weight:600;color:var(--t2);display:block;margin-bottom:5px;}
+.fi,.fsel,.fta{width:100%;padding:9px 12px;border:1.5px solid var(--bs);border-radius:8px;font-size:13px;font-family:inherit;color:var(--t1);background:var(--surface);outline:none;transition:border-color 0.2s;}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,0.1);}
+.fta{min-height:80px;resize:vertical;}
+.mwrap{position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.mwrap.on{display:flex;}
+.modal{background:var(--surface);border-radius:18px;width:100%;max-width:520px;box-shadow:0 24px 80px rgba(0,0,0,0.2);overflow:hidden;animation:mi 0.2s ease;}
+@keyframes mi{from{opacity:0;transform:scale(0.96) translateY(8px);}to{opacity:1;transform:none;}}
+.mhd{padding:20px 22px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.mhd-title{font-size:17px;font-weight:700;}
+.mclose{width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,0.06);border:none;cursor:pointer;font-size:16px;color:var(--t4);display:flex;align-items:center;justify-content:center;}
+.mbody{padding:20px 22px;}
+.mfoot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:rgba(0,0,0,0.018);}
+.job-detail{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.jd-item label{font-size:11px;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:4px;}
+.jd-item .jd-val{font-size:15px;font-weight:600;color:var(--t1);}
+.dispatch-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.db-label{font-size:13px;font-weight:600;flex:1;}
+.db-status{font-size:12px;color:var(--t4);}
+.sent-badge{font-size:11px;font-weight:700;color:var(--green);background:var(--gs);padding:3px 9px;border-radius:20px;border:1px solid rgba(52,199,89,0.2);}
+.toast{position:fixed;bottom:24px;right:24px;background:#1d1d1f;color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.25);z-index:9999;display:flex;align-items:center;gap:9px;transform:translateY(80px);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+.toast.v{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="sb-icon">
+      <svg viewBox="0 0 22 22" fill="none" width="22" height="22">
+        <rect x="10" y="2" width="2" height="18" rx="1" fill="#FF6B00"/>
+        <path d="M10,11 Q5,8 2,4 L2,7 Q5,10 9,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <path d="M12,11 Q17,8 20,4 L20,7 Q17,10 13,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <circle cx="11" cy="11" r="2.5" fill="#fff"/>
+        <circle cx="11" cy="11" r="1.2" fill="#FF6B00"/>
+      </svg>
+    </div>
+    <div><div class="sb-name">HGVDesk</div><div class="sb-sub">Workshop</div></div>
+  </div>
+  <div class="sb-sect">Jobs</div>
+  <ul class="sb-nav">
+    <li><div class="sbi on" id="nav-dash" data-page="dash">Dashboard</div></li>
+    <li><div class="sbi" id="nav-jobs" data-page="jobs">All Jobs <span class="sb-badge b" id="jobs-cnt">0</span></div></li>
+    <li><div class="sbi" id="nav-floor" data-page="floor">On Floor <span class="sb-badge a" id="floor-cnt">0</span></div></li>
+    <li><div class="sbi" id="nav-urgent" data-page="urgent">Urgent <span class="sb-badge r" id="urgent-cnt">0</span></div></li>
+    <li><div class="sbi" id="nav-new" data-page="new">+ New Job</div></li>
+  </ul>
+  <div class="sb-sect">Systems</div>
+  <ul class="sb-nav">
+    <li><div class="sbi" data-href="/inspect">Inspect</div></li>
+    <li><div class="sbi" id="nav-techs" data-page="techs">Technicians</div></li>
+    <li><div class="sbi" data-href="/parts">Parts</div></li>
+    <li><div class="sbi" onclick="window.location.href='/customers'">Customers</div></li>
+    <li><div class="sbi" onclick="window.location.href='/invoices'">Invoices</div></li>
+    <li><div class="sbi" onclick="window.location.href='/reports'">Reports</div></li>
+    <li><div class="sbi" data-href="/command">Command</div></li>
+  </ul>
+  <div class="sb-foot">
+    <div style="padding:8px 10px;font-size:11px;color:var(--t5);">API: <span id="api-st" style="color:var(--amber);">Connecting...</span></div>
+  </div>
+</aside>
+
+<div class="main">
+<header class="topbar">
+  <div><span class="tb-title" id="tbt">Dashboard</span><span class="tb-sub" id="tbs"> - Live Overview</span></div>
+  <div class="sp"></div>
+  <div class="pill">Inspect Live</div>
+  <div class="pill">Parts Live</div>
+  <button class="btn btn-p" id="btn-new-top">+ New Job</button>
+</header>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div class="page on" id="page-dash">
+  <div class="stats">
+    <div class="sc o"><div class="sc-lbl">Active Jobs</div><div class="sc-val" id="s-active">0</div></div>
+    <div class="sc a"><div class="sc-lbl">On Floor</div><div class="sc-val" id="s-floor">0</div></div>
+    <div class="sc r"><div class="sc-lbl">Urgent</div><div class="sc-val" id="s-urgent">0</div></div>
+    <div class="sc g"><div class="sc-lbl">Completed</div><div class="sc-val" id="s-done">0</div></div>
+    <div class="sc b"><div class="sc-lbl">Total</div><div class="sc-val" id="s-total">0</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Recent Jobs</div><span class="badge bg-o" id="dash-tot">0 Jobs</span></div>
+    <table class="tbl">
+      <thead><tr><th></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Time</th><th></th></tr></thead>
+      <tbody id="dash-tb"><tr><td colspan="9" style="text-align:center;padding:40px;color:var(--t5);">No jobs yet</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ALL JOBS -->
+<div class="page" id="page-jobs">
+  <div class="phd">
+    <div><div class="ptitle">All Jobs</div><div class="pdesc">Complete job history</div></div>
+    <div class="pacts">
+      <button class="btn btn-s" onclick="selectAll()">Select All</button>
+      <button class="btn btn-r" onclick="deleteSelected()">Delete Selected</button>
+      <button class="btn btn-p" id="btn-new-jobs">+ New Job</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Jobs</div><span class="badge bg-b" id="jobs-tot">0</span></div>
+    <table class="tbl">
+      <thead><tr><th></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody id="jobs-tb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ON FLOOR -->
+<div class="page" id="page-floor">
+  <div class="phd"><div><div class="ptitle">On Floor</div><div class="pdesc">Jobs currently being worked on</div></div></div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Active Floor Jobs</div><span class="badge bg-a" id="floor-tot">0</span></div>
+    <table class="tbl">
+      <thead><tr><th></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Inspect</th><th>Parts</th><th>Time</th><th></th></tr></thead>
+      <tbody id="floor-tb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- URGENT -->
+<div class="page" id="page-urgent">
+  <div class="phd"><div><div class="ptitle">Urgent Jobs</div><div class="pdesc">Requires immediate attention</div></div></div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Urgent</div><span class="badge bg-r" id="urgent-tot">0</span></div>
+    <table class="tbl">
+      <thead><tr><th></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Status</th><th>Time</th><th></th></tr></thead>
+      <tbody id="urgent-tb"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- NEW JOB -->
+<div class="page" id="page-new">
+  <div class="phd">
+    <div><div class="ptitle">New Job</div><div class="pdesc">Create a new workshop job</div></div>
+    <div class="pacts">
+      <button class="btn btn-s" id="btn-back">Cancel</button>
+      <button class="btn btn-p" id="btn-create">Create Job</button>
+    </div>
+  </div>
+  <div class="card" style="padding:24px;">
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">Vehicle Registration *</label>
+        <input class="fi" id="f-reg" placeholder="e.g. LK23 XPT" style="text-transform:uppercase;font-family:monospace;font-weight:700;letter-spacing:0.08em;">
+        <div id="f-reg-info"></div>
+      </div>
+      <div class="fg"><label class="fl">Inspection Type *</label>
+        <select class="fsel" id="f-type">
+          <option value="">Select type...</option>
+          <option value="T50">T50 - Annual HGV</option>
+          <option value="T60">T60 - Trailer</option>
+          <option value="PMI">PMI - Periodic</option>
+          <option value="Pre-Use">Pre-Use Check</option>
+          <option value="Emergency">Emergency Inspection</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Customer / Operator *</label><input class="fi" id="f-cust" placeholder="e.g. Stobart Fleet"></div>
+      <div class="fg"><label class="fl">Technician</label><select class="fsel" id="f-tech"><option value="">Select technician...</option></select></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Priority</label>
+        <select class="fsel" id="f-priority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Scheduled Date</label><input class="fi" id="f-date" type="date"></div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="fta" id="f-notes" placeholder="Any additional notes or instructions..."></textarea></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+      <input type="checkbox" id="f-send-floor" style="width:16px;height:16px;cursor:pointer;">
+      <label for="f-send-floor" style="font-size:13px;font-weight:500;cursor:pointer;">Send to floor immediately after creating (dispatches to Inspect and Parts)</label>
+    </div>
+  </div>
+</div>
+
+<!-- TECHNICIANS -->
+<div class="page" id="page-techs">
+  <div class="phd">
+    <div><div class="ptitle">Technicians</div><div class="pdesc">Manage workshop technicians</div></div>
+    <div class="pacts"><button class="btn btn-p" onclick="showAddTech()">+ Add Technician</button></div>
+  </div>
+  <div class="card" id="add-tech-form" style="display:none;margin-bottom:16px;">
+    <div class="card-hd"><div class="card-title">New Technician</div></div>
+    <div style="padding:20px;">
+      <div class="fr">
+        <div class="fg"><label class="fl">Name *</label><input class="fi" id="tech-name" placeholder="Full name"></div>
+        <div class="fg"><label class="fl">Phone</label><input class="fi" id="tech-phone" placeholder="07700 000000"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-p" onclick="saveTech()">Save Technician</button>
+        <button class="btn btn-s" onclick="hideAddTech()">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Technicians</div><span class="badge bg-b" id="techs-count">0</span></div>
+    <table class="tbl" id="techs-tb">
+      <thead><tr><th>Name</th><th>Phone</th><th>Username</th><th>Status</th><th></th></tr></thead>
+      <tbody id="techs-body"><tr><td colspan="5" style="padding:40px;text-align:center;color:var(--t5);">No technicians yet</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- end content -->
+</div><!-- end main -->
+</div><!-- end layout -->
+
+<!-- JOB MODAL -->
+<div class="mwrap" id="job-modal">
+  <div class="modal">
+    <div class="mhd"><div class="mhd-title" id="jm-title">Job Details</div><button class="mclose" id="jm-close">&#x2715;</button></div>
+    <div class="mbody">
+      <div class="job-detail" id="jm-detail"></div>
+      <div id="jm-dispatch">
+        <div class="dispatch-box">
+          <div><div class="db-label">HGV Inspect</div><div class="db-status" id="jm-insp-st">Not sent</div></div>
+          <div id="jm-insp-badge"></div>
+        </div>
+        <div class="dispatch-box">
+          <div><div class="db-label">HGV Parts</div><div class="db-status" id="jm-parts-st">Not sent</div></div>
+          <div id="jm-parts-badge"></div>
+        </div>
+      </div>
+      <div id="jm-sold-hours" style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--t4);">Sold Hours</div>
+          <div style="font-size:13px;font-weight:700;color:var(--t1);">Total: <span id="jm-sh-total">0.00</span> hrs</div>
+        </div>
+        <input id="jm-sh-search" type="text" placeholder="Search job library..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:8px;outline:none;font-family:inherit;">
+        <div id="jm-sh-results" style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;display:none;background:var(--surface);"></div>
+        <div id="jm-sh-lines" style="margin-top:8px;"></div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-s" id="jm-close2">Close</button>
+      <button class="btn btn-s" id="jm-preview" style="display:none;" onclick="previewJobReport()">Preview Report</button>
+      <button class="btn btn-s" id="jm-print" style="display:none;" onclick="printJobSheet()">Print Job Sheet</button>
+      <button class="btn btn-s" id="jm-save-sh" onclick="saveJobLines()">Save Hours</button>
+      <button class="btn btn-g" id="jm-send" style="display:none;">Send to Floor</button>
+      <button class="btn btn-r" id="jm-done" style="display:none;">Mark Complete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TECH CREDENTIALS MODAL -->
+<div class="mwrap" id="tech-creds-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="mhd"><div class="mhd-title">Technician Created</div></div>
+    <div class="mbody" style="text-align:center;">
+      <div style="font-size:13px;color:var(--t4);margin-bottom:20px;">Share these login credentials with the technician</div>
+      <div style="background:var(--bg);border-radius:10px;padding:16px;margin-bottom:16px;text-align:left;">
+        <div style="font-size:11px;color:var(--t5);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Username</div>
+        <div style="font-size:15px;font-weight:700;font-family:monospace;" id="cred-username"></div>
+        <div style="font-size:11px;color:var(--t5);font-weight:600;text-transform:uppercase;margin-top:12px;margin-bottom:4px;">Temporary Password</div>
+        <div style="font-size:15px;font-weight:700;font-family:monospace;color:var(--teal);" id="cred-password"></div>
+      </div>
+      <div style="font-size:12px;color:var(--red);margin-bottom:16px;">&#9888; Save these now — the password cannot be retrieved again</div>
+      <button class="btn btn-p" onclick="document.getElementById('tech-creds-modal').classList.remove('on');loadTechs();">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="ti"></span><span id="tm"></span></div>
+
+<script>
+var KEY = '13940e4c045e4b2691354522b103d7be';
+var currentJob = null;
+var allJobs = [];
+var allTechs = [];
+
+// ── API ──
+function api(method, path, body) {
+  var opts = { method: method, headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY } };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch('/api' + path, opts).then(function(r) { return r.json(); }).catch(function() { return null; });
+}
+
+// ── TOAST ──
+var tt;
+function toast(icon, msg) {
+  document.getElementById('ti').textContent = icon;
+  document.getElementById('tm').textContent = msg;
+  var t = document.getElementById('toast');
+  t.classList.add('v');
+  clearTimeout(tt);
+  tt = setTimeout(function() { t.classList.remove('v'); }, 3200);
+}
+
+// ── HELPERS ──
+function ago(iso) {
+  if (!iso) return '';
+  var m = Math.floor((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  if (m < 1440) return Math.floor(m / 60) + 'h ago';
+  return Math.floor(m / 1440) + 'd ago';
+}
+function priorityChip(p) {
+  if (p === 'urgent') return '<span class="chip c-f">Urgent</span>';
+  if (p === 'high') return '<span class="chip c-a">High</span>';
+  return '<span class="chip c-q">Normal</span>';
+}
+function statusChip(s) {
+  if (s === 'done' || s === 'complete') return '<span class="chip c-p">Complete</span>';
+  if (s === 'in_progress') return '<span class="chip c-a">In Progress</span>';
+  if (s === 'pending') return '<span class="chip c-q">Pending</span>';
+  return '<span class="chip c-o">' + s + '</span>';
+}
+
+// ── NAVIGATION ──
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(function(x) { x.classList.remove('on'); });
+  document.querySelectorAll('.sbi[data-page]').forEach(function(x) { x.classList.remove('on'); });
+  var pg = document.getElementById('page-' + p);
+  if (pg) pg.classList.add('on');
+  var nav = document.getElementById('nav-' + p);
+  if (nav) nav.classList.add('on');
+  var titles = {
+    dash: ['Dashboard', ' - Live Overview'],
+    jobs: ['All Jobs', ' - History'],
+    floor: ['On Floor', ' - Active'],
+    urgent: ['Urgent', ' - Action Required'],
+    new: ['New Job', ' - Create'],
+    techs: ['Technicians', '']
+  };
+  var t = titles[p] || [p, ''];
+  document.getElementById('tbt').textContent = t[0];
+  document.getElementById('tbs').textContent = t[1];
+  if (p === 'techs') { setTimeout(loadTechs, 50); }
+  if (p !== 'new') { loadJobs(); }
+}
+
+// ── JOBS ──
+function loadJobs() {
+  api('GET', '/jobs').then(function(d) {
+    if (!d) return;
+    allJobs = (d.data ? d.data.jobs : d.jobs) || [];
+    renderJobs();
+  });
+}
+
+function renderJobs() {
+  var jobs = allJobs;
+  var active = jobs.filter(function(j) { return j.status !== 'done'; });
+  var floor = jobs.filter(function(j) { return j.status === 'in_progress'; });
+  var urgent = jobs.filter(function(j) { return j.priority === 'urgent' && j.status !== 'done'; });
+  var done = jobs.filter(function(j) { return j.status === 'done'; });
+
+  document.getElementById('s-active').textContent = active.length;
+  document.getElementById('s-floor').textContent = floor.length;
+  document.getElementById('s-urgent').textContent = urgent.length;
+  document.getElementById('s-done').textContent = done.length;
+  document.getElementById('s-total').textContent = jobs.length;
+  document.getElementById('dash-tot').textContent = jobs.length + ' Jobs';
+  document.getElementById('jobs-cnt').textContent = jobs.length;
+  document.getElementById('floor-cnt').textContent = floor.length;
+  document.getElementById('urgent-cnt').textContent = urgent.length;
+  document.getElementById('jobs-tot').textContent = jobs.length;
+  document.getElementById('floor-tot').textContent = floor.length;
+  document.getElementById('urgent-tot').textContent = urgent.length;
+
+  function jobRow(j, cols) {
+    var row = '<tr data-id="' + j.id + '"><td><input type="checkbox" class="row-cb" data-id="' + j.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>';
+    row += '<td><span class="reg">' + j.vehicle_reg + '</span></td>';
+    row += '<td style="font-size:12px;">' + (j.inspection_type || '') + '</td>';
+    row += '<td style="font-size:12px;">' + (j.customer_name || '') + '</td>';
+    if (cols.indexOf('tech') >= 0) row += '<td style="font-size:12px;color:var(--t4);">' + (j.technician_name || '-') + '</td>';
+    if (cols.indexOf('priority') >= 0) row += '<td>' + priorityChip(j.priority) + '</td>';
+    if (cols.indexOf('status') >= 0) row += '<td>' + statusChip(j.status) + '</td>';
+    if (cols.indexOf('insp') >= 0) row += '<td>' + (j.inspect_sent ? '<span class="chip c-p">Sent</span>' : '<span style="font-size:11px;color:var(--t5);">Pending</span>') + '</td>';
+    if (cols.indexOf('parts') >= 0) row += '<td>' + (j.parts_sent ? '<span class="chip c-p">Sent</span>' : '<span style="font-size:11px;color:var(--t5);">Pending</span>') + '</td>';
+    row += '<td style="font-size:11px;color:var(--t5);">' + ago(j.created_at) + '</td>';
+    row += '<td style="display:flex;gap:6px;"><button class="btn btn-s" style="padding:4px 10px;font-size:11px;" data-id="' + j.id + '">View</button><button class="btn" style="padding:4px 10px;font-size:11px;background:#fff0f0;color:#ff3b30;border:1px solid rgba(255,59,48,0.2);" onclick="event.stopPropagation();deleteJob(' + j.id + ')">Delete</button></td>';
+    row += '</tr>';
+    return row;
+  }
+
+  var empty9 = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--t5);">No jobs found</td></tr>';
+  document.getElementById('dash-tb').innerHTML = jobs.slice(0, 20).map(function(j) { return jobRow(j, ['tech','priority','status']); }).join('') || empty9;
+  document.getElementById('jobs-tb').innerHTML = jobs.map(function(j) { return jobRow(j, ['tech','priority','status']); }).join('') || empty9;
+  document.getElementById('floor-tb').innerHTML = floor.map(function(j) { return jobRow(j, ['tech','insp','parts']); }).join('') || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--t5);">No jobs on floor</td></tr>';
+  document.getElementById('urgent-tb').innerHTML = urgent.map(function(j) { return jobRow(j, ['tech','status']); }).join('') || '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--t5);">No urgent jobs</td></tr>';
+
+  document.querySelectorAll('tr[data-id]').forEach(function(row) {
+    row.addEventListener('click', function() {
+      var id = parseInt(row.dataset.id);
+      var job = allJobs.find(function(j) { return j.id === id; });
+      if (job) openJobModal(job);
+    });
+  });
+}
+
+function deleteJob(id) {
+  if (!confirm('Delete this job?')) return;
+  fetch('/api/jobs/' + id, { method: 'DELETE', headers: { 'X-API-Key': KEY } })
+    .then(function(r) { if (r.ok) loadJobs(); else alert('Delete failed'); })
+    .catch(function(e) { alert('Error: ' + e.message); });
+}
+
+function deleteSelected() {
+  var cbs = document.querySelectorAll('.row-cb:checked');
+  if (!cbs.length) { alert('No items selected'); return; }
+  if (!confirm('Delete ' + cbs.length + ' selected job(s)?')) return;
+  var ids = Array.from(cbs).map(function(c) { return c.dataset.id; });
+  Promise.all(ids.map(function(id) {
+    return fetch('/api/jobs/' + id, { method: 'DELETE', headers: { 'X-API-Key': KEY } });
+  })).then(function() { loadJobs(); });
+}
+
+function selectAll() {
+  var cbs = document.querySelectorAll('.row-cb');
+  var allChecked = Array.from(cbs).every(function(c) { return c.checked; });
+  cbs.forEach(function(c) { c.checked = !allChecked; });
+}
+
+// ── JOB MODAL ──
+function openJobModal(job) {
+  currentJob = job;
+  document.getElementById('jm-title').textContent = job.vehicle_reg + ' - ' + (job.inspection_type || '');
+  document.getElementById('jm-detail').innerHTML =
+    '<div class="jd-item"><label>Registration</label><div class="jd-val reg">' + job.vehicle_reg + '</div></div>' +
+    '<div class="jd-item"><label>Type</label><div class="jd-val">' + (job.inspection_type || '-') + '</div></div>' +
+    '<div class="jd-item"><label>Customer</label><div class="jd-val">' + (job.customer_name || '-') + '</div></div>' +
+    '<div class="jd-item"><label>Technician</label><div class="jd-val">' + (job.technician_name || '-') + '</div></div>' +
+    '<div class="jd-item"><label>Priority</label><div class="jd-val">' + priorityChip(job.priority) + '</div></div>' +
+    '<div class="jd-item"><label>Status</label><div class="jd-val">' + statusChip(job.status) + '</div></div>';
+  document.getElementById('jm-insp-st').textContent = job.inspect_sent ? 'Dispatched to Inspect' : 'Not sent yet';
+  document.getElementById('jm-parts-st').textContent = job.parts_sent ? 'Dispatched to Parts' : 'Not sent yet';
+  document.getElementById('jm-insp-badge').innerHTML = job.inspect_sent ? '<span class="sent-badge">Sent</span>' : '';
+  document.getElementById('jm-parts-badge').innerHTML = job.parts_sent ? '<span class="sent-badge">Sent</span>' : '';
+  document.getElementById('jm-preview').style.display = job.inspect_sent ? 'inline-flex' : 'none';
+  document.getElementById('jm-print').style.display = 'inline-flex';
+  document.getElementById('jm-send').style.display = (job.status !== 'done' && (!job.inspect_sent || !job.parts_sent)) ? 'flex' : 'none';
+  document.getElementById('jm-done').style.display = job.status !== 'done' ? 'flex' : 'none';
+  document.getElementById('job-modal').classList.add('on');
+  // Load job library and existing lines
+  loadJobLibrary();
+  loadJobLines(job.id);
+}
+
+var jobLibraryCache = [];
+var currentJobLines = [];
+
+function loadJobLibrary() {
+  if (jobLibraryCache.length) return;
+  api('GET', '/job-library').then(function(d) {
+    jobLibraryCache = (d && d.data && d.data.jobs) ? d.data.jobs : [];
+  });
+}
+
+function loadJobLines(jobId) {
+  currentJobLines = [];
+  renderJobLines();
+  api('GET', '/jobs/' + jobId + '/lines').then(function(d) {
+    currentJobLines = (d && d.data && d.data.lines) ? d.data.lines : [];
+    renderJobLines();
+  });
+}
+
+function renderJobLines() {
+  var total = currentJobLines.reduce(function(s, l) { return s + parseFloat(l.sold_hours) * parseFloat(l.quantity); }, 0);
+  document.getElementById('jm-sh-total').textContent = total.toFixed(2);
+  var html = '';
+  currentJobLines.forEach(function(l, i) {
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg);">';
+    html += '<div style="flex:1;font-size:12px;font-weight:500;">' + l.name + '</div>';
+    html += '<div style="font-size:11px;color:var(--t4);white-space:nowrap;">' + parseFloat(l.sold_hours).toFixed(2) + ' hrs</div>';
+    html += '<button onclick="removeJobLine(' + i + ')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0 4px;">&#x2715;</button>';
+    html += '</div>';
+  });
+  if (!currentJobLines.length) html = '<div style="font-size:12px;color:var(--t4);text-align:center;padding:8px;">No jobs added yet</div>';
+  document.getElementById('jm-sh-lines').innerHTML = html;
+}
+
+function removeJobLine(i) {
+  currentJobLines.splice(i, 1);
+  renderJobLines();
+}
+
+function saveJobLines() {
+  if (!currentJob) return;
+  api('POST', '/jobs/' + currentJob.id + '/lines', { lines: currentJobLines }).then(function(d) {
+    if (d) toast('Saved', 'Sold hours saved');
+  });
+}
+
+document.getElementById('jm-sh-search').addEventListener('input', function() {
+  var q = this.value.toLowerCase().trim();
+  var res = document.getElementById('jm-sh-results');
+  if (!q) { res.style.display = 'none'; return; }
+  var matches = jobLibraryCache.filter(function(j) {
+    return j.name.toLowerCase().includes(q) || j.code.toLowerCase().includes(q) || j.category.toLowerCase().includes(q);
+  }).slice(0, 8);
+  if (!matches.length) { res.style.display = 'none'; return; }
+  res.style.display = 'block';
+  res.innerHTML = matches.map(function(j) {
+    return '<div onclick="addJobLine(' + j.id + ')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bg);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background=\"#f5f5f7\"" onmouseout="this.style.background=\"\"">' +
+      '<div><div style="font-size:12px;font-weight:600;">' + j.name + '</div><div style="font-size:10px;color:var(--t4);">' + j.code + ' &bull; ' + j.category + '</div></div>' +
+      '<div style="font-size:12px;font-weight:700;color:var(--t1);white-space:nowrap;">' + parseFloat(j.sold_hours).toFixed(2) + ' hrs</div>' +
+      '</div>';
+  }).join('');
+});
+
+function addJobLine(libId) {
+  var j = jobLibraryCache.find(function(x) { return x.id === libId; });
+  if (!j) return;
+  currentJobLines.push({ job_library_id: j.id, code: j.code, name: j.name, sold_hours: j.sold_hours, quantity: 1 });
+  renderJobLines();
+  document.getElementById('jm-sh-search').value = '';
+  document.getElementById('jm-sh-results').style.display = 'none';
+}
+
+function printJobSheet() {
+  if (!currentJob) return;
+  window.open('/job-sheet?job=' + currentJob.id, '_blank');
+}
+
+function previewJobReport() {
+  if (!currentJob) return;
+  api('GET', '/inspections').then(function(d) {
+    var inspections = (d && d.data ? d.data.inspections : (d ? d.inspections : [])) || [];
+    var insp = inspections.find(function(i) { return i.job_id == currentJob.id; });
+    if (!insp) insp = inspections.find(function(i) { return i.vehicle_reg && i.vehicle_reg.replace(/\s/g,'').toUpperCase() === currentJob.vehicle_reg.replace(/\s/g,'').toUpperCase(); });
+    if (insp) { window.open('/api/inspections/' + insp.id + '/report/preview', '_blank'); }
+    else { alert('No inspection found for this job. Send to floor first.'); }
+  });
+}
+
+document.getElementById('jm-send').addEventListener('click', function() {
+  if (!currentJob) return;
+  toast('Sending', 'Sending to floor...');
+  api('POST', '/jobs/' + currentJob.id + '/send', { targets: ['inspect', 'parts'] }).then(function(res) {
+    if (res) { toast('Done', currentJob.vehicle_reg + ' sent to floor'); document.getElementById('job-modal').classList.remove('on'); loadJobs(); }
+    else { toast('Error', 'Failed to send'); }
+  });
+});
+
+document.getElementById('jm-done').addEventListener('click', function() {
+  if (!currentJob) return;
+  api('PUT', '/jobs/' + currentJob.id, { status: 'done', wip_status: 'done' }).then(function(res) {
+    if (res) { toast('Complete', currentJob.vehicle_reg + ' marked complete'); document.getElementById('job-modal').classList.remove('on'); loadJobs(); }
+  });
+});
+
+document.getElementById('jm-close').addEventListener('click', function() { document.getElementById('job-modal').classList.remove('on'); });
+document.getElementById('jm-close2').addEventListener('click', function() { document.getElementById('job-modal').classList.remove('on'); });
+document.getElementById('job-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('on'); });
+
+// ── NEW JOB FORM ──
+document.getElementById('btn-create').addEventListener('click', function() {
+  var reg = document.getElementById('f-reg').value.trim().toUpperCase();
+  var type = document.getElementById('f-type').value;
+  var cust = document.getElementById('f-cust').value.trim();
+  if (!type || !cust) { toast('Warning', 'Type and customer are required'); return; }
+  if (!reg && type !== 'T60') { toast('Warning', 'Vehicle registration is required'); return; }
+  if (!reg && type === 'T60') { reg = 'TRAILER'; }
+  var body = {
+    vehicleReg: reg, inspectionType: type, customerName: cust,
+    technicianName: document.getElementById('f-tech').value,
+    priority: document.getElementById('f-priority').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    scheduledDate: document.getElementById('f-date').value || null
+  };
+  toast('Creating', 'Creating job...');
+  api('POST', '/jobs', body).then(function(res) {
+    if (res && (res.job || (res.data && res.data.job))) {
+      var jobId = res.job ? res.job.id : res.data.job.id;
+      if (document.getElementById('f-send-floor').checked) {
+        api('POST', '/jobs/' + jobId + '/send', { targets: ['inspect', 'parts'] }).then(function() {
+          toast('Done', reg + ' created and sent to floor');
+          clearForm(); showPage('floor');
+        });
+      } else {
+        toast('Done', reg + ' job created');
+        clearForm(); showPage('jobs');
+      }
+    } else { toast('Error', 'Failed to create job'); }
+  });
+});
+
+function clearForm() {
+  ['f-reg','f-cust','f-notes','f-date'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('f-type').value = '';
+  document.getElementById('f-priority').value = 'normal';
+  document.getElementById('f-send-floor').checked = false;
+  document.getElementById('f-reg-info').innerHTML = '';
+}
+
+document.getElementById('f-type').addEventListener('change', function() {
+  var regInput = document.getElementById('f-reg');
+  var regFg = regInput.closest('.fg');
+  var lbl = regFg ? regFg.querySelector('.fl') : null;
+  if (this.value === 'T60') {
+    regInput.placeholder = 'e.g. TRL-001 (optional for trailers)';
+    if (lbl) lbl.textContent = 'Trailer ID / Fleet Number (optional)';
+  } else {
+    regInput.placeholder = 'e.g. LK23 XPT';
+    if (lbl) lbl.textContent = 'Vehicle Registration *';
+  }
+});
+
+// ── DVLA LOOKUP ──
+function dvlaLookup(regVal, targetEl) {
+  var reg = (regVal || '').trim().toUpperCase().replace(/\s/g, '');
+  if (reg.length < 2) return;
+  if (targetEl) targetEl.innerHTML = '<div style="margin-top:10px;padding:10px;background:#f5f5f7;border-radius:10px;font-size:12px;color:#888;">Looking up vehicle...</div>';
+  fetch('/api/dvla/lookup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY },
+    body: JSON.stringify({ reg: reg })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d && d.data && d.data.make) {
+      var v = d.data;
+      var motColor = (v.motResult === 'PASSED') ? '#1d9e75' : '#ff3b30';
+      var motExpiry = v.motExpiry ? new Date(v.motExpiry).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '-';
+      var motDate = v.motDate ? new Date(v.motDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '-';
+      var expiryDate = v.motExpiry ? new Date(v.motExpiry) : null;
+      var daysLeft = expiryDate ? Math.floor((expiryDate - new Date()) / 86400000) : null;
+      var expiryColor = daysLeft !== null ? (daysLeft < 30 ? '#ff3b30' : daysLeft < 90 ? '#ff9500' : '#1d9e75') : '#86868b';
+      var historyRows = (v.testHistory || []).map(function(t) {
+        var tDate = t.date ? new Date(t.date).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '-';
+        var tColor = t.result === 'PASSED' ? '#1d9e75' : '#ff3b30';
+        return '<tr style="border-bottom:1px solid #e5e5e7;"><td style="padding:5px 8px;font-size:11px;">' + tDate + '</td><td style="padding:5px 8px;font-size:11px;font-weight:700;color:' + tColor + ';">' + (t.result||'-') + '</td><td style="padding:5px 8px;font-size:11px;">' + (t.mileage||'-') + '</td><td style="padding:5px 8px;font-size:11px;color:#ff3b30;">' + (t.defects||0) + ' fail</td><td style="padding:5px 8px;font-size:11px;color:#ff9500;">' + (t.advisories||0) + ' adv</td></tr>';
+      }).join('');
+      var card = '<div style="margin-top:12px;background:#f5f5f7;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">' +
+        '<div style="padding:10px 14px;background:#1d1d1f;color:#fff;display:flex;align-items:center;justify-content:space-between;">' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">DVSA Vehicle Data</div>' +
+        '<div style="font-size:11px;color:#aeaeb2;">' + (v.make||'') + ' ' + (v.model||'') + '</div></div>' +
+        '<div style="padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">' +
+        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Make / Model</div><div style="font-size:13px;font-weight:700;">' + (v.make||'-') + ' ' + (v.model||'') + '</div></div>' +
+        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Colour</div><div style="font-size:13px;font-weight:600;">' + (v.colour||'-') + '</div></div>' +
+        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Fuel / Engine</div><div style="font-size:13px;font-weight:600;">' + (v.fuelType||'-') + (v.engineSize ? ' ' + (parseInt(v.engineSize)/1000).toFixed(1) + 'L' : '') + '</div></div>' +
+        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Last Test</div><div style="font-size:13px;font-weight:700;color:' + motColor + ';">' + (v.motResult||'-') + '</div><div style="font-size:10px;color:#888;">' + motDate + '</div></div>' +
+        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Test Expiry</div><div style="font-size:13px;font-weight:700;color:' + expiryColor + ';">' + motExpiry + '</div>' + (daysLeft !== null ? '<div style="font-size:10px;color:' + expiryColor + ';">' + (daysLeft > 0 ? daysLeft + ' days' : 'EXPIRED') + '</div>' : '') + '</div>' +
+        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Mileage</div><div style="font-size:13px;font-weight:600;">' + (v.mileage||'-') + '</div></div>' +
+        '</div>';
+      if (v.advisoriesOnLatest && v.advisoriesOnLatest.length) {
+        card += '<div style="padding:0 14px 10px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#ff9500;margin-bottom:6px;">Advisories on Last Test</div>' + v.advisoriesOnLatest.map(function(a){return '<div style="font-size:11px;padding:4px 8px;background:#fff3e0;border-radius:4px;margin-bottom:3px;">' + a + '</div>';}).join('') + '</div>';
+      }
+      if (v.defectsOnLatest && v.defectsOnLatest.length) {
+        card += '<div style="padding:0 14px 10px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#ff3b30;margin-bottom:6px;">Failures on Last Test</div>' + v.defectsOnLatest.map(function(a){return '<div style="font-size:11px;padding:4px 8px;background:#fff0f0;border-radius:4px;margin-bottom:3px;">' + a + '</div>';}).join('') + '</div>';
+      }
+      if (historyRows) {
+        card += '<div style="padding:0 14px 14px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:6px;">Test History</div><table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;"><thead><tr style="background:#e5e5e7;"><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Date</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Result</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Mileage</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Fails</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Adv</th></tr></thead><tbody>' + historyRows + '</tbody></table></div>';
+      }
+      card += '</div>';
+      if (targetEl) targetEl.innerHTML = card;
+    } else {
+      if (targetEl) targetEl.innerHTML = '<div style="margin-top:10px;padding:10px;background:#fff0f0;border-radius:10px;font-size:12px;color:#ff3b30;">Vehicle not found in DVSA database</div>';
+    }
+  }).catch(function() { if (targetEl) targetEl.innerHTML = ''; });
+}
+
+(function() {
+  var inp = document.getElementById('f-reg');
+  var info = document.getElementById('f-reg-info');
+  var timer;
+  inp.addEventListener('input', function() { clearTimeout(timer); timer = setTimeout(function() { dvlaLookup(inp.value, info); }, 800); });
+  inp.addEventListener('blur', function() { dvlaLookup(inp.value, info); });
+})();
+
+// ── TECHNICIANS ──
+function showAddTech() { document.getElementById('add-tech-form').style.display = 'block'; }
+function hideAddTech() {
+  document.getElementById('add-tech-form').style.display = 'none';
+  document.getElementById('tech-name').value = '';
+  document.getElementById('tech-phone').value = '';
+}
+
+function loadTechs() {
+  fetch('/api/technicians', { headers: { 'X-API-Key': KEY } })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      allTechs = (d.technicians || (d.data && d.data.technicians) || []);
+      var countEl = document.getElementById('techs-count');
+      if (countEl) countEl.textContent = allTechs.length;
+      var tbody = document.getElementById('techs-body');
+      if (!tbody) return;
+      if (!allTechs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:var(--t5);">No technicians yet</td></tr>';
+      } else {
+        tbody.innerHTML = allTechs.map(function(t) {
+          return '<tr>' +
+            '<td style="padding:12px 18px;font-weight:600;">' + t.name + '</td>' +
+            '<td style="padding:12px 18px;color:var(--t4);">' + (t.phone || '-') + '</td>' +
+            '<td style="padding:12px 18px;font-family:monospace;font-size:12px;">' + t.username + '</td>' +
+            '<td style="padding:12px 18px;"><span style="font-size:11px;font-weight:700;color:' + (t.active ? '#1d9e75' : '#ff3b30') + ';">' + (t.active ? 'Active' : 'Inactive') + '</span></td>' +
+            '<td style="padding:12px 18px;display:flex;gap:8px;">' +
+            '<button class="btn btn-s" style="padding:4px 10px;font-size:11px;" onclick="resetTechPwd(' + t.id + ')">Reset Pwd</button>' +
+            '<button class="btn" style="padding:4px 10px;font-size:11px;background:#fff0f0;color:#ff3b30;border:1px solid rgba(255,59,48,0.2);" onclick="deleteTech(' + t.id + ')">Delete</button>' +
+            '</td></tr>';
+        }).join('');
+      }
+      var sel = document.getElementById('f-tech');
+      if (sel) {
+        var cur = sel.value;
+        sel.innerHTML = '<option value="">Select technician...</option>' +
+          allTechs.filter(function(t) { return t.active; }).map(function(t) {
+            return '<option value="' + t.name + '"' + (cur === t.name ? ' selected' : '') + '>' + t.name + '</option>';
+          }).join('');
+      }
+    });
+}
+
+function saveTech() {
+  var name = document.getElementById('tech-name').value.trim();
+  var phone = document.getElementById('tech-phone').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  fetch('/api/technicians', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY },
+    body: JSON.stringify({ name: name, phone: phone })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.technician && d.tempPassword) {
+      document.getElementById('cred-username').textContent = d.technician.username;
+      document.getElementById('cred-password').textContent = d.tempPassword;
+      document.getElementById('tech-creds-modal').classList.add('on');
+      hideAddTech();
+    } else { alert(d.error || 'Failed to create technician'); }
+  });
+}
+
+function deleteTech(id) {
+  if (!confirm('Delete this technician?')) return;
+  fetch('/api/technicians/' + id, { method: 'DELETE', headers: { 'X-API-Key': KEY } })
+    .then(function() { loadTechs(); });
+}
+
+function resetTechPwd(id) {
+  if (!confirm('Reset this technician password?')) return;
+  fetch('/api/technicians/' + id + '/reset-password', { method: 'POST', headers: { 'X-API-Key': KEY } })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.tempPassword) { alert('New temporary password: ' + d.tempPassword + '\n\nShare this with the technician.'); }
+    });
+}
+
+// ── DELETE HELPERS (used by inspect/parts pages too) ──
+function deleteInspection(id) {
+  if (!confirm('Delete this inspection?')) return;
+  fetch('/api/inspections/' + id, { method: 'DELETE', headers: { 'X-API-Key': KEY } })
+    .then(function(r) { if (r.ok && typeof loadData === 'function') loadData(); else alert('Delete failed'); });
+}
+function deletePart(id) {
+  if (!confirm('Delete this part?')) return;
+  fetch('/api/parts/' + id, { method: 'DELETE', headers: { 'X-API-Key': KEY } })
+    .then(function(r) { if (r.ok && typeof loadParts === 'function') loadParts(); else alert('Delete failed'); });
+}
+
+// ── WIRE UP NAV ──
+document.querySelectorAll('.sbi[data-page]').forEach(function(el) {
+  el.addEventListener('click', function() { showPage(el.dataset.page); });
+});
+document.querySelectorAll('.sbi[data-href]').forEach(function(el) {
+  el.addEventListener('click', function() { window.location.href = el.dataset.href; });
+});
+document.getElementById('btn-new-top').addEventListener('click', function() { showPage('new'); });
+document.getElementById('btn-new-jobs').addEventListener('click', function() { showPage('new'); });
+document.getElementById('btn-back').addEventListener('click', function() { showPage('dash'); });
+
+// ── INIT ──
+function init() {
+  api('GET', '/health').then(function(h) {
+    if (h && h.status === 'healthy') {
+      document.getElementById('api-st').textContent = 'Connected';
+      document.getElementById('api-st').style.color = 'var(--green)';
+    }
+  });
+  loadTechs();
+  loadJobs();
+  setInterval(loadJobs, 30000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

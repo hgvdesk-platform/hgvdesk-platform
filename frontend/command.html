@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk - Command</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--t5:#aeaeb2;--green:#34c759;--gs:rgba(52,199,89,0.1);--red:#ff3b30;--rs:rgba(255,59,48,0.1);--amber:#ff9500;--ams:rgba(255,149,0,0.1);--orange:#FF6B00;--ors:rgba(255,107,0,0.1);--teal:#0071e3;--ts:rgba(0,113,227,0.1);--sw:230px;}
+body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:200;}
+.sb-top{padding:20px 16px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sb-icon{width:36px;height:36px;border-radius:9px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-name{font-size:14px;font-weight:700;color:var(--t1);}
+.sb-sub{font-size:11px;color:var(--t4);}
+.sb-sect{padding:16px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t5);}
+.sb-nav{list-style:none;padding:0 8px;}
+.sbi{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--t3);cursor:pointer;margin-bottom:1px;transition:all 0.12s;}
+.sbi:hover{background:rgba(0,0,0,0.04);color:var(--t1);}
+.sbi.on{background:var(--ors);color:var(--orange);font-weight:600;}
+.sb-foot{margin-top:auto;border-top:1px solid var(--border);padding:12px 8px;}
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
+.topbar{height:52px;position:sticky;top:0;z-index:100;background:rgba(245,245,247,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;}
+.tb-title{font-size:16px;font-weight:600;}
+.tb-sub{font-size:12px;color:var(--t4);}
+.sp{flex:1;}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;border:1px solid;}
+.pill-g{color:var(--green);background:var(--gs);border-color:rgba(52,199,89,0.2);}
+.pill-o{color:var(--orange);background:var(--ors);border-color:rgba(255,107,0,0.2);}
+.pill-b{color:var(--teal);background:var(--ts);border-color:rgba(0,113,227,0.2);}
+.pill::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:980px;font-size:13px;font-weight:500;font-family:inherit;border:none;cursor:pointer;transition:all 0.2s;}
+.btn-p{background:var(--orange);color:#fff;}
+.btn-s{background:var(--surface);color:var(--t1);border:1px solid var(--bs);}
+.content{padding:24px 28px;flex:1;}
+.page{display:none;}
+.page.on{display:block;}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;transition:transform 0.2s;}
+.sc:hover{transform:translateY(-2px);}
+.sc::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;}
+.sc.o::after{background:linear-gradient(90deg,var(--orange),transparent);}
+.sc.g::after{background:linear-gradient(90deg,var(--green),transparent);}
+.sc.b::after{background:linear-gradient(90deg,var(--teal),transparent);}
+.sc.a::after{background:linear-gradient(90deg,var(--amber),transparent);}
+.sc.r::after{background:linear-gradient(90deg,var(--red),transparent);}
+.sc-sys{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t5);margin-bottom:14px;}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sc-item{}
+.sc-lbl{font-size:10px;font-weight:600;color:var(--t5);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+.sc-val{font-size:28px;font-weight:700;letter-spacing:-0.04em;line-height:1;}
+.sc.o .sc-val{color:var(--orange);}
+.sc.g .sc-val{color:var(--green);}
+.sc.b .sc-val{color:var(--teal);}
+.sc.a .sc-val{color:var(--amber);}
+.sc.r .sc-val{color:var(--red);}
+.sc-sub{font-size:11px;color:var(--t4);margin-top:3px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.card-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.012);}
+.card-title{font-size:14px;font-weight:600;}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid;}
+.bg-r{background:var(--rs);color:var(--red);border-color:rgba(255,59,48,0.2);}
+.bg-g{background:var(--gs);color:#248a3d;border-color:rgba(52,199,89,0.2);}
+.bg-o{background:var(--ors);color:var(--orange);border-color:rgba(255,107,0,0.2);}
+.bg-b{background:var(--ts);color:var(--teal);border-color:rgba(0,113,227,0.2);}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--t5);padding:10px 18px;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.012);}
+.tbl td{padding:11px 18px;border-bottom:1px solid var(--border);font-size:13px;color:var(--t2);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.reg{font-family:monospace;font-size:13px;font-weight:700;letter-spacing:0.06em;}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid;}
+.chip::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.c-p{background:var(--gs);color:#248a3d;border-color:rgba(52,199,89,0.2);}
+.c-a{background:var(--ams);color:#bf5900;border-color:rgba(255,149,0,0.2);}
+.c-f{background:var(--rs);color:var(--red);border-color:rgba(255,59,48,0.2);}
+.c-o{background:var(--ors);color:var(--orange);border-color:rgba(255,107,0,0.2);}
+
+.alert-banner{border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:16px;border:1px solid;}
+.ab-crit{background:rgba(255,59,48,0.06);border-color:rgba(255,59,48,0.2);}
+.ab-high{background:rgba(255,149,0,0.06);border-color:rgba(255,149,0,0.2);}
+.ab-icon{font-size:20px;flex-shrink:0;}
+.ab-title{font-size:13px;font-weight:600;}
+.ab-sub{font-size:12px;color:var(--t4);margin-top:2px;}
+
+.act-item{display:flex;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:flex-start;}
+.act-item:last-child{border-bottom:none;}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.act-dot.o{background:var(--orange);}
+.act-dot.g{background:var(--green);}
+.act-dot.r{background:var(--red);}
+.act-dot.b{background:var(--teal);}
+.act-dot.a{background:var(--amber);}
+.act-text{flex:1;font-size:13px;color:var(--t2);}
+.act-sys{font-size:10px;font-weight:700;color:var(--t4);}
+.act-time{font-size:11px;color:var(--t5);flex-shrink:0;}
+
+.sys-link{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.15s;margin-bottom:8px;background:var(--surface);}
+.sys-link:hover{border-color:var(--orange);background:var(--ors);}
+.sys-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sys-name{font-size:14px;font-weight:600;}
+.sys-desc{font-size:12px;color:var(--t4);margin-top:2px;}
+.sys-arrow{margin-left:auto;font-size:18px;color:var(--t5);}
+
+.empty{text-align:center;padding:40px 20px;color:var(--t5);font-size:13px;}
+.toast{position:fixed;bottom:24px;right:24px;background:#1d1d1f;color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.25);z-index:9999;display:flex;align-items:center;gap:9px;transform:translateY(80px);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+.toast.v{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="sb-icon">
+      <svg viewBox="0 0 22 22" fill="none" width="22" height="22">
+        <rect x="10" y="2" width="2" height="18" rx="1" fill="#FF6B00"/>
+        <path d="M10,11 Q5,8 2,4 L2,7 Q5,10 9,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <path d="M12,11 Q17,8 20,4 L20,7 Q17,10 13,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <circle cx="11" cy="11" r="2.5" fill="#fff"/>
+        <circle cx="11" cy="11" r="1.2" fill="#FF6B00"/>
+      </svg>
+    </div>
+    <div><div class="sb-name">HGVDesk</div><div class="sb-sub">Command Centre</div></div>
+  </div>
+  <div class="sb-sect">Overview</div>
+  <ul class="sb-nav">
+    <li><div class="sbi on" id="nav-dash" data-page="dash">Dashboard</div></li>
+    <li><div class="sbi" id="nav-activity" data-page="activity">Activity Log</div></li>
+  </ul>
+  <div class="sb-sect">Systems</div>
+  <ul class="sb-nav">
+    <li><div class="sbi" data-href="/workshop">Workshop</div></li>
+    <li><div class="sbi" data-href="/inspect">Inspect</div></li>
+    <li><div class="sbi" data-href="/parts">Parts</div></li>
+  </ul>
+  <div class="sb-foot">
+    <div style="padding:8px 10px;font-size:11px;color:var(--t5);">API: <span id="api-st" style="color:var(--amber);">Connecting...</span></div>
+  </div>
+</aside>
+
+<div class="main">
+<header class="topbar">
+  <div><span class="tb-title" id="tbt">Command Centre</span><span class="tb-sub" id="tbs"> - Live Overview</span></div>
+  <div class="sp"></div>
+  <div class="pill pill-o">Workshop</div>
+  <div class="pill pill-b">Inspect</div>
+  <div class="pill pill-g">Parts</div>
+  <span id="last-refresh" style="font-size:11px;color:var(--t5);"></span>
+</header>
+
+<div class="content">
+
+<!-- DASHBOARD -->
+<div class="page on" id="page-dash">
+  <div id="alert-strip"></div>
+
+  <!-- 4 system stat cards -->
+  <div class="stats">
+    <div class="sc o">
+      <div class="sc-sys">Workshop</div>
+      <div class="sc-grid">
+        <div class="sc-item"><div class="sc-lbl">Active</div><div class="sc-val" id="w-active">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">On Floor</div><div class="sc-val" id="w-floor">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">Urgent</div><div class="sc-val" id="w-urgent">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">Total</div><div class="sc-val" id="w-total">0</div></div>
+      </div>
+    </div>
+    <div class="sc b">
+      <div class="sc-sys">Inspect</div>
+      <div class="sc-grid">
+        <div class="sc-item"><div class="sc-lbl">Passed</div><div class="sc-val" id="i-pass">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">Failed</div><div class="sc-val" id="i-fail">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">Advisory</div><div class="sc-val" id="i-adv">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">Queued</div><div class="sc-val" id="i-queue">0</div></div>
+      </div>
+    </div>
+    <div class="sc a">
+      <div class="sc-sys">Parts</div>
+      <div class="sc-grid">
+        <div class="sc-item"><div class="sc-lbl">Pending</div><div class="sc-val" id="p-pending">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">Ordered</div><div class="sc-val" id="p-ordered">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">Ready</div><div class="sc-val" id="p-ready">0</div></div>
+        <div class="sc-item"><div class="sc-lbl">Total</div><div class="sc-val" id="p-total">0</div></div>
+      </div>
+    </div>
+    <div class="sc g">
+      <div class="sc-sys">Systems</div>
+      <div style="margin-top:8px;">
+        <div class="sys-link" onclick="window.location.href='/workshop'">
+          <div class="sys-icon" style="background:var(--ors);">W</div>
+          <div><div class="sys-name">Workshop</div><div class="sys-desc">Job management</div></div>
+          <div class="sys-arrow">→</div>
+        </div>
+        <div class="sys-link" onclick="window.location.href='/inspect'">
+          <div class="sys-icon" style="background:var(--ts);">I</div>
+          <div><div class="sys-name">Inspect</div><div class="sys-desc">Inspections</div></div>
+          <div class="sys-arrow">→</div>
+        </div>
+        <div class="sys-link" onclick="window.location.href='/parts'">
+          <div class="sys-icon" style="background:rgba(88,86,214,0.1);">P</div>
+          <div><div class="sys-name">Parts</div><div class="sys-desc">Parts queue</div></div>
+          <div class="sys-arrow">→</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <!-- Recent Jobs -->
+    <div class="card">
+      <div class="card-hd"><div class="card-title">Recent Jobs</div><span class="badge bg-o" id="jobs-badge">0</span></div>
+      <table class="tbl">
+        <thead><tr><th>Vehicle</th><th>Type</th><th>Status</th><th>Time</th></tr></thead>
+        <tbody id="jobs-tb"><tr><td colspan="4" class="empty">No jobs yet</td></tr></tbody>
+      </table>
+    </div>
+    <!-- Recent Inspections -->
+    <div class="card">
+      <div class="card-hd"><div class="card-title">Recent Inspections</div><span class="badge bg-b" id="insp-badge">0</span></div>
+      <table class="tbl">
+        <thead><tr><th>Vehicle</th><th>Type</th><th>Result</th><th>Time</th></tr></thead>
+        <tbody id="insp-tb"><tr><td colspan="4" class="empty">No inspections yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Activity Feed -->
+  <div class="card">
+    <div class="card-hd"><div class="card-title">Live Activity Feed</div><span class="badge bg-g">Real-time</span></div>
+    <div id="activity-feed"><div class="empty">No activity yet</div></div>
+  </div>
+</div>
+
+<!-- ACTIVITY LOG -->
+<div class="page" id="page-activity">
+  <div style="margin-bottom:22px;"><div style="font-size:26px;font-weight:700;letter-spacing:-0.04em;">Activity Log</div><div style="font-size:13px;color:var(--t4);margin-top:3px;">All system events across Workshop, Inspect and Parts</div></div>
+  <div class="card">
+    <div class="card-hd"><div class="card-title">All Activity</div><span class="badge bg-b" id="act-badge">0</span></div>
+    <div id="full-activity"><div class="empty">No activity yet</div></div>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"><span id="ti"></span><span id="tm"></span></div>
+
+<script>
+var KEY = '13940e4c045e4b2691354522b103d7be';
+
+function api(method, path) {
+  return fetch('/api' + path, {method: method, headers: {'Content-Type': 'application/json', 'X-API-Key': KEY}})
+    .then(function(r) { return r.json(); }).catch(function() { return null; });
+}
+
+function ago(iso) {
+  if (!iso) return '';
+  var m = Math.floor((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  if (m < 1440) return Math.floor(m/60) + 'h ago';
+  return Math.floor(m/1440) + 'd ago';
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(function(x) { x.classList.remove('on'); });
+  document.querySelectorAll('.sbi[data-page]').forEach(function(x) { x.classList.remove('on'); });
+  document.getElementById('page-' + p).classList.add('on');
+  var nav = document.getElementById('nav-' + p);
+  if (nav) nav.classList.add('on');
+  if (p === 'activity') loadActivity();
+}
+
+function dotColor(sys) {
+  if (!sys) return 'b';
+  sys = sys.toLowerCase();
+  if (sys.indexOf('workshop') >= 0) return 'o';
+  if (sys.indexOf('inspect') >= 0) return 'b';
+  if (sys.indexOf('parts') >= 0) return 'a';
+  if (sys.indexOf('fail') >= 0) return 'r';
+  if (sys.indexOf('pass') >= 0) return 'g';
+  return 'b';
+}
+
+function loadDashboard() {
+  Promise.all([
+    api('GET', '/command/overview'),
+    api('GET', '/jobs'),
+    api('GET', '/inspections'),
+    api('GET', '/activity?limit=20')
+  ]).then(function(results) {
+    var ov = results[0];
+    var jobs = results[1];
+    var insps = results[2];
+    var acts = results[3];
+
+    if (ov) {
+      document.getElementById('w-active').textContent = ov.workshop ? ov.workshop.active : 0;
+      document.getElementById('w-floor').textContent = ov.workshop ? ov.workshop.onFloor : 0;
+      document.getElementById('w-urgent').textContent = ov.workshop ? ov.workshop.urgent : 0;
+      document.getElementById('w-total').textContent = ov.workshop ? ov.workshop.total : 0;
+      document.getElementById('i-pass').textContent = ov.inspect ? ov.inspect.passed : 0;
+      document.getElementById('i-fail').textContent = ov.inspect ? ov.inspect.failed : 0;
+      document.getElementById('i-adv').textContent = ov.inspect ? ov.inspect.advisory : 0;
+      document.getElementById('i-queue').textContent = ov.inspect ? ov.inspect.queued : 0;
+      document.getElementById('p-pending').textContent = ov.parts ? ov.parts.pending : 0;
+      document.getElementById('p-ordered').textContent = ov.parts ? ov.parts.ordered : 0;
+      document.getElementById('p-ready').textContent = ov.parts ? ov.parts.ready : 0;
+      document.getElementById('p-total').textContent = ov.parts ? ov.parts.total : 0;
+
+      var alerts = ov.alerts || [];
+      var strip = document.getElementById('alert-strip');
+      if (alerts.length > 0) {
+        strip.innerHTML = alerts.slice(0,3).map(function(a) {
+          return '<div class="alert-banner ' + (a.severity === 'critical' ? 'ab-crit' : 'ab-high') + '">' +
+            '<div class="ab-icon">' + (a.severity === 'critical' ? 'X' : '!') + '</div>' +
+            '<div><div class="ab-title">' + a.title + '</div><div class="ab-sub">' + a.detail + '</div></div>' +
+            '</div>';
+        }).join('');
+      } else {
+        strip.innerHTML = '';
+      }
+    }
+
+    if (jobs && jobs.jobs) {
+      var jl = jobs.jobs.slice(0,8);
+      document.getElementById('jobs-badge').textContent = jobs.total || 0;
+      document.getElementById('jobs-tb').innerHTML = jl.length ? jl.map(function(j) {
+        var sc = j.status === 'done' ? 'c-p' : j.status === 'on_floor' ? 'c-a' : 'c-o';
+        return '<tr><td><span class="reg">' + j.vehicle_reg + '</span></td><td style="font-size:12px;">' + j.inspection_type + '</td><td><span class="chip ' + sc + '">' + j.status + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(j.created_at) + '</td></tr>';
+      }).join('') : '<tr><td colspan="4" class="empty">No jobs yet</td></tr>';
+    }
+
+    if (insps && insps.inspections) {
+      var il = insps.inspections.slice(0,8);
+      document.getElementById('insp-badge').textContent = insps.total || 0;
+      document.getElementById('insp-tb').innerHTML = il.length ? il.map(function(i) {
+        var rc = i.result === 'pass' ? 'c-p' : i.result === 'fail' ? 'c-f' : i.result === 'advisory' ? 'c-a' : 'c-o';
+        return '<tr><td><span class="reg">' + i.vehicle_reg + '</span></td><td style="font-size:12px;">' + i.inspection_type + '</td><td><span class="chip ' + rc + '">' + (i.result || 'pending') + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(i.created_at) + '</td></tr>';
+      }).join('') : '<tr><td colspan="4" class="empty">No inspections yet</td></tr>';
+    }
+
+    if (acts && acts.activity) {
+      renderActivity(acts.activity, 'activity-feed');
+    }
+
+    document.getElementById('last-refresh').textContent = 'Updated ' + ago(new Date().toISOString());
+  });
+}
+
+function loadActivity() {
+  api('GET', '/activity?limit=100').then(function(d) {
+    if (!d) return;
+    document.getElementById('act-badge').textContent = d.total || 0;
+    renderActivity(d.activity || [], 'full-activity');
+  });
+}
+
+function renderActivity(items, elId) {
+  var el = document.getElementById(elId);
+  if (!items.length) { el.innerHTML = '<div class="empty">No activity yet</div>'; return; }
+  el.innerHTML = items.map(function(a) {
+    var dc = dotColor(a.system + ' ' + a.event);
+    return '<div class="act-item">' +
+      '<div class="act-dot ' + dc + '"></div>' +
+      '<div style="flex:1;">' +
+        '<div class="act-text">' + (a.detail || a.event) + '</div>' +
+        '<div class="act-sys">' + (a.system || '') + '</div>' +
+      '</div>' +
+      '<div class="act-time">' + ago(a.created_at) + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+document.querySelectorAll('.sbi[data-page]').forEach(function(el) {
+  el.addEventListener('click', function() { showPage(el.dataset.page); });
+});
+document.querySelectorAll('.sbi[data-href]').forEach(function(el) {
+  el.addEventListener('click', function() { window.location.href = el.dataset.href; });
+});
+
+function init() {
+  api('GET', '/health').then(function(h) {
+    if (h && h.status === 'healthy') {
+      document.getElementById('api-st').textContent = 'Connected';
+      document.getElementById('api-st').style.color = 'var(--green)';
+    }
+  });
+  loadDashboard();
+  setInterval(loadDashboard, 30000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+
+
+
+<script>
+function dvlaLookup(regVal, targetEl) {
+  var reg = (regVal || '').trim().toUpperCase().replace(/\s/g,'');
+  if (reg.length < 2) return;
+  fetch('/api/dvla/lookup', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-API-Key':'13940e4c045e4b2691354522b103d7be'},
+    body: JSON.stringify({reg: reg})
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d && d.data && d.data.make) {
+      var info = d.data;
+      var html = '<div style="margin-top:6px;padding:8px 12px;background:#f5f5f7;border-radius:8px;font-size:12px;color:#636366;">' +
+        '<b style="color:#1d1d1f;">' + info.make + '</b>' +
+        (info.colour ? ' &middot; ' + info.colour : '') +
+        (info.year ? ' &middot; ' + info.year : '') +
+        (info.fuelType ? ' &middot; ' + info.fuelType : '') +
+        (info.motStatus ? ' &middot; MOT: <span style="color:' + (info.motStatus === 'Valid' ? '#34c759' : '#ff3b30') + ';">' + info.motStatus + '</span>' : '') +
+        '</div>';
+      if (targetEl) targetEl.innerHTML = html;
+    }
+  }).catch(function(){});
+}
+
+function dvlaSetup(inputId, infoId) {
+  var inp = document.getElementById(inputId);
+  var info = infoId ? document.getElementById(infoId) : null;
+  if (!inp) return;
+  var timer;
+  inp.addEventListener('input', function() {
+    clearTimeout(timer);
+    timer = setTimeout(function(){ dvlaLookup(inp.value, info); }, 800);
+  });
+  inp.addEventListener('blur', function() { dvlaLookup(inp.value, info); });
+}
+</script>
+
+<script>
+function deleteJob(id) {
+  if (!confirm('Delete this job?')) return;
+  fetch('/api/jobs/' + id, {
+    method: 'DELETE',
+    headers: {'X-API-Key': '13940e4c045e4b2691354522b103d7be'}
+  }).then(function(r) {
+    if (r.ok) { if (typeof loadJobs === 'function') loadJobs(); }
+    else { alert('Delete failed'); }
+  }).catch(function(e){ alert('Error: ' + e.message); });
+}
+
+function deleteInspection(id) {
+  if (!confirm('Delete this inspection?')) return;
+  fetch('/api/inspections/' + id, {
+    method: 'DELETE',
+    headers: {'X-API-Key': '13940e4c045e4b2691354522b103d7be'}
+  }).then(function(r) {
+    if (r.ok) { if (typeof loadData === 'function') loadData(); }
+    else { alert('Delete failed'); }
+  }).catch(function(e){ alert('Error: ' + e.message); });
+}
+
+function deletePart(id) {
+  if (!confirm('Delete this part?')) return;
+  fetch('/api/parts/' + id, {
+    method: 'DELETE',
+    headers: {'X-API-Key': '13940e4c045e4b2691354522b103d7be'}
+  }).then(function(r) {
+    if (r.ok) { if (typeof loadParts === 'function') loadParts(); }
+    else { alert('Delete failed'); }
+  }).catch(function(e){ alert('Error: ' + e.message); });
+}
+</script>
+</body>
+</html>

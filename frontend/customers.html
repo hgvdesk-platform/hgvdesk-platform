@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk - Customers</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--green:#34c759;--red:#ff3b30;--amber:#ff9500;--blue:#0071e3;--sw:230px;}
+body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:100;}
+.brand{padding:20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);}
+.brand-icon{width:36px;height:36px;background:#FF6B00;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.brand-icon svg{width:20px;height:20px;fill:#fff;}
+.brand-name{font-size:15px;font-weight:700;color:var(--t1);}
+.brand-sub{font-size:10px;color:var(--t4);font-weight:500;}
+.nav{padding:12px 0;flex:1;}
+.sbi{padding:10px 20px;font-size:13px;font-weight:500;color:var(--t3);cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;}
+.sbi:hover{background:rgba(0,0,0,0.04);color:var(--t1);}
+.sbi.active{background:rgba(255,107,0,0.08);color:#FF6B00;font-weight:600;}
+.main{margin-left:var(--sw);flex:1;padding:32px;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+.page-title{font-size:24px;font-weight:700;}
+.btn{padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all 0.15s;}
+.btn-primary{background:#FF6B00;color:#fff;}
+.btn-primary:hover{background:#e05e00;}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--border);}
+.btn-ghost:hover{background:rgba(0,0,0,0.04);}
+.btn-danger{background:var(--red);color:#fff;}
+.card{background:var(--surface);border-radius:16px;border:1px solid var(--border);overflow:hidden;}
+.search-bar{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.search-input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);}
+.search-input:focus{border-color:#FF6B00;}
+table{width:100%;border-collapse:collapse;}
+th{padding:12px 20px;text-align:left;font-size:11px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);background:#fafafa;}
+td{padding:14px 20px;font-size:13px;border-bottom:1px solid var(--border);color:var(--t2);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(0,0,0,0.02);}
+.customer-name{font-weight:600;color:var(--t1);}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+.badge-green{background:rgba(52,199,89,0.1);color:#1d9e4f;}
+.badge-red{background:rgba(255,59,48,0.1);color:var(--red);}
+.action-btns{display:flex;gap:8px;}
+.empty{padding:60px 20px;text-align:center;color:var(--t4);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:var(--surface);border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal-header{padding:24px 24px 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:18px;font-weight:700;}
+.modal-close{width:32px;height:32px;border-radius:8px;border:none;background:rgba(0,0,0,0.06);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.modal-body{padding:20px 24px 24px;}
+.form-group{margin-bottom:16px;}
+.form-label{font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;}
+.form-input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;}
+.form-input:focus{border-color:#FF6B00;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border);margin-top:16px;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity 0.3s;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M1 3h22v4H1zm2 6h18v12H3zm4 3v6h2v-6zm4 0v6h2v-6zm4 0v6h2v-6z"/></svg></div>
+      <div><div class="brand-name">HGVDesk</div><div class="brand-sub">Fleet Platform</div></div>
+    </div>
+    <nav class="nav">
+      <div class="sbi" onclick="location.href='/workshop'">Workshop</div>
+      <div class="sbi" onclick="location.href='/inspect'">Inspect</div>
+      <div class="sbi" onclick="location.href='/parts'">Parts</div>
+      <div class="sbi active">Customers</div>
+      <div class="sbi" onclick="location.href='/invoices'">Invoices</div>
+      <div class="sbi" onclick="location.href='/reports'">Reports</div>
+    </nav>
+  </div>
+  <div class="main">
+    <div class="page-header">
+      <div class="page-title">Customers</div>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Customer</button>
+    </div>
+    <div class="card">
+      <div class="search-bar">
+        <input class="search-input" id="search" placeholder="Search customers..." oninput="filterCustomers()">
+        <span id="count" style="font-size:12px;color:var(--t4);white-space:nowrap;"></span>
+      </div>
+      <div id="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Contact</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Labour Rate</th>
+              <th>Terms</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="empty" id="empty" style="display:none;">
+          <div class="empty-icon">👥</div>
+          <div style="font-weight:600;margin-bottom:4px;">No customers yet</div>
+          <div style="font-size:13px;">Add your first customer to get started</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" style="display:none;" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add Customer</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Company Name *</label>
+          <input class="form-input" id="f-name" placeholder="e.g. Stobart Group">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Name</label>
+          <input class="form-input" id="f-contact" placeholder="e.g. John Smith">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" id="f-email" type="email" placeholder="billing@company.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input class="form-input" id="f-phone" placeholder="01234 567890">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <input class="form-input" id="f-address" placeholder="1 Business Park, Manchester, M1 1AA">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Labour Rate (£/hr)</label>
+          <input class="form-input" id="f-rate" type="number" placeholder="75.00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Terms (days)</label>
+          <input class="form-input" id="f-terms" type="number" placeholder="30">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input class="form-input" id="f-notes" placeholder="Any additional notes...">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var KEY = '13940e4c045e4b2691354522b103d7be';
+var customers = [];
+
+function api(method, path, body) {
+  var opts = { method: method, headers: { 'X-API-Key': KEY, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch('/api' + path, opts).then(function(r) { return r.json(); });
+}
+
+function toast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#ff3b30' : '#1d1d1f';
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+function delCust(id) {
+  var c = customers.find(function(x) { return x.id === id; });
+  if (c) deleteCustomer(c.id, c.name);
+}
+
+function loadCustomers() {
+  api('GET', '/customers').then(function(d) {
+    if (d.success) {
+      customers = d.data.customers;
+      renderTable(customers);
+    }
+  });
+}
+
+function renderTable(list) {
+  var tbody = document.getElementById('tbody');
+  var empty = document.getElementById('empty');
+  var count = document.getElementById('count');
+  count.textContent = list.length + ' customer' + (list.length !== 1 ? 's' : '');
+  if (!list.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = list.map(function(c) {
+    return '<tr>' +
+      '<td><div class="customer-name">' + esc(c.name) + '</div></td>' +
+      '<td>' + esc(c.contact_name || '-') + '</td>' +
+      '<td>' + (c.email ? '<a href="mailto:' + esc(c.email) + '" style="color:var(--blue);text-decoration:none;">' + esc(c.email) + '</a>' : '-') + '</td>' +
+      '<td>' + esc(c.phone || '-') + '</td>' +
+      '<td style="font-weight:600;">£' + parseFloat(c.labour_rate).toFixed(2) + '/hr</td>' +
+      '<td>' + (c.payment_terms || 30) + ' days</td>' +
+      '<td><span class="badge ' + (c.active ? 'badge-green' : 'badge-red') + '">' + (c.active ? 'Active' : 'Inactive') + '</span></td>' +
+      '<td><div class="action-btns">' +
+        '<button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="editCustomer(' + c.id + ')">Edit</button>' +
+        '<button class="btn btn-danger" style="padding:6px 12px;font-size:12px;" onclick="delCust(' + c.id + ')">Delete</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
+function filterCustomers() {
+  var q = document.getElementById('search').value.toLowerCase();
+  if (!q) { renderTable(customers); return; }
+  renderTable(customers.filter(function(c) {
+    return (c.name||'').toLowerCase().includes(q) ||
+           (c.contact_name||'').toLowerCase().includes(q) ||
+           (c.email||'').toLowerCase().includes(q) ||
+           (c.phone||'').toLowerCase().includes(q);
+  }));
+}
+
+function openModal(c) {
+  document.getElementById('modal-title').textContent = c ? 'Edit Customer' : 'Add Customer';
+  document.getElementById('edit-id').value = c ? c.id : '';
+  document.getElementById('f-name').value = c ? c.name : '';
+  document.getElementById('f-contact').value = c ? (c.contact_name || '') : '';
+  document.getElementById('f-email').value = c ? (c.email || '') : '';
+  document.getElementById('f-phone').value = c ? (c.phone || '') : '';
+  document.getElementById('f-address').value = c ? (c.address || '') : '';
+  document.getElementById('f-rate').value = c ? parseFloat(c.labour_rate).toFixed(2) : '75.00';
+  document.getElementById('f-terms').value = c ? (c.payment_terms || 30) : '30';
+  document.getElementById('f-notes').value = c ? (c.notes || '') : '';
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+function editCustomer(id) {
+  var c = customers.find(function(x) { return x.id === id; });
+  if (c) openModal(c);
+}
+
+function saveCustomer() {
+  var name = document.getElementById('f-name').value.trim();
+  if (!name) { toast('Company name is required', true); return; }
+  var id = document.getElementById('edit-id').value;
+  var body = {
+    name: name,
+    contact_name: document.getElementById('f-contact').value.trim(),
+    email: document.getElementById('f-email').value.trim(),
+    phone: document.getElementById('f-phone').value.trim(),
+    address: document.getElementById('f-address').value.trim(),
+    labour_rate: parseFloat(document.getElementById('f-rate').value) || 75,
+    payment_terms: parseInt(document.getElementById('f-terms').value) || 30,
+    notes: document.getElementById('f-notes').value.trim()
+  };
+  var method = id ? 'PUT' : 'POST';
+  var path = id ? '/customers/' + id : '/customers';
+  api(method, path, body).then(function(d) {
+    if (d.success) {
+      toast(id ? 'Customer updated' : 'Customer added');
+      closeModal();
+      loadCustomers();
+    } else {
+      toast(d.error || 'Failed to save', true);
+    }
+  });
+}
+
+function deleteCustomer(id, name) {
+  if (!confirm('Delete customer "' + name + '"? This cannot be undone.')) return;
+  api('DELETE', '/customers/' + id).then(function(d) {
+    if (d.success) {
+      toast('Customer deleted');
+      loadCustomers();
+    } else {
+      toast(d.error || 'Failed to delete', true);
+    }
+  });
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+loadCustomers();
+</script>
+</body>
+</html>

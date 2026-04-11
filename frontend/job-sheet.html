@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Sheet</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Helvetica Neue",Arial,sans-serif;background:#fff;color:#1d1d1f;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.page{max-width:794px;margin:0 auto;padding:40px;}
+.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #1d1d1f;}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-icon{width:44px;height:44px;border-radius:10px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{font-size:18px;font-weight:700;}
+.brand-sub{font-size:11px;color:#636366;margin-top:2px;}
+.doc-title{text-align:right;}
+.doc-title h1{font-size:22px;font-weight:700;letter-spacing:-0.02em;}
+.doc-num{font-size:11px;color:#636366;margin-top:4px;}
+.status-bar{background:#f5f5f7;border-radius:10px;padding:14px 18px;margin-bottom:24px;display:flex;gap:24px;flex-wrap:wrap;}
+.sb-item{}
+.sb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;margin-bottom:4px;}
+.sb-val{font-size:13px;font-weight:600;}
+.chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.chip-pass{background:#e8f5e9;color:#1d9e75;border:1px solid rgba(52,199,89,0.3);}
+.chip-fail{background:#ffebee;color:#ff3b30;border:1px solid rgba(255,59,48,0.3);}
+.chip-advisory{background:#fff3e0;color:#FF6B00;border:1px solid rgba(255,107,0,0.3);}
+.chip-pending{background:#e3f2fd;color:#0071e3;border:1px solid rgba(0,113,227,0.3);}
+.chip-progress{background:#fff3e0;color:#FF6B00;border:1px solid rgba(255,107,0,0.3);}
+.chip-urgent{background:#ffebee;color:#ff3b30;border:1px solid rgba(255,59,48,0.3);}
+.chip-critical{background:#ffebee;color:#ff3b30;border:1px solid rgba(255,59,48,0.3);}
+.chip-resolved{background:#e8f5e9;color:#1d9e75;border:1px solid rgba(52,199,89,0.3);}
+.section{margin-bottom:28px;}
+.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#86868b;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e5e5e7;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.field{background:#f5f5f7;border-radius:8px;padding:12px 14px;}
+.field-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;margin-bottom:4px;}
+.field-val{font-size:14px;font-weight:600;color:#1d1d1f;}
+.field-val.reg{font-family:monospace;font-size:16px;letter-spacing:0.08em;}
+.dvla-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.dvla-item{background:#f5f5f7;border-radius:8px;padding:10px 12px;}
+.dvla-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;margin-bottom:3px;}
+.dvla-val{font-size:13px;font-weight:600;}
+.notes-box{background:#f5f5f7;border-radius:8px;padding:14px;min-height:50px;font-size:13px;color:#3a3a3c;line-height:1.5;}
+.dispatch-row{display:flex;gap:12px;}
+.dispatch-item{flex:1;background:#f5f5f7;border-radius:8px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;}
+.dispatch-label{font-size:12px;font-weight:600;}
+.dispatch-sent{font-size:11px;font-weight:700;color:#1d9e75;}
+.dispatch-pending{font-size:11px;color:#86868b;}
+.defect-card{border:1px solid #e5e5e7;border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+.defect-card.severity-critical{border-left:4px solid #ff3b30;}
+.defect-card.severity-major{border-left:4px solid #ff9500;}
+.defect-card.severity-advisory{border-left:4px solid #0071e3;}
+.defect-card.resolved{opacity:0.7;background:#f9fafb;}
+.defect-title{font-size:13px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.defect-desc{font-size:12px;color:#636366;margin-bottom:8px;line-height:1.4;}
+.defect-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#86868b;}
+.defect-photo{margin-top:10px;}
+.defect-photo img{max-width:200px;max-height:150px;border-radius:6px;border:1px solid #e5e5e7;}
+.rectified-box{background:#e8f5e9;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12px;}
+.rectified-label{font-size:10px;font-weight:700;text-transform:uppercase;color:#1d9e75;margin-bottom:4px;}
+.tyre-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.tyre-item{background:#f5f5f7;border-radius:8px;padding:10px;text-align:center;}
+.tyre-pos{font-size:10px;font-weight:700;text-transform:uppercase;color:#86868b;margin-bottom:4px;}
+.tyre-val{font-size:12px;font-weight:600;}
+.brake-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.brake-item{background:#f5f5f7;border-radius:8px;padding:10px 12px;}
+.brake-label{font-size:10px;font-weight:700;text-transform:uppercase;color:#86868b;margin-bottom:4px;}
+.brake-val{font-size:13px;font-weight:600;}
+.nil-defect-box{background:#e8f5e9;border:1px solid rgba(52,199,89,0.3);border-radius:10px;padding:16px;text-align:center;}
+.nil-defect-icon{font-size:24px;margin-bottom:6px;}
+.nil-defect-text{font-size:14px;font-weight:700;color:#1d9e75;}
+.sig-box{border:1.5px dashed #d1d1d6;border-radius:8px;height:70px;display:flex;align-items:flex-end;padding:8px 12px;}
+.sig-line{font-size:10px;color:#86868b;}
+.footer{margin-top:32px;padding-top:16px;border-top:1px solid #e5e5e7;display:flex;justify-content:space-between;}
+.footer-text{font-size:10px;color:#86868b;}
+.print-btn{position:fixed;bottom:24px;right:24px;padding:12px 24px;background:#FF6B00;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;box-shadow:0 4px 16px rgba(255,107,0,0.35);}
+.loading{text-align:center;padding:60px;color:#86868b;font-size:14px;}
+.no-data{color:#aeaeb2;font-style:italic;}
+@media print{.print-btn{display:none;}@page{size:A4;margin:15mm;}}
+</style>
+</head>
+<body>
+<div class="page" id="sheet">
+
+  <div class="header">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 22 22" fill="none" width="26" height="26">
+          <rect x="10" y="2" width="2" height="18" rx="1" fill="#FF6B00"/>
+          <path d="M10,11 Q5,8 2,4 L2,7 Q5,10 9,12 Z" fill="#FF6B00" opacity="0.6"/>
+          <path d="M12,11 Q17,8 20,4 L20,7 Q17,10 13,12 Z" fill="#FF6B00" opacity="0.6"/>
+          <circle cx="11" cy="11" r="2.5" fill="#fff"/>
+          <circle cx="11" cy="11" r="1.2" fill="#FF6B00"/>
+        </svg>
+      </div>
+      <div><div class="brand-name">HGVDesk</div><div class="brand-sub">Workshop Job Sheet</div></div>
+    </div>
+    <div class="doc-title">
+      <h1>Job Sheet</h1>
+      <div class="doc-num" id="doc-num">Loading...</div>
+    </div>
+  </div>
+
+  <div id="main-content"><div class="loading">Loading job data...</div></div>
+
+</div>
+
+<button class="print-btn" onclick="window.print()">&#128438; Print / Save PDF</button>
+
+<script>
+(function() {
+  var KEY = '13940e4c045e4b2691354522b103d7be';
+  var params = new URLSearchParams(window.location.search);
+  var jobId = params.get('job');
+
+  document.getElementById('doc-num').textContent = jobId ? 'Job #' + jobId : 'No job specified';
+  document.getElementById('print-time');
+
+  if (!jobId) { document.getElementById('main-content').innerHTML = '<div class="loading">No job ID specified</div>'; return; }
+
+  function fmt(iso) {
+    if (!iso) return '-';
+    return new Date(iso).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+  }
+  function fmtDt(iso) {
+    if (!iso) return '-';
+    return new Date(iso).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }
+  function resultChip(r) {
+    if (!r) return '<span class="chip chip-pending">Pending</span>';
+    if (r === 'pass') return '<span class="chip chip-pass">PASS</span>';
+    if (r === 'fail') return '<span class="chip chip-fail">FAIL</span>';
+    if (r === 'advisory') return '<span class="chip chip-advisory">Advisory</span>';
+    return '<span class="chip chip-pending">' + r + '</span>';
+  }
+  function statusChip(s) {
+    if (s === 'done' || s === 'complete') return '<span class="chip chip-pass">Complete</span>';
+    if (s === 'in_progress') return '<span class="chip chip-progress">In Progress</span>';
+    return '<span class="chip chip-pending">Pending</span>';
+  }
+  function priorityChip(p) {
+    if (p === 'urgent') return '<span class="chip chip-urgent">Urgent</span>';
+    if (p === 'high') return '<span class="chip chip-advisory">High</span>';
+    return '<span class="chip chip-pending">Normal</span>';
+  }
+  function severityChip(s) {
+    if (s === 'critical') return '<span class="chip chip-critical">Critical</span>';
+    if (s === 'major') return '<span class="chip chip-advisory">Major</span>';
+    return '<span class="chip chip-pending">Advisory</span>';
+  }
+
+  function renderPage(job, insp, defects, dvla, jobLines) {
+    var html = '';
+
+    // Status bar
+    html += '<div class="status-bar">';
+    html += '<div class="sb-item"><div class="sb-label">Job Status</div><div class="sb-val">' + statusChip(job.status) + '</div></div>';
+    html += '<div class="sb-item"><div class="sb-label">Priority</div><div class="sb-val">' + priorityChip(job.priority) + '</div></div>';
+    html += '<div class="sb-item"><div class="sb-label">Created</div><div class="sb-val">' + fmt(job.created_at) + '</div></div>';
+    if (job.scheduled_date) html += '<div class="sb-item"><div class="sb-label">Scheduled</div><div class="sb-val">' + fmt(job.scheduled_date) + '</div></div>';
+    if (insp) {
+      html += '<div class="sb-item"><div class="sb-label">Inspection Result</div><div class="sb-val">' + resultChip(insp.result) + '</div></div>';
+      if (insp.completed_at) html += '<div class="sb-item"><div class="sb-label">Completed</div><div class="sb-val">' + fmtDt(insp.completed_at) + '</div></div>';
+    }
+    html += '</div>';
+
+    // Vehicle & Job Details
+    html += '<div class="section"><div class="section-title">Vehicle & Job Details</div>';
+    html += '<div class="grid" style="margin-bottom:12px;">';
+    html += '<div class="field"><div class="field-label">Registration</div><div class="field-val reg">' + job.vehicle_reg + '</div></div>';
+    html += '<div class="field"><div class="field-label">Inspection Type</div><div class="field-val">' + (job.inspection_type || '-') + '</div></div>';
+    html += '</div><div class="grid">';
+    html += '<div class="field"><div class="field-label">Customer / Operator</div><div class="field-val">' + (job.customer_name || '-') + '</div></div>';
+    html += '<div class="field"><div class="field-label">Assigned Technician</div><div class="field-val">' + (job.technician_name || 'Unassigned') + '</div></div>';
+    html += '</div></div>';
+
+    // DVLA Data
+    if (dvla && dvla.make) {
+      html += '<div class="section"><div class="section-title">DVLA Vehicle Data</div>';
+      html += '<div class="dvla-grid">';
+      html += '<div class="dvla-item"><div class="dvla-label">Make</div><div class="dvla-val">' + (dvla.make||'-') + '</div></div>';
+      html += '<div class="dvla-item"><div class="dvla-label">Colour</div><div class="dvla-val">' + (dvla.colour||'-') + '</div></div>';
+      html += '<div class="dvla-item"><div class="dvla-label">Year</div><div class="dvla-val">' + (dvla.year||'-') + '</div></div>';
+      html += '<div class="dvla-item"><div class="dvla-label">Fuel</div><div class="dvla-val">' + (dvla.fuelType||'-') + '</div></div>';
+      html += '<div class="dvla-item"><div class="dvla-label">MOT</div><div class="dvla-val" style="color:' + (dvla.motStatus==='Valid'?'#1d9e75':'#ff3b30') + '">' + (dvla.motStatus||'-') + '</div></div>';
+      html += '<div class="dvla-item"><div class="dvla-label">Tax</div><div class="dvla-val" style="color:' + (dvla.taxStatus==='Taxed'?'#1d9e75':'#ff3b30') + '">' + (dvla.taxStatus||'-') + '</div></div>';
+      html += '</div></div>';
+    }
+
+    // Inspection Details
+    if (insp) {
+      html += '<div class="section"><div class="section-title">Inspection Details</div>';
+      html += '<div class="grid">';
+      html += '<div class="field"><div class="field-label">Inspector</div><div class="field-val">' + (insp.inspector_name || '-') + '</div></div>';
+      html += '<div class="field"><div class="field-label">Mileage</div><div class="field-val">' + (insp.overall_mileage ? insp.overall_mileage.toLocaleString() + ' miles' : '-') + '</div></div>';
+      html += '</div>';
+      if (insp.notes) {
+        html += '<div style="margin-top:12px;"><div class="field-label" style="margin-bottom:6px;">Inspector Notes</div>';
+        html += '<div class="notes-box">' + insp.notes + '</div></div>';
+      }
+      html += '</div>';
+
+      // Nil Defect
+      if (insp.nil_defect) {
+        html += '<div class="section"><div class="nil-defect-box"><div class="nil-defect-icon">&#10003;</div><div class="nil-defect-text">NIL DEFECT — No defects found during inspection</div></div></div>';
+      }
+
+      // Tyre Data
+      if (insp.tyre_data) {
+        var tyres = typeof insp.tyre_data === 'string' ? JSON.parse(insp.tyre_data) : insp.tyre_data;
+        var tyreKeys = Object.keys(tyres);
+        if (tyreKeys.length) {
+          html += '<div class="section"><div class="section-title">Tyre Report</div><div class="tyre-grid">';
+          tyreKeys.forEach(function(k) {
+            var t = tyres[k];
+            html += '<div class="tyre-item"><div class="tyre-pos">' + k + '</div>';
+            if (typeof t === 'object') {
+              html += '<div class="tyre-val">' + (t.depth || t.tread || '-') + 'mm</div>';
+              if (t.condition) html += '<div style="font-size:10px;color:#636366;">' + t.condition + '</div>';
+            } else {
+              html += '<div class="tyre-val">' + t + '</div>';
+            }
+            html += '</div>';
+          });
+          html += '</div></div>';
+        }
+      }
+
+      // Brake Test Data
+      if (insp.brake_test_data) {
+        var brakes = typeof insp.brake_test_data === 'string' ? JSON.parse(insp.brake_test_data) : insp.brake_test_data;
+        var brakeKeys = Object.keys(brakes);
+        if (brakeKeys.length) {
+          html += '<div class="section"><div class="section-title">Brake Test Report</div><div class="brake-grid">';
+          brakeKeys.forEach(function(k) {
+            html += '<div class="brake-item"><div class="brake-label">' + k + '</div><div class="brake-val">' + brakes[k] + '</div></div>';
+          });
+          html += '</div></div>';
+        }
+      }
+    }
+
+    // Defects
+    html += '<div class="section"><div class="section-title">Defects (' + defects.length + ')</div>';
+    if (!defects.length) {
+      html += '<div class="notes-box no-data">No defects recorded</div>';
+    } else {
+      var open = defects.filter(function(d) { return !d.resolved; });
+      var resolved = defects.filter(function(d) { return d.resolved; });
+
+      if (open.length) {
+        html += '<div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#ff3b30;">OUTSTANDING (' + open.length + ')</div>';
+        open.forEach(function(d) {
+          html += '<div class="defect-card severity-' + (d.severity||'advisory') + '">';
+          html += '<div class="defect-title">' + (d.title||'Defect') + ' ' + severityChip(d.severity) + '</div>';
+          if (d.description) html += '<div class="defect-desc">' + d.description + '</div>';
+          html += '<div class="defect-meta">';
+          if (d.category) html += '<span>Category: ' + d.category + '</span>';
+          if (d.part_name) html += '<span>Part: ' + d.part_name + '</span>';
+          if (d.estimated_cost) html += '<span>Est. Cost: &pound;' + parseFloat(d.estimated_cost).toFixed(2) + '</span>';
+          html += '</div>';
+          if (d.photo_url) html += '<div class="defect-photo"><img src="' + d.photo_url + '" alt="Defect photo"></div>';
+          html += '</div>';
+        });
+      }
+
+      if (resolved.length) {
+        html += '<div style="margin-top:16px;margin-bottom:8px;font-size:11px;font-weight:700;color:#1d9e75;">RECTIFIED (' + resolved.length + ')</div>';
+        resolved.forEach(function(d) {
+          html += '<div class="defect-card resolved">';
+          html += '<div class="defect-title">' + (d.title||'Defect') + ' <span class="chip chip-resolved">Rectified</span></div>';
+          if (d.description) html += '<div class="defect-desc">' + d.description + '</div>';
+          html += '<div class="rectified-box"><div class="rectified-label">Rectification Details</div>';
+          if (d.resolved_by) html += '<div>Rectified by: <strong>' + d.resolved_by + '</strong></div>';
+          if (d.resolved_at) html += '<div>Date: <strong>' + fmtDt(d.resolved_at) + '</strong></div>';
+          if (d.resolution_notes) html += '<div style="margin-top:4px;">' + d.resolution_notes + '</div>';
+          html += '</div>';
+          if (d.photo_url) html += '<div class="defect-photo"><img src="' + d.photo_url + '" alt="Defect photo"></div>';
+          html += '</div>';
+        });
+      }
+    }
+    html += '</div>';
+
+    // Sold Hours
+    if (jobLines && jobLines.length) {
+      var totalSold = jobLines.reduce(function(s, l) { return s + parseFloat(l.sold_hours) * parseFloat(l.quantity); }, 0);
+      html += '<div class="section"><div class="section-title">Sold Hours</div>';
+      html += '<table style="width:100%;border-collapse:collapse;">';
+      html += '<thead><tr style="background:#f5f5f7;">';
+      html += '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Code</th>';
+      html += '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Job Description</th>';
+      html += '<th style="text-align:center;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Qty</th>';
+      html += '<th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Sold Hrs</th>';
+      html += '<th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Total</th>';
+      html += '</tr></thead><tbody>';
+      jobLines.forEach(function(l) {
+        var lineTotal = (parseFloat(l.sold_hours) * parseFloat(l.quantity)).toFixed(2);
+        html += '<tr style="border-bottom:1px solid #f0f0f0;">';
+        html += '<td style="padding:8px 12px;font-size:11px;color:#86868b;font-family:monospace;">' + (l.code || '-') + '</td>';
+        html += '<td style="padding:8px 12px;font-size:13px;font-weight:500;">' + l.name + '</td>';
+        html += '<td style="padding:8px 12px;font-size:13px;text-align:center;">' + parseFloat(l.quantity).toFixed(1) + '</td>';
+        html += '<td style="padding:8px 12px;font-size:13px;text-align:right;">' + parseFloat(l.sold_hours).toFixed(2) + '</td>';
+        html += '<td style="padding:8px 12px;font-size:13px;font-weight:600;text-align:right;">' + lineTotal + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      html += '<div style="display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:2px solid #1d1d1f;">';
+      html += '<div style="font-size:14px;font-weight:700;">Total Sold Hours: ' + totalSold.toFixed(2) + ' hrs</div>';
+      html += '</div></div>';
+    }
+
+    // Dispatch Status
+    html += '<div class="section"><div class="section-title">Dispatch Status</div><div class="dispatch-row">';
+    html += '<div class="dispatch-item"><div class="dispatch-label">HGV Inspect</div><div class="' + (job.inspect_sent ? 'dispatch-sent' : 'dispatch-pending') + '">' + (job.inspect_sent ? 'Dispatched' : 'Not sent') + '</div></div>';
+    html += '<div class="dispatch-item"><div class="dispatch-label">HGV Parts</div><div class="' + (job.parts_sent ? 'dispatch-sent' : 'dispatch-pending') + '">' + (job.parts_sent ? 'Dispatched' : 'Not sent') + '</div></div>';
+    html += '</div></div>';
+
+    // Job Notes
+    if (job.notes) {
+      html += '<div class="section"><div class="section-title">Job Notes</div><div class="notes-box">' + job.notes + '</div></div>';
+    }
+
+    // Sign-off
+    html += '<div class="section"><div class="section-title">Authorisation</div><div class="grid">';
+    html += '<div><div style="font-size:11px;color:#636366;margin-bottom:6px;">Technician Signature</div><div class="sig-box"><span class="sig-line">Signature & Date</span></div></div>';
+    html += '<div><div style="font-size:11px;color:#636366;margin-bottom:6px;">Authorised By</div><div class="sig-box"><span class="sig-line">Signature & Date</span></div></div>';
+    html += '</div></div>';
+
+    // Footer
+    html += '<div class="footer"><div class="footer-text">Generated by HGVDesk &bull; hgvdesk.co.uk</div>';
+    html += '<div class="footer-text">Printed: ' + new Date().toLocaleString('en-GB') + '</div></div>';
+
+    document.getElementById('main-content').innerHTML = html;
+    document.getElementById('doc-num').innerHTML = 'Job #' + job.id + ' &bull; ' + job.vehicle_reg;
+    document.title = 'Job Sheet - ' + job.vehicle_reg;
+  }
+
+  // Load everything in parallel
+  var jobData, inspData, defectData, dvlaData;
+
+  fetch('/api/jobs/' + jobId, { headers: { 'X-API-Key': KEY } })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      jobData = d.job || (d.data && d.data.job) || d;
+      if (!jobData || !jobData.vehicle_reg) {
+        document.getElementById('main-content').innerHTML = '<div class="loading">Job not found</div>';
+        return;
+      }
+
+      // Load inspection for this job
+      return fetch('/api/inspections?jobId=' + jobId, { headers: { 'X-API-Key': KEY } })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var insps = (d.data ? d.data.inspections : d.inspections) || [];
+          inspData = insps.find(function(i) { return i.job_id == jobId; }) ||
+                     insps.find(function(i) { return i.vehicle_reg && i.vehicle_reg.replace(/\s/g,'').toUpperCase() === jobData.vehicle_reg.replace(/\s/g,'').toUpperCase(); });
+
+          // Load defects
+          var defectUrl = '/api/defects?jobId=' + jobId;
+          if (inspData) defectUrl = '/api/defects?inspectionId=' + inspData.id;
+          return fetch(defectUrl, { headers: { 'X-API-Key': KEY } });
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          defectData = (d.data ? d.data.defects : d.defects) || [];
+
+          // DVLA lookup
+          var reg = jobData.vehicle_reg.replace(/\s/g,'');
+          return fetch('/api/dvla/lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY },
+            body: JSON.stringify({ reg: reg })
+          });
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          dvlaData = (d.data && d.data.make) ? d.data : null;
+          // Load job lines
+          return fetch('/api/jobs/' + jobId + '/lines', { headers: { 'X-API-Key': KEY } })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+              var lines = (d.data && d.data.lines) ? d.data.lines : [];
+              renderPage(jobData, inspData, defectData, dvlaData, lines);
+            });
+        });
+    })
+    .catch(function(e) {
+      document.getElementById('main-content').innerHTML = '<div class="loading">Error loading data: ' + e.message + '</div>';
+    });
+})();
+</script>
+</body>
+</html>

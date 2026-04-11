@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk — Fleet Management Built for Britain</title>
+<meta name="description" content="Real-time HGV fleet management. Inspections, workshop jobs, parts tracking and live command centre — all in one platform built for UK operators.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #0f2040;
+    --navy-light: #1a3055;
+    --orange: #e8520a;
+    --orange-light: #ff6b2b;
+    --orange-glow: rgba(232,82,10,0.15);
+    --steel: #4a6080;
+    --mist: #b8c8d8;
+    --white: #f4f7fa;
+    --pure: #ffffff;
+    --line: rgba(255,255,255,0.08);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2.5rem;
+    background: rgba(10,22,40,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav-logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 0.02em;
+    color: var(--pure);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--orange); }
+
+  .nav-links { display: flex; align-items: center; gap: 2rem; }
+  .nav-links a {
+    color: var(--mist); font-size: 0.9rem; text-decoration: none;
+    font-weight: 500; letter-spacing: 0.03em; transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--pure); }
+
+  .nav-cta {
+    background: var(--orange); color: var(--pure) !important;
+    padding: 0.5rem 1.25rem; border-radius: 4px;
+    font-weight: 600 !important; transition: background 0.2s !important;
+  }
+  .nav-cta:hover { background: var(--orange-light) !important; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 8rem 2.5rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 40%, rgba(232,82,10,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 10% 80%, rgba(15,32,64,0.8) 0%, transparent 60%);
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(232,82,10,0.12);
+    border: 1px solid rgba(232,82,10,0.3);
+    border-radius: 100px;
+    padding: 0.35rem 1rem;
+    font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--orange-light);
+    margin-bottom: 2rem;
+    width: fit-content;
+    position: relative;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--orange-light);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.4); }
+  }
+
+  .hero-headline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: clamp(3.2rem, 7vw, 6rem);
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--pure);
+    max-width: 900px;
+    position: relative;
+  }
+
+  .hero-headline .accent { color: var(--orange); display: block; }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--mist);
+    max-width: 540px;
+    line-height: 1.7;
+    margin-top: 1.75rem;
+    position: relative;
+    font-weight: 400;
+  }
+
+  .hero-actions {
+    display: flex; align-items: center; gap: 1rem;
+    margin-top: 2.5rem;
+    position: relative;
+  }
+
+  .btn-primary {
+    background: var(--orange);
+    color: var(--pure);
+    padding: 0.85rem 2rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: background 0.2s, transform 0.15s;
+    border: none; cursor: pointer;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: var(--orange-light); transform: translateY(-1px); }
+
+  .btn-secondary {
+    color: var(--mist);
+    padding: 0.85rem 2rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: border-color 0.2s, color 0.2s;
+    display: inline-block;
+  }
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.4); color: var(--pure); }
+
+  .hero-stats {
+    display: flex; gap: 3rem;
+    margin-top: 4rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--line);
+    position: relative;
+  }
+
+  .stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 2.2rem; font-weight: 800;
+    color: var(--pure);
+    line-height: 1;
+  }
+  .stat-num span { color: var(--orange); }
+  .stat-label { font-size: 0.82rem; color: var(--mist); margin-top: 0.4rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* MODULES SECTION */
+  .modules {
+    padding: 6rem 2.5rem;
+    position: relative;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 4vw, 3rem);
+    text-transform: uppercase;
+    color: var(--pure);
+    line-height: 1;
+    max-width: 600px;
+  }
+
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5px;
+    margin-top: 3.5rem;
+    border: 1.5px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .module-card {
+    background: var(--navy-mid);
+    padding: 2.5rem 2rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.25s;
+    position: relative;
+    overflow: hidden;
+    border: none;
+  }
+
+  .module-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--orange);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+  }
+
+  .module-card:hover { background: var(--navy-light); }
+  .module-card:hover::before { transform: scaleX(1); }
+
+  .module-icon {
+    width: 48px; height: 48px; border-radius: 8px;
+    background: var(--orange-glow);
+    border: 1px solid rgba(232,82,10,0.25);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .module-icon svg { width: 22px; height: 22px; stroke: var(--orange-light); fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+  .module-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--pure);
+    margin-bottom: 0.75rem;
+  }
+
+  .module-desc {
+    font-size: 0.88rem;
+    color: var(--mist);
+    line-height: 1.65;
+  }
+
+  .module-tag {
+    display: inline-block;
+    margin-top: 1.25rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange-light);
+    padding: 0.25rem 0.6rem;
+    border: 1px solid rgba(232,82,10,0.3);
+    border-radius: 3px;
+    background: rgba(232,82,10,0.06);
+  }
+
+  /* FEATURES */
+  .features {
+    padding: 6rem 2.5rem;
+    background: var(--navy-mid);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .features-inner {
+    max-width: 1100px; margin: 0 auto;
+  }
+
+  .features-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 3.5rem;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .feature-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+  }
+
+  .feature-item {}
+  .feature-item-icon {
+    font-size: 0; width: 10px; height: 10px; background: var(--orange);
+    border-radius: 2px; margin-bottom: 1rem; transform: rotate(45deg);
+  }
+  .feature-item-title {
+    font-weight: 600; font-size: 0.95rem; color: var(--pure);
+    margin-bottom: 0.5rem;
+  }
+  .feature-item-desc {
+    font-size: 0.85rem; color: var(--mist); line-height: 1.6;
+  }
+
+  /* COMPLIANCE STRIP */
+  .compliance {
+    padding: 5rem 2.5rem;
+    background: linear-gradient(135deg, rgba(232,82,10,0.08) 0%, transparent 60%);
+    border-bottom: 1px solid var(--line);
+  }
+  .compliance-inner { max-width: 1100px; margin: 0 auto; }
+
+  .compliance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  .compliance-list { list-style: none; margin-top: 1.75rem; }
+  .compliance-list li {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.9rem;
+    color: var(--mist);
+    line-height: 1.5;
+  }
+  .compliance-list li:last-child { border-bottom: none; }
+  .check {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(232,82,10,0.15);
+    border: 1px solid rgba(232,82,10,0.4);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .check::after {
+    content: ''; display: block;
+    width: 6px; height: 4px;
+    border-left: 1.5px solid var(--orange-light);
+    border-bottom: 1.5px solid var(--orange-light);
+    transform: rotate(-45deg) translate(0.5px, -0.5px);
+  }
+
+  .compliance-visual {
+    background: var(--navy-mid);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 2rem;
+  }
+
+  .cv-title {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--steel);
+    margin-bottom: 1.5rem;
+  }
+
+  .cv-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.85rem;
+  }
+  .cv-row:last-child { border-bottom: none; }
+  .cv-label { color: var(--mist); }
+  .cv-status { font-weight: 600; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 3px; letter-spacing: 0.04em; }
+  .status-pass { background: rgba(30,160,80,0.15); color: #5de09a; }
+  .status-warn { background: rgba(220,140,0,0.15); color: #fbbf24; }
+  .status-due  { background: rgba(232,82,10,0.15); color: var(--orange-light); }
+
+  /* PRICING */
+  .pricing {
+    padding: 6rem 2.5rem;
+    max-width: 1100px; margin: 0 auto;
+  }
+
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3.5rem;
+  }
+
+  .price-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 2.25rem;
+    position: relative;
+    transition: border-color 0.25s;
+  }
+  .price-card:hover { border-color: rgba(232,82,10,0.35); }
+  .price-card.featured {
+    border-color: var(--orange);
+    background: linear-gradient(160deg, rgba(232,82,10,0.06) 0%, var(--navy-mid) 60%);
+  }
+
+  .featured-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--orange); color: var(--pure);
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.25rem 0.75rem; border-radius: 100px;
+  }
+
+  .price-plan {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 1.2rem;
+    text-transform: uppercase; color: var(--mist);
+    letter-spacing: 0.05em;
+  }
+
+  .price-amount {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 3rem; font-weight: 800;
+    color: var(--pure); line-height: 1;
+    margin: 0.75rem 0 0.25rem;
+  }
+  .price-amount span { font-size: 1.5rem; font-weight: 600; }
+
+  .price-period { font-size: 0.82rem; color: var(--steel); margin-bottom: 1.75rem; }
+
+  .price-features { list-style: none; font-size: 0.875rem; }
+  .price-features li {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.45rem 0;
+    color: var(--mist);
+    border-bottom: 1px solid var(--line);
+  }
+  .price-features li:last-child { border-bottom: none; }
+  .price-features li::before {
+    content: ''; display: block;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--orange); flex-shrink: 0;
+  }
+  .price-cta {
+    display: block; text-align: center; margin-top: 2rem;
+    padding: 0.8rem; border-radius: 4px;
+    font-weight: 600; font-size: 0.9rem;
+    text-decoration: none; transition: all 0.2s;
+    cursor: pointer; border: none;
+  }
+  .cta-outline {
+    background: transparent; color: var(--mist);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .cta-outline:hover { border-color: rgba(255,255,255,0.4); color: var(--pure); }
+  .cta-fill { background: var(--orange); color: var(--pure); }
+  .cta-fill:hover { background: var(--orange-light); }
+
+  /* CTA SECTION */
+  .cta-section {
+    padding: 6rem 2.5rem;
+    text-align: center;
+    border-top: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-section::before {
+    content: '';
+    position: absolute; top: -50%; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(232,82,10,0.1) 0%, transparent 65%);
+  }
+  .cta-section .section-title { margin: 1rem auto; max-width: 700px; }
+  .cta-section p { color: var(--mist); max-width: 480px; margin: 1.5rem auto 2.5rem; font-size: 1rem; line-height: 1.65; }
+
+  /* FOOTER */
+  footer {
+    padding: 2.5rem;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .footer-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--steel); }
+  .footer-logo span { color: var(--orange); }
+  .footer-text { font-size: 0.8rem; color: var(--steel); }
+  footer a { color: var(--steel); text-decoration: none; }
+  footer a:hover { color: var(--mist); }
+
+  /* RESPONSIVE */
+  @media (max-width: 700px) {
+    nav { padding: 1rem 1.25rem; }
+    .nav-links { display: none; }
+    .hero { padding: 7rem 1.25rem 3rem; }
+    .hero-stats { flex-direction: column; gap: 1.5rem; }
+    .modules, .features, .compliance, .pricing, .cta-section { padding: 4rem 1.25rem; }
+    .compliance-grid { grid-template-columns: 1fr; }
+    footer { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">HGV<span>Manager</span></a>
+  <div class="nav-links">
+    <a href="#modules">Systems</a>
+    <a href="#features">Features</a>
+    <a href="#compliance">Compliance</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/login" class="nav-cta">Operator Login</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+
+  <div class="hero-badge">
+    <div class="badge-dot"></div>
+    Live Platform — UK HGV Operations
+  </div>
+
+  <h1 class="hero-headline">
+    Fleet control.<br>
+    <span class="accent">Zero paperwork.</span>
+  </h1>
+
+  <p class="hero-sub">
+    Real-time HGV fleet management built for UK operators. Inspections, workshop scheduling, parts tracking, and live command data — all connected, all compliant.
+  </p>
+
+  <div class="hero-actions">
+    <a href="/login" class="btn-primary">Access Your Fleet</a>
+    <a href="#modules" class="btn-secondary">See How It Works</a>
+  </div>
+
+  <div class="hero-stats">
+    <div>
+      <div class="stat-num">4<span>+</span></div>
+      <div class="stat-label">Integrated modules</div>
+    </div>
+    <div>
+      <div class="stat-num">100<span>%</span></div>
+      <div class="stat-label">DVSA compliant records</div>
+    </div>
+    <div>
+      <div class="stat-num">Live</div>
+      <div class="stat-label">Real-time dashboard</div>
+    </div>
+    <div>
+      <div class="stat-num">UK<span>-built</span></div>
+      <div class="stat-label">For British operators</div>
+    </div>
+  </div>
+</section>
+
+<!-- MODULES -->
+<section class="modules" id="modules">
+  <div class="section-label">Four integrated systems</div>
+  <h2 class="section-title">Everything your operation needs</h2>
+
+  <div class="modules-grid">
+
+    <a href="/command" class="module-card">
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      <div class="module-name">Command Centre</div>
+      <div class="module-desc">Live fleet overview with real-time status across all vehicles, active jobs, inspection progress, and parts supply. Your single source of truth.</div>
+      <div class="module-tag">Live stats</div>
+    </a>
+
+    <a href="/workshop" class="module-card">
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div class="module-name">Workshop</div>
+      <div class="module-desc">Create and manage jobs from report to resolution. Send work orders direct to the workshop floor. Full HGV and T60 trailer support.</div>
+      <div class="module-tag">Job management</div>
+    </a>
+
+    <a href="/inspect" class="module-card">
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <div class="module-name">Inspect</div>
+      <div class="module-desc">Full digital pre-use inspection with timer, structured checklist, brake test records, tyre data, and defect diagram with photo evidence upload.</div>
+      <div class="module-tag">DVSA-ready</div>
+    </a>
+
+    <a href="/parts" class="module-card">
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      </div>
+      <div class="module-name">Parts</div>
+      <div class="module-desc">Track components through the full lifecycle — pending order, ordered, and ready to fit. Automatic queue linked to workshop jobs.</div>
+      <div class="module-tag">Parts lifecycle</div>
+    </a>
+
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="features-inner">
+    <div class="features-header">
+      <div>
+        <div class="section-label">Built for real operators</div>
+        <h2 class="section-title">No fluff. Just the tools that matter.</h2>
+      </div>
+      <a href="/login" class="btn-primary">Start free trial</a>
+    </div>
+
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="feature-item-icon"></div>
+        <div class="feature-item-title">Digital inspection records</div>
+        <div class="feature-item-desc">Full inspection data saved to PostgreSQL with timestamps, tyre readings, brake test results and photo evidence.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-item-icon"></div>
+        <div class="feature-item-title">Defect diagram & photos</div>
+        <div class="feature-item-desc">Mark defects on an interactive vehicle diagram and attach photographic evidence directly to the inspection record.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-item-icon"></div>
+        <div class="feature-item-title">Workshop floor integration</div>
+        <div class="feature-item-desc">Send inspection faults direct to the workshop job queue. Engineers see exactly what needs attention, no phone calls needed.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-item-icon"></div>
+        <div class="feature-item-title">T60 trailer support</div>
+        <div class="feature-item-desc">Full trailer management with optional registration — built to handle the complexity of combined vehicle fleets.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-item-icon"></div>
+        <div class="feature-item-title">Inspection timer</div>
+        <div class="feature-item-desc">Built-in start/stop timer records actual inspection duration — demonstrating due diligence for DVSA audits.</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-item-icon"></div>
+        <div class="feature-item-title">Fully API-driven</div>
+        <div class="feature-item-desc">Every module backed by a structured REST API. Data flows in real time. No refresh required to see the current fleet status.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPLIANCE -->
+<section class="compliance" id="compliance">
+  <div class="compliance-inner">
+    <div class="compliance-grid">
+      <div>
+        <div class="section-label">DVSA &amp; operator compliance</div>
+        <h2 class="section-title">Built to keep your operator's licence safe</h2>
+        <ul class="compliance-list">
+          <li><div class="check"></div>Structured pre-use inspection records meet DVSA format requirements</li>
+          <li><div class="check"></div>Tyre depth, brake performance and defect data stored per inspection</li>
+          <li><div class="check"></div>Timestamped sign-off — driver name and completion time on every record</li>
+          <li><div class="check"></div>Photo evidence attached to individual defect locations</li>
+          <li><div class="check"></div>Audit trail from defect report through workshop job to resolution</li>
+          <li><div class="check"></div>T60 trailer records with optional plate — handles all asset types</li>
+        </ul>
+      </div>
+      <div class="compliance-visual">
+        <div class="cv-title">Live fleet status — example</div>
+        <div class="cv-row"><span class="cv-label">MX21 HGV — Daily inspection</span><span class="cv-status status-pass">PASS</span></div>
+        <div class="cv-row"><span class="cv-label">OU70 HGV — Brake test</span><span class="cv-status status-pass">PASS</span></div>
+        <div class="cv-row"><span class="cv-label">BF19 HGV — Tyre depth (NS)</span><span class="cv-status status-warn">MONITOR</span></div>
+        <div class="cv-row"><span class="cv-label">T60 Trailer — Next PMI</span><span class="cv-status status-due">DUE</span></div>
+        <div class="cv-row"><span class="cv-label">YE68 HGV — Daily inspection</span><span class="cv-status status-pass">PASS</span></div>
+        <div class="cv-row"><span class="cv-label">Workshop Job #WS-041</span><span class="cv-status status-pass">CLOSED</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="section-label">Straightforward pricing</div>
+  <h2 class="section-title">Pay per vehicle, not per user</h2>
+
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-plan">Starter</div>
+      <div class="price-amount"><span>£</span>49</div>
+      <div class="price-period">per month · up to 5 vehicles</div>
+      <ul class="price-features">
+        <li>Command centre dashboard</li>
+        <li>Digital inspections</li>
+        <li>Workshop job management</li>
+        <li>Parts tracking queue</li>
+        <li>PostgreSQL data storage</li>
+      </ul>
+      <a href="/login" class="price-cta cta-outline">Get started free</a>
+    </div>
+
+    <div class="price-card featured">
+      <div class="featured-badge">Most popular</div>
+      <div class="price-plan">Operator</div>
+      <div class="price-amount"><span>£</span>149</div>
+      <div class="price-period">per month · up to 25 vehicles</div>
+      <ul class="price-features">
+        <li>Everything in Starter</li>
+        <li>Email alerts — failed inspections</li>
+        <li>Trailer (T60) management</li>
+        <li>Photo evidence storage</li>
+        <li>Full audit trail export</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="/login" class="price-cta cta-fill">Start free trial</a>
+    </div>
+
+    <div class="price-card">
+      <div class="price-plan">Enterprise</div>
+      <div class="price-amount" style="font-size:2rem; padding-top:0.4rem;">Custom</div>
+      <div class="price-period">multi-site · unlimited vehicles</div>
+      <ul class="price-features">
+        <li>Everything in Operator</li>
+        <li>Multiple depot support</li>
+        <li>White-label option</li>
+        <li>Custom integrations</li>
+        <li>Dedicated account manager</li>
+        <li>SLA-backed uptime</li>
+      </ul>
+      <a href="mailto:hello@hgvdesk.co.uk" class="price-cta cta-outline">Contact us</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="section-label">Get started today</div>
+  <h2 class="section-title">Stop managing on spreadsheets. Start managing in real time.</h2>
+  <p>HGVDesk is live and taking on UK operators now. No contract, no setup fee. Full platform access from day one.</p>
+  <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+    <a href="/login" class="btn-primary">Access the platform</a>
+    <a href="mailto:hello@hgvdesk.co.uk" class="btn-secondary">Talk to us first</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">HGV<span>Manager</span>.co.uk</div>
+  <div class="footer-text">
+    &copy; 2026 HGVDesk Ltd &nbsp;·&nbsp;
+    <a href="/privacy">Privacy</a> &nbsp;·&nbsp;
+    <a href="/terms">Terms</a> &nbsp;·&nbsp;
+    Built for UK operators
+  </div>
+</footer>
+
+</body>
+</html>

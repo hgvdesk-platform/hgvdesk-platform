@@ -1,0 +1,50 @@
+# ══════════════════════════════════════════════
+# HGV PLATFORM — SYSTEMD SERVICE
+# File: /etc/systemd/system/hgv-platform.service
+#
+# Keeps the server running 24/7
+# Auto-restarts on crash
+# Starts on server reboot
+# ══════════════════════════════════════════════
+
+[Unit]
+Description=HGV Platform — FleetCommand
+Documentation=https://fleetcommand.co.uk
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=hgv
+Group=hgv
+WorkingDirectory=/var/www/hgv-platform/server
+
+# Load environment from .env file
+EnvironmentFile=/var/www/hgv-platform/server/.env
+
+# Start command
+ExecStart=/usr/bin/node server.js
+
+# Restart policy — restart on any crash, wait 5s
+Restart=always
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=5
+
+# Logging — view with: journalctl -u hgv-platform -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hgv-platform
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/hgv-platform
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

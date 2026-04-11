@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0a1628; --navy-mid: #0f2040; --navy-light: #1a3055;
+    --orange: #e8520a; --orange-light: #ff6b2b;
+    --steel: #4a6080; --mist: #b8c8d8; --white: #1d1d1f; --pure: #1d1d1f;
+    --line: rgba(255,255,255,0.08);
+    --green: #1d9e75; --red: #e24b4a; --amber: #ba7517;
+  }
+  body { font-family: "DM Sans",-apple-system,sans-serif; background: #f5f5f7; color: #1d1d1f; min-height: 100vh; }
+
+  /* AUTH GATE */
+  #auth-gate {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  }
+  .auth-card {
+    background: #ffffff; border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 380px;
+  }
+  .auth-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #FF6B00; margin-bottom: 0.5rem; }
+  .auth-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.8rem; text-transform: uppercase; color: #1d1d1f; margin-bottom: 1.5rem; }
+  .auth-input {
+    width: 100%; padding: 0.75rem 1rem; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+    color: #1d1d1f; font-family: 'Barlow', sans-serif; font-size: 0.95rem;
+    outline: none; margin-bottom: 1rem;
+  }
+  .auth-input:focus { border-color: rgba(232,82,10,0.5); }
+  .auth-btn {
+    width: 100%; padding: 0.85rem; background: var(--orange); color: #1d1d1f;
+    border: none; border-radius: 6px; font-family: 'Barlow', sans-serif;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  }
+  .auth-btn:hover { background: var(--orange-light); }
+  .auth-err { color: var(--orange-light); font-size: 0.85rem; margin-bottom: 1rem; display: none; }
+
+  /* MAIN LAYOUT */
+  #app { display: none; }
+  nav {
+    background: rgba(10,22,40,0.95); border-bottom: 1px solid rgba(0,0,0,0.08);
+    padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.3rem; color: #1d1d1f; }
+  .nav-logo span { color: #FF6B00; }
+  .nav-badge { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(232,82,10,0.15); color: var(--orange-light); border: 1px solid rgba(232,82,10,0.3); padding: 0.2rem 0.6rem; border-radius: 3px; margin-left: 0.75rem; }
+  .nav-actions { display: flex; gap: 1rem; align-items: center; }
+  .nav-user { font-size: 0.82rem; color: #636366; }
+  .btn-sm { padding: 0.4rem 0.9rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #636366; font-family: 'Barlow', sans-serif; transition: all 0.2s; }
+  .btn-sm:hover { border-color: rgba(255,255,255,0.4); color: #1d1d1f; }
+  .btn-orange { background: var(--orange); color: #1d1d1f; border-color: #FF6B00; }
+  .btn-orange:hover { background: var(--orange-light); border-color: var(--orange-light); color: #1d1d1f; }
+
+  main { padding: 2.5rem 2rem; max-width: 1200px; margin: 0 auto; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 0; }
+  .tab { padding: 0.6rem 1.25rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--steel); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; font-family: 'Barlow', sans-serif; }
+  .tab:hover { color: #636366; }
+  .tab.active { color: #FF6B00; border-bottom-color: #FF6B00; }
+
+  /* SECTION HEADER */
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+  .section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.3rem; text-transform: uppercase; color: #1d1d1f; }
+  .section-count { font-size: 0.8rem; color: var(--steel); margin-top: 0.2rem; }
+
+  /* TABLE */
+  .table-wrap { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  thead th { padding: 0.75rem 1rem; text-align: left; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--steel); border-bottom: 1px solid rgba(0,0,0,0.08); }
+  tbody tr { border-bottom: 1px solid rgba(0,0,0,0.08); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody td { padding: 0.85rem 1rem; color: #636366; vertical-align: middle; }
+  tbody td:first-child { color: #1d1d1f; font-weight: 500; }
+
+  .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 3px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .badge-green { background: rgba(29,158,117,0.15); color: #5de09a; }
+  .badge-red { background: rgba(226,75,74,0.15); color: #f87171; }
+  .badge-amber { background: rgba(186,117,23,0.15); color: #fbbf24; }
+  .badge-blue { background: rgba(55,138,221,0.15); color: #60a5fa; }
+  .badge-gray { background: rgba(255,255,255,0.08); color: #636366; }
+
+  .action-btn { background: none; border: 1px solid rgba(255,255,255,0.1); color: #636366; padding: 0.3rem 0.7rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-family: 'Barlow', sans-serif; font-weight: 500; transition: all 0.2s; margin-right: 0.3rem; }
+  .action-btn:hover { border-color: rgba(255,255,255,0.3); color: #1d1d1f; }
+  .action-btn.danger:hover { border-color: var(--red); color: #f87171; }
+  .action-btn.success:hover { border-color: var(--green); color: #5de09a; }
+
+  /* MODAL */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; }
+  .modal-bg.show { display: flex; }
+  .modal { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 2rem; width: 100%; max-width: 480px; }
+  .modal-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.3rem; text-transform: uppercase; color: #1d1d1f; margin-bottom: 1.5rem; }
+  .form-group { margin-bottom: 1rem; }
+  .form-label { display: block; font-size: 0.78rem; font-weight: 600; color: #636366; margin-bottom: 0.4rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .form-input, .form-select {
+    width: 100%; padding: 0.7rem 0.9rem; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+    color: #1d1d1f; font-family: 'Barlow', sans-serif; font-size: 0.9rem; outline: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: rgba(232,82,10,0.5); }
+  .form-select option { background: #ffffff; }
+  .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+  .modal-err { color: var(--orange-light); font-size: 0.82rem; margin-bottom: 1rem; display: none; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: #ffffff; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; padding: 1.25rem; }
+  .stat-num { font-family: 'Barlow Condensed', sans-serif; font-size: 2rem; font-weight: 800; color: #1d1d1f; line-height: 1; }
+  .stat-num span { color: #FF6B00; }
+  .stat-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); margin-top: 0.4rem; }
+
+  .empty { text-align: center; padding: 3rem; color: var(--steel); font-size: 0.9rem; }
+
+  /* Panel sections */
+  .panel { display: none; }
+  .panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- AUTH GATE -->
+<div id="auth-gate">
+  <div class="auth-card">
+    <div class="auth-label">System access</div>
+    <div class="auth-title">Admin Panel</div>
+    <div class="auth-err" id="auth-err">Invalid credentials.</div>
+    <input class="auth-input" type="email" id="auth-email" placeholder="Email address" value="james.m.smith54@outlook.com">
+    <input class="auth-input" type="password" id="auth-password" placeholder="Password">
+    <button class="auth-btn" onclick="doAuth()">Sign in</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <nav>
+    <div style="display:flex;align-items:center;">
+      <div class="nav-logo">HGV<span>Manager</span></div>
+      <div class="nav-badge">Admin</div>
+    </div>
+    <div class="nav-actions">
+      <span class="nav-user" id="nav-user"></span>
+      <a href="/command" class="btn-sm">Command Centre</a>
+      <button class="btn-sm" onclick="doLogout()">Sign out</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-orgs">—</div><div class="stat-label">Organisations</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-users">—</div><div class="stat-label">Total users</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-active">—</div><div class="stat-label">Active users</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-plans">—</div><div class="stat-label">Paid plans</div></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('orgs')">Organisations</button>
+      <button class="tab" onclick="switchTab('users')">Users</button>
+    </div>
+
+    <!-- ORGS PANEL -->
+    <div class="panel active" id="panel-orgs">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Organisations</div>
+          <div class="section-count" id="orgs-count"></div>
+        </div>
+        <button class="btn-sm btn-orange" onclick="showOrgModal()">+ New Organisation</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Plan</th><th>API Key</th><th>Status</th><th>Users</th><th>Actions</th></tr></thead>
+          <tbody id="orgs-tbody"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS PANEL -->
+    <div class="panel" id="panel-users">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Users</div>
+          <div class="section-count" id="users-count"></div>
+        </div>
+        <button class="btn-sm btn-orange" onclick="showUserModal()">+ New User</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Organisation</th><th>Role</th><th>Status</th><th>Last login</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"><tr><td colspan="7" class="empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ORG MODAL -->
+<div class="modal-bg" id="org-modal">
+  <div class="modal">
+    <div class="modal-title" id="org-modal-title">New Organisation</div>
+    <div class="modal-err" id="org-err"></div>
+    <input type="hidden" id="org-id">
+    <div class="form-group"><label class="form-label">Organisation name</label><input class="form-input" id="org-name" placeholder="e.g. Smith Haulage Ltd"></div>
+    <div class="form-group"><label class="form-label">Plan</label>
+      <select class="form-select" id="org-plan">
+        <option value="starter">Starter</option>
+        <option value="operator" selected>Operator</option>
+        <option value="enterprise">Enterprise</option>
+        <option value="full_platform">Full Platform</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Status</label>
+      <select class="form-select" id="org-active">
+        <option value="true">Active</option>
+        <option value="false">Inactive</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn-sm btn-orange" onclick="saveOrg()">Save Organisation</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="modal-bg" id="user-modal">
+  <div class="modal">
+    <div class="modal-title" id="user-modal-title">New User</div>
+    <div class="modal-err" id="user-err"></div>
+    <input type="hidden" id="user-id">
+    <div class="form-group"><label class="form-label">Full name</label><input class="form-input" id="user-name" placeholder="e.g. John Driver"></div>
+    <div class="form-group"><label class="form-label">Email address</label><input class="form-input" id="user-email" type="email" placeholder="e.g. john@company.com"></div>
+    <div class="form-group" id="user-password-group"><label class="form-label">Password</label><input class="form-input" id="user-password" type="password" placeholder="Min 8 characters"></div>
+    <div class="form-group"><label class="form-label">Organisation</label>
+      <select class="form-select" id="user-org"></select>
+    </div>
+    <div class="form-group"><label class="form-label">Role</label>
+      <select class="form-select" id="user-role">
+        <option value="driver">Driver</option>
+        <option value="technician">Technician</option>
+        <option value="manager">Manager</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Status</label>
+      <select class="form-select" id="user-active">
+        <option value="true">Active</option>
+        <option value="false">Inactive</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModals()">Cancel</button>
+      <button class="btn-sm btn-orange" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let TOKEN = '';
+let orgs = [];
+let users = [];
+
+// ── AUTH ──
+async function doAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Login failed');
+    if (data.user.role !== 'admin') throw new Error('Admin access required');
+    TOKEN = data.token;
+    sessionStorage.setItem('admin_token', TOKEN);
+    sessionStorage.setItem('admin_user', JSON.stringify(data.user));
+    showApp(data.user);
+  } catch (err) {
+    const el = document.getElementById('auth-err');
+    el.textContent = err.message;
+    el.style.display = 'block';
+  }
+}
+
+document.getElementById('auth-password').addEventListener('keydown', e => { if (e.key === 'Enter') doAuth(); });
+
+function showApp(user) {
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('nav-user').textContent = user.fullName || user.email;
+  loadAll();
+}
+
+function doLogout() {
+  sessionStorage.removeItem('admin_token');
+  sessionStorage.removeItem('admin_user');
+  location.reload();
+}
+
+// Check existing session
+const savedToken = sessionStorage.getItem('admin_token');
+const savedUser = sessionStorage.getItem('admin_user');
+if (savedToken && savedUser) {
+  TOKEN = savedToken;
+  showApp(JSON.parse(savedUser));
+}
+
+// ── API ──
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'API error');
+  return data;
+}
+
+// ── LOAD ──
+async function loadAll() {
+  await Promise.all([loadOrgs(), loadUsers()]);
+  updateStats();
+}
+
+async function loadOrgs() {
+  try {
+    const data = await api('/api/admin/organisations');
+    orgs = data.organisations || [];
+    renderOrgs();
+  } catch (e) { console.error(e); }
+}
+
+async function loadUsers() {
+  try {
+    const data = await api('/api/admin/users');
+    users = data.users || [];
+    renderUsers();
+    populateOrgSelect();
+  } catch (e) { console.error(e); }
+}
+
+function updateStats() {
+  document.getElementById('stat-orgs').textContent = orgs.length;
+  document.getElementById('stat-users').textContent = users.length;
+  document.getElementById('stat-active').textContent = users.filter(u => u.active).length;
+  document.getElementById('stat-plans').textContent = orgs.filter(o => o.plan !== 'starter').length;
+}
+
+// ── RENDER ORGS ──
+function renderOrgs() {
+  const tbody = document.getElementById('orgs-tbody');
+  document.getElementById('orgs-count').textContent = orgs.length + ' organisations';
+  if (!orgs.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No organisations yet</td></tr>'; return; }
+  tbody.innerHTML = orgs.map(org => {
+    const userCount = users.filter(u => u.org_id === org.id).length;
+    const planBadge = { starter: 'badge-gray', operator: 'badge-blue', enterprise: 'badge-amber', full_platform: 'badge-green' }[org.plan] || 'badge-gray';
+    const apiShort = org.api_key ? org.api_key.substring(0, 12) + '...' : '—';
+    return `<tr>
+      <td>${org.name}</td>
+      <td><span class="badge ${planBadge}">${org.plan || 'starter'}</span></td>
+      <td style="font-family:monospace;font-size:0.78rem;color:var(--steel);">${apiShort}</td>
+      <td><span class="badge ${org.active ? 'badge-green' : 'badge-red'}">${org.active ? 'Active' : 'Inactive'}</span></td>
+      <td>${userCount}</td>
+      <td>
+        <button class="action-btn" onclick="editOrg(${org.id})">Edit</button>
+        <button class="action-btn ${org.active ? 'danger' : 'success'}" onclick="toggleOrg(${org.id}, ${org.active})">${org.active ? 'Deactivate' : 'Activate'}</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER USERS ──
+function renderUsers() {
+  const tbody = document.getElementById('users-tbody');
+  document.getElementById('users-count').textContent = users.length + ' users';
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">No users yet</td></tr>'; return; }
+  tbody.innerHTML = users.map(u => {
+    const org = orgs.find(o => o.id === u.org_id);
+    const roleBadge = { admin: 'badge-amber', manager: 'badge-blue', technician: 'badge-gray', driver: 'badge-gray' }[u.role] || 'badge-gray';
+    const lastLogin = u.last_login ? new Date(u.last_login).toLocaleDateString('en-GB') : 'Never';
+    return `<tr>
+      <td>${u.full_name}</td>
+      <td style="color:var(--steel);font-size:0.82rem;">${u.email}</td>
+      <td>${org ? org.name : '—'}</td>
+      <td><span class="badge ${roleBadge}">${u.role}</span></td>
+      <td><span class="badge ${u.active ? 'badge-green' : 'badge-red'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+      <td style="color:var(--steel);font-size:0.82rem;">${lastLogin}</td>
+      <td>
+        <button class="action-btn" onclick="editUser(${u.id})">Edit</button>
+        <button class="action-btn ${u.active ? 'danger' : 'success'}" onclick="toggleUser(${u.id}, ${u.active})">${u.active ? 'Deactivate' : 'Activate'}</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function populateOrgSelect() {
+  const sel = document.getElementById('user-org');
+  sel.innerHTML = orgs.map(o => `<option value="${o.id}">${o.name}</option>`).join('');
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ['orgs','users'][i] === tab));
+  document.getElementById('panel-orgs').classList.toggle('active', tab === 'orgs');
+  document.getElementById('panel-users').classList.toggle('active', tab === 'users');
+}
+
+// ── ORG MODAL ──
+function showOrgModal(org = null) {
+  document.getElementById('org-modal-title').textContent = org ? 'Edit Organisation' : 'New Organisation';
+  document.getElementById('org-id').value = org ? org.id : '';
+  document.getElementById('org-name').value = org ? org.name : '';
+  document.getElementById('org-plan').value = org ? (org.plan || 'operator') : 'operator';
+  document.getElementById('org-active').value = org ? String(org.active) : 'true';
+  document.getElementById('org-err').style.display = 'none';
+  document.getElementById('org-modal').classList.add('show');
+}
+
+function editOrg(id) { showOrgModal(orgs.find(o => o.id === id)); }
+
+async function saveOrg() {
+  const id = document.getElementById('org-id').value;
+  const body = {
+    name: document.getElementById('org-name').value.trim(),
+    plan: document.getElementById('org-plan').value,
+    active: document.getElementById('org-active').value === 'true'
+  };
+  const errEl = document.getElementById('org-err');
+  try {
+    if (id) { await api('/api/admin/organisations/' + id, 'PUT', body); }
+    else { await api('/api/admin/organisations', 'POST', body); }
+    closeModals();
+    await loadOrgs();
+    updateStats();
+  } catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+}
+
+async function toggleOrg(id, active) {
+  try { await api('/api/admin/organisations/' + id, 'PUT', { active: !active }); await loadOrgs(); updateStats(); }
+  catch (e) { alert(e.message); }
+}
+
+// ── USER MODAL ──
+function showUserModal(user = null) {
+  document.getElementById('user-modal-title').textContent = user ? 'Edit User' : 'New User';
+  document.getElementById('user-id').value = user ? user.id : '';
+  document.getElementById('user-name').value = user ? user.full_name : '';
+  document.getElementById('user-email').value = user ? user.email : '';
+  document.getElementById('user-password').value = '';
+  document.getElementById('user-password-group').style.display = user ? 'none' : 'block';
+  document.getElementById('user-org').value = user ? user.org_id : '';
+  document.getElementById('user-role').value = user ? user.role : 'technician';
+  document.getElementById('user-active').value = user ? String(user.active) : 'true';
+  document.getElementById('user-err').style.display = 'none';
+  document.getElementById('user-modal').classList.add('show');
+}
+
+function editUser(id) { showUserModal(users.find(u => u.id === id)); }
+
+async function saveUser() {
+  const id = document.getElementById('user-id').value;
+  const body = {
+    fullName: document.getElementById('user-name').value.trim(),
+    email: document.getElementById('user-email').value.trim(),
+    orgId: parseInt(document.getElementById('user-org').value),
+    role: document.getElementById('user-role').value,
+    active: document.getElementById('user-active').value === 'true'
+  };
+  if (!id) body.password = document.getElementById('user-password').value;
+  const errEl = document.getElementById('user-err');
+  try {
+    if (id) { await api('/api/admin/users/' + id, 'PUT', body); }
+    else { await api('/api/admin/users', 'POST', body); }
+    closeModals();
+    await loadUsers();
+    updateStats();
+  } catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; }
+}
+
+async function toggleUser(id, active) {
+  try { await api('/api/admin/users/' + id, 'PUT', { active: !active }); await loadUsers(); updateStats(); }
+  catch (e) { alert(e.message); }
+}
+
+function closeModals() {
+  document.querySelectorAll('.modal-bg').forEach(m => m.classList.remove('show'));
+}
+
+document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModals(); }));
+</script>
+</body>
+</html>

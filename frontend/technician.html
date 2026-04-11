@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk - Technician Login</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t4:#86868b;--orange:#FF6B00;--red:#ff3b30;--green:#34c759;}
+body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;-webkit-font-smoothing:antialiased;}
+.card{background:var(--surface);border-radius:20px;padding:40px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,0.08);}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:32px;justify-content:center;}
+.logo-icon{width:44px;height:44px;border-radius:11px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-name{font-size:17px;font-weight:700;}
+.logo-sub{font-size:12px;color:var(--t4);}
+h1{font-size:22px;font-weight:700;margin-bottom:6px;}
+.sub{font-size:14px;color:var(--t4);margin-bottom:28px;}
+.fg{margin-bottom:16px;}
+.fl{font-size:12px;font-weight:600;color:var(--t2);display:block;margin-bottom:6px;}
+.fi{width:100%;padding:12px 14px;border:1.5px solid var(--bs);border-radius:10px;font-size:15px;font-family:inherit;color:var(--t1);background:var(--surface);outline:none;transition:border-color 0.2s;}
+.fi:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,0.1);}
+.btn{width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:600;font-family:inherit;border:none;cursor:pointer;background:var(--orange);color:#fff;transition:background 0.2s;margin-top:4px;}
+.btn:hover{background:#e05f00;}
+.btn:disabled{background:#ccc;cursor:not-allowed;}
+.err{background:#fff0f0;border:1px solid rgba(255,59,48,0.2);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;}
+.err.on{display:block;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 22 22" fill="none" width="24" height="24">
+        <rect x="10" y="2" width="2" height="18" rx="1" fill="#FF6B00"/>
+        <path d="M10,11 Q5,8 2,4 L2,7 Q5,10 9,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <path d="M12,11 Q17,8 20,4 L20,7 Q17,10 13,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <circle cx="11" cy="11" r="2.5" fill="#fff"/>
+        <circle cx="11" cy="11" r="1.2" fill="#FF6B00"/>
+      </svg>
+    </div>
+    <div><div class="logo-name">HGVDesk</div><div class="logo-sub">Technician Portal</div></div>
+  </div>
+  <h1>Sign in</h1>
+  <div class="sub">Enter your technician credentials</div>
+  <div class="err" id="err"></div>
+  <div class="fg">
+    <label class="fl">Username</label>
+    <input class="fi" id="username" type="text" autocomplete="username" autocapitalize="none" placeholder="your.name.1234">
+  </div>
+  <div class="fg">
+    <label class="fl">Password</label>
+    <input class="fi" id="password" type="password" autocomplete="current-password" placeholder="Your password">
+  </div>
+  <button class="btn" id="btn-login">Sign In</button>
+</div>
+
+<script>
+(function() {
+  // If already logged in, redirect
+  if (localStorage.getItem('tech_token')) {
+    window.location.href = '/tech-dashboard';
+    return;
+  }
+
+  function showError(msg) {
+    var e = document.getElementById('err');
+    e.textContent = msg;
+    e.classList.add('on');
+  }
+
+  function doLogin() {
+    var username = document.getElementById('username').value.trim();
+    var password = document.getElementById('password').value;
+    var btn = document.getElementById('btn-login');
+
+    if (!username || !password) { showError('Please enter your username and password'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    document.getElementById('err').classList.remove('on');
+
+    fetch('/api/technician/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, password: password })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.token) {
+        localStorage.setItem('tech_token', d.token);
+        localStorage.setItem('tech_name', d.name || username);
+        window.location.href = '/tech-dashboard';
+      } else {
+        showError(d.error || 'Invalid username or password');
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    })
+    .catch(function() {
+      showError('Connection error — please try again');
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    });
+  }
+
+  document.getElementById('btn-login').addEventListener('click', doLogin);
+  document.getElementById('password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('username').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('password').focus();
+  });
+
+  // Focus username on load
+  document.getElementById('username').focus();
+})();
+</script>
+</body>
+</html>

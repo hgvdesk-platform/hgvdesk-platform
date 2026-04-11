@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk - Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--t5:#aeaeb2;--green:#34c759;--gs:rgba(52,199,89,0.1);--red:#ff3b30;--rs:rgba(255,59,48,0.1);--amber:#ff9500;--ams:rgba(255,149,0,0.1);--orange:#FF6B00;--ors:rgba(255,107,0,0.1);--teal:#0071e3;--ts:rgba(0,113,227,0.1);--sw:230px;}
+body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:100;}
+.brand{padding:20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);}
+.brand-icon{width:36px;height:36px;border-radius:9px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{font-size:15px;font-weight:700;letter-spacing:-0.02em;}
+.brand-sub{font-size:11px;color:var(--t4);margin-top:1px;}
+nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-section{padding:0 12px;margin-bottom:4px;}
+.nav-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t5);padding:8px 8px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--t2);cursor:pointer;text-decoration:none;transition:all 0.15s;}
+.nav-item:hover{background:var(--bg);color:var(--t1);}
+.nav-item.active{background:var(--ors);color:var(--orange);font-weight:600;}
+.nav-icon{width:18px;height:18px;opacity:0.6;flex-shrink:0;}
+.nav-item.active .nav-icon{opacity:1;}
+.main{margin-left:var(--sw);flex:1;padding:32px;}
+.page-header{margin-bottom:28px;}
+.page-title{font-size:26px;font-weight:700;letter-spacing:-0.03em;color:var(--t1);}
+.page-sub{font-size:14px;color:var(--t4);margin-top:4px;}
+.report-layout{display:grid;grid-template-columns:220px 1fr;gap:24px;min-height:calc(100vh - 160px);}
+.report-sidebar{background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:8px;height:fit-content;position:sticky;top:32px;}
+.report-cat{padding:10px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--t2);cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;}
+.report-cat:hover{background:var(--bg);}
+.report-cat.active{background:var(--ors);color:var(--orange);font-weight:600;}
+.report-cat-icon{font-size:16px;width:20px;text-align:center;}
+.report-content{display:flex;flex-direction:column;gap:20px;}
+.report-controls{background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:20px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;}
+.ctrl-group{display:flex;flex-direction:column;gap:6px;}
+.ctrl-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--t4);}
+.ctrl-input{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--t1);outline:none;}
+.ctrl-input:focus{border-color:var(--orange);background:#fff;}
+.ctrl-select{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--t1);outline:none;cursor:pointer;}
+.btn-run{padding:9px 20px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity 0.15s;}
+.btn-run:hover{opacity:0.85;}
+.btn-export{padding:9px 16px;background:var(--bg);color:var(--t2);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;}
+.report-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.stat-card{background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:18px 20px;}
+.stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--t4);margin-bottom:8px;}
+.stat-val{font-size:28px;font-weight:700;letter-spacing:-0.02em;}
+.stat-sub{font-size:12px;color:var(--t4);margin-top:4px;}
+.stat-card.green .stat-val{color:var(--green);}
+.stat-card.red .stat-val{color:var(--red);}
+.stat-card.amber .stat-val{color:var(--amber);}
+.stat-card.orange .stat-val{color:var(--orange);}
+.report-table-wrap{background:var(--surface);border-radius:14px;border:1px solid var(--border);overflow:hidden;}
+.report-table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.report-table-title{font-size:14px;font-weight:700;}
+.report-table-count{font-size:12px;color:var(--t4);}
+.report-table{width:100%;border-collapse:collapse;}
+.report-table th{padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--t4);text-align:left;background:var(--bg);border-bottom:1px solid var(--border);}
+.report-table td{padding:12px 16px;font-size:13px;color:var(--t2);border-bottom:1px solid var(--border);}
+.report-table tr:last-child td{border-bottom:none;}
+.report-table tr:hover td{background:rgba(0,0,0,0.02);}
+.chip{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.chip-pass{background:var(--gs);color:var(--green);}
+.chip-fail{background:var(--rs);color:var(--red);}
+.chip-advisory{background:var(--ams);color:var(--amber);}
+.chip-pending{background:var(--ts);color:var(--teal);}
+.chip-critical{background:var(--rs);color:var(--red);}
+.chip-done{background:var(--gs);color:var(--green);}
+.empty-state{padding:48px;text-align:center;color:var(--t5);font-size:14px;}
+.chart-wrap{background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:20px;}
+.chart-title{font-size:14px;font-weight:700;margin-bottom:16px;}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:140px;}
+.bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.bar{width:100%;background:var(--orange);border-radius:4px 4px 0 0;min-height:4px;transition:height 0.3s;}
+.bar.green{background:var(--green);}
+.bar.red{background:var(--red);}
+.bar.amber{background:var(--amber);}
+.bar-label{font-size:10px;color:var(--t4);text-align:center;}
+.bar-val{font-size:11px;font-weight:700;color:var(--t2);}
+.loading{padding:40px;text-align:center;color:var(--t4);font-size:13px;}
+.report-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 22 22" fill="none" width="20" height="20">
+        <rect x="10" y="2" width="2" height="18" rx="1" fill="#FF6B00"/>
+        <path d="M10,11 Q5,8 2,4 L2,7 Q5,10 9,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <path d="M12,11 Q17,8 20,4 L20,7 Q17,10 13,12 Z" fill="#FF6B00" opacity="0.6"/>
+        <circle cx="11" cy="11" r="2.5" fill="#fff"/>
+        <circle cx="11" cy="11" r="1.2" fill="#FF6B00"/>
+      </svg>
+    </div>
+    <div><div class="brand-name">HGVDesk</div><div class="brand-sub">Fleet Operations</div></div>
+  </div>
+  <nav>
+    <div class="nav-section">
+      <div class="nav-label">Operations</div>
+      <a href="/workshop" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 14a6 6 0 110-12 6 6 0 010 12z"/></svg>
+        Workshop
+      </a>
+      <a href="/inspect" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+        Inspect
+      </a>
+      <a href="/workshop#parts" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/></svg>
+        Parts
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Analytics</div>
+      <a href="/reports" class="nav-item active">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+        Reports
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">People</div>
+      <a href="/workshop#techs" class="nav-item">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+        Technicians
+      </a>
+    </div>
+  </nav>
+</div>
+
+<div class="main">
+  <div class="page-header">
+    <div class="page-title">Reports</div>
+    <div class="page-sub">Analytics and operational intelligence for your fleet</div>
+  </div>
+
+  <div class="report-layout">
+    <!-- Category sidebar -->
+    <div class="report-sidebar">
+      <div class="report-cat active" onclick="loadReport('fleet')"><span class="report-cat-icon">🚛</span> Fleet</div>
+      <div class="report-cat" onclick="loadReport('inspections')"><span class="report-cat-icon">📋</span> Inspections</div>
+      <div class="report-cat" onclick="loadReport('defects')"><span class="report-cat-icon">⚠️</span> Defects</div>
+      <div class="report-cat" onclick="loadReport('wip')"><span class="report-cat-icon">🔧</span> Work in Progress</div>
+      <div class="report-cat" onclick="loadReport('technicians')"><span class="report-cat-icon">👷</span> Technicians</div>
+      <div class="report-cat" onclick="loadReport('parts')"><span class="report-cat-icon">📦</span> Parts</div>
+    </div>
+
+    <!-- Report content -->
+    <div class="report-content" id="report-content">
+      <div class="loading">Loading...</div>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+var KEY = '13940e4c045e4b2691354522b103d7be';
+var currentReport = 'fleet';
+
+// Date helpers
+function today() { return new Date().toISOString().split('T')[0]; }
+function daysAgo(n) { var d = new Date(); d.setDate(d.getDate()-n); return d.toISOString().split('T')[0]; }
+function fmt(iso) { if (!iso) return '-'; return new Date(iso).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}); }
+function fmtDt(iso) { if (!iso) return '-'; return new Date(iso).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+
+function api(path, params) {
+  var url = '/api' + path;
+  if (params) url += '?' + new URLSearchParams(params).toString();
+  return fetch(url, { headers: { 'X-API-Key': KEY, 'Content-Type': 'application/json' } }).then(function(r) { return r.json(); });
+}
+
+function setActive(cat) {
+  document.querySelectorAll('.report-cat').forEach(function(el) { el.classList.remove('active'); });
+  event.target.closest('.report-cat').classList.add('active');
+  currentReport = cat;
+}
+
+function loadReport(cat) {
+  setActive(cat);
+  var content = document.getElementById('report-content');
+  content.innerHTML = '<div class="loading">Loading report...</div>';
+  if (cat === 'fleet') renderFleet();
+  else if (cat === 'inspections') renderInspections();
+  else if (cat === 'defects') renderDefects();
+  else if (cat === 'wip') renderWIP();
+  else if (cat === 'technicians') renderTechnicians();
+  else if (cat === 'parts') renderParts();
+}
+
+// ── FLEET REPORT ──
+function renderFleet() {
+  var from = daysAgo(30), to = today();
+  var content = document.getElementById('report-content');
+  content.innerHTML = `
+    <div class="report-controls">
+      <div class="ctrl-group"><div class="ctrl-label">From</div><input class="ctrl-input" type="date" id="r-from" value="${from}"></div>
+      <div class="ctrl-group"><div class="ctrl-label">To</div><input class="ctrl-input" type="date" id="r-to" value="${to}"></div>
+      <button class="btn-run" onclick="runFleet()">Run Report</button>
+      <button class="btn-export" onclick="exportCSV('fleet')">Export CSV</button>
+    </div>
+    <div id="fleet-output"><div class="loading">Click Run Report to load data</div></div>`;
+  runFleet();
+}
+
+function runFleet() {
+  Promise.all([
+    api('/inspections'),
+    api('/defects')
+  ]).then(function(results) {
+    var insps = (results[0].data ? results[0].data.inspections : results[0].inspections) || [];
+    var defects = (results[1].data ? results[1].data.defects : results[1].defects) || [];
+
+    var pass = insps.filter(function(i){return i.result==='pass';}).length;
+    var fail = insps.filter(function(i){return i.result==='fail';}).length;
+    var adv = insps.filter(function(i){return i.result==='advisory';}).length;
+    var openDefects = defects.filter(function(d){return !d.resolved;}).length;
+
+    // Group by vehicle
+    var byVeh = {};
+    insps.forEach(function(i) {
+      if (!byVeh[i.vehicle_reg]) byVeh[i.vehicle_reg] = {reg:i.vehicle_reg, inspections:0, pass:0, fail:0, adv:0, lastInsp:null};
+      byVeh[i.vehicle_reg].inspections++;
+      if (i.result==='pass') byVeh[i.vehicle_reg].pass++;
+      if (i.result==='fail') byVeh[i.vehicle_reg].fail++;
+      if (i.result==='advisory') byVeh[i.vehicle_reg].adv++;
+      if (!byVeh[i.vehicle_reg].lastInsp || i.completed_at > byVeh[i.vehicle_reg].lastInsp)
+        byVeh[i.vehicle_reg].lastInsp = i.completed_at;
+    });
+
+    var vehs = Object.values(byVeh);
+    var failRate = insps.length ? Math.round(fail/insps.length*100) : 0;
+
+    document.getElementById('fleet-output').innerHTML = `
+      <div class="report-cards">
+        <div class="stat-card"><div class="stat-label">Total Inspections</div><div class="stat-val">${insps.length}</div><div class="stat-sub">All time</div></div>
+        <div class="stat-card green"><div class="stat-label">Pass Rate</div><div class="stat-val">${insps.length ? Math.round(pass/insps.length*100) : 0}%</div><div class="stat-sub">${pass} passed</div></div>
+        <div class="stat-card red"><div class="stat-label">Fail Rate</div><div class="stat-val">${failRate}%</div><div class="stat-sub">${fail} failed</div></div>
+        <div class="stat-card amber"><div class="stat-label">Open Defects</div><div class="stat-val">${openDefects}</div><div class="stat-sub">Awaiting rectification</div></div>
+      </div>
+      <div class="report-grid-2">
+        <div class="chart-wrap">
+          <div class="chart-title">Inspection Results</div>
+          <div class="bar-chart">
+            ${[['Pass',pass,'green'],['Fail',fail,'red'],['Advisory',adv,'amber']].map(function(b){
+              var max = Math.max(pass,fail,adv,1);
+              return '<div class="bar-group"><div class="bar-val">'+b[1]+'</div><div class="bar '+b[2]+'" style="height:'+Math.round(b[1]/max*100)+'px"></div><div class="bar-label">'+b[0]+'</div></div>';
+            }).join('')}
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div class="chart-title">Defect Status</div>
+          <div class="bar-chart">
+            ${[['Open',openDefects,'red'],['Resolved',defects.length-openDefects,'green']].map(function(b){
+              var max = Math.max(openDefects, defects.length-openDefects, 1);
+              return '<div class="bar-group"><div class="bar-val">'+b[1]+'</div><div class="bar '+b[2]+'" style="height:'+Math.round(b[1]/max*100)+'px"></div><div class="bar-label">'+b[0]+'</div></div>';
+            }).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="report-table-wrap">
+        <div class="report-table-header">
+          <div class="report-table-title">Vehicle Inspection Summary</div>
+          <div class="report-table-count">${vehs.length} vehicles</div>
+        </div>
+        ${vehs.length ? `<table class="report-table">
+          <thead><tr><th>Registration</th><th>Inspections</th><th>Pass</th><th>Fail</th><th>Advisory</th><th>Pass Rate</th><th>Last Inspection</th></tr></thead>
+          <tbody>${vehs.map(function(v){
+            var rate = v.inspections ? Math.round(v.pass/v.inspections*100) : 0;
+            var rateColor = rate>=80?'var(--green)':rate>=50?'var(--amber)':'var(--red)';
+            return '<tr><td><b style="font-family:monospace;">'+v.reg+'</b></td><td>'+v.inspections+'</td><td style="color:var(--green);font-weight:600;">'+v.pass+'</td><td style="color:var(--red);font-weight:600;">'+v.fail+'</td><td style="color:var(--amber);font-weight:600;">'+v.adv+'</td><td><span style="font-weight:700;color:'+rateColor+';">'+rate+'%</span></td><td>'+fmt(v.lastInsp)+'</td></tr>';
+          }).join('')}</tbody>
+        </table>` : '<div class="empty-state">No vehicle data yet</div>'}
+      </div>`;
+    window._fleetData = {insps, defects, vehs};
+  });
+}
+
+// ── INSPECTIONS REPORT ──
+function renderInspections() {
+  var content = document.getElementById('report-content');
+  content.innerHTML = `
+    <div class="report-controls">
+      <div class="ctrl-group"><div class="ctrl-label">From</div><input class="ctrl-input" type="date" id="r-from" value="${daysAgo(30)}"></div>
+      <div class="ctrl-group"><div class="ctrl-label">To</div><input class="ctrl-input" type="date" id="r-to" value="${today()}"></div>
+      <div class="ctrl-group"><div class="ctrl-label">Result</div>
+        <select class="ctrl-select" id="r-result">
+          <option value="">All</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="advisory">Advisory</option>
+        </select>
+      </div>
+      <div class="ctrl-group"><div class="ctrl-label">Registration</div><input class="ctrl-input" type="text" id="r-reg" placeholder="e.g. WU68XVY" style="text-transform:uppercase;width:120px;"></div>
+      <button class="btn-run" onclick="runInspections()">Run Report</button>
+      <button class="btn-export" onclick="exportCSV('inspections')">Export CSV</button>
+    </div>
+    <div id="insp-output"><div class="loading">Click Run Report to load data</div></div>`;
+  runInspections();
+}
+
+function runInspections() {
+  var params = {};
+  var result = document.getElementById('r-result');
+  var reg = document.getElementById('r-reg');
+  if (result && result.value) params.result = result.value;
+  if (reg && reg.value) params.reg = reg.value.trim().toUpperCase();
+
+  api('/inspections', params).then(function(d) {
+    var insps = (d.data ? d.data.inspections : d.inspections) || [];
+    var pass = insps.filter(function(i){return i.result==='pass';}).length;
+    var fail = insps.filter(function(i){return i.result==='fail';}).length;
+    var adv = insps.filter(function(i){return i.result==='advisory';}).length;
+    var pending = insps.filter(function(i){return !i.result;}).length;
+
+    document.getElementById('insp-output').innerHTML = `
+      <div class="report-cards">
+        <div class="stat-card"><div class="stat-label">Total</div><div class="stat-val">${insps.length}</div></div>
+        <div class="stat-card green"><div class="stat-label">Pass</div><div class="stat-val">${pass}</div></div>
+        <div class="stat-card red"><div class="stat-label">Fail</div><div class="stat-val">${fail}</div></div>
+        <div class="stat-card amber"><div class="stat-label">Advisory</div><div class="stat-val">${adv}</div></div>
+      </div>
+      <div class="report-table-wrap">
+        <div class="report-table-header">
+          <div class="report-table-title">Inspection History</div>
+          <div class="report-table-count">${insps.length} records</div>
+        </div>
+        ${insps.length ? `<table class="report-table">
+          <thead><tr><th>ID</th><th>Registration</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Completed</th></tr></thead>
+          <tbody>${insps.map(function(i){
+            var chip = i.result==='pass'?'chip-pass':i.result==='fail'?'chip-fail':i.result==='advisory'?'chip-advisory':'chip-pending';
+            return '<tr><td style="font-family:monospace;font-size:11px;">'+i.inspection_id+'</td><td><b style="font-family:monospace;">'+i.vehicle_reg+'</b></td><td>'+i.inspection_type+'</td><td>'+(i.inspector_name||'-')+'</td><td><span class="chip '+chip+'">'+(i.result||'Pending')+'</span></td><td>'+i.status+'</td><td>'+fmt(i.completed_at)+'</td></tr>';
+          }).join('')}</tbody>
+        </table>` : '<div class="empty-state">No inspections found</div>'}
+      </div>`;
+    window._inspData = insps;
+  });
+}
+
+// ── DEFECTS REPORT ──
+function renderDefects() {
+  var content = document.getElementById('report-content');
+  content.innerHTML = `
+    <div class="report-controls">
+      <div class="ctrl-group"><div class="ctrl-label">Status</div>
+        <select class="ctrl-select" id="r-resolved">
+          <option value="">All</option><option value="open">Open</option><option value="resolved">Resolved</option>
+        </select>
+      </div>
+      <div class="ctrl-group"><div class="ctrl-label">Registration</div><input class="ctrl-input" type="text" id="r-reg" placeholder="e.g. WU68XVY" style="text-transform:uppercase;width:120px;"></div>
+      <button class="btn-run" onclick="runDefects()">Run Report</button>
+      <button class="btn-export" onclick="exportCSV('defects')">Export CSV</button>
+    </div>
+    <div id="defect-output"><div class="loading">Click Run Report to load data</div></div>`;
+  runDefects();
+}
+
+function runDefects() {
+  var params = {};
+  var reg = document.getElementById('r-reg');
+  if (reg && reg.value) params.reg = reg.value.trim().toUpperCase();
+
+  api('/defects', params).then(function(d) {
+    var defects = (d.data ? d.data.defects : d.defects) || [];
+    var resolved = document.getElementById('r-resolved');
+    if (resolved && resolved.value === 'open') defects = defects.filter(function(d){return !d.resolved;});
+    if (resolved && resolved.value === 'resolved') defects = defects.filter(function(d){return d.resolved;});
+
+    var open = defects.filter(function(d){return !d.resolved;}).length;
+    var rect = defects.filter(function(d){return d.resolved;}).length;
+    var critical = defects.filter(function(d){return d.severity==='critical';}).length;
+    var advisory = defects.filter(function(d){return d.severity==='advisory';}).length;
+
+    document.getElementById('defect-output').innerHTML = `
+      <div class="report-cards">
+        <div class="stat-card"><div class="stat-label">Total Defects</div><div class="stat-val">${defects.length}</div></div>
+        <div class="stat-card red"><div class="stat-label">Outstanding</div><div class="stat-val">${open}</div></div>
+        <div class="stat-card green"><div class="stat-label">Rectified</div><div class="stat-val">${rect}</div></div>
+        <div class="stat-card amber"><div class="stat-label">Critical</div><div class="stat-val">${critical}</div></div>
+      </div>
+      <div class="report-table-wrap">
+        <div class="report-table-header">
+          <div class="report-table-title">Defect Register</div>
+          <div class="report-table-count">${defects.length} defects</div>
+        </div>
+        ${defects.length ? `<table class="report-table">
+          <thead><tr><th>Registration</th><th>Defect</th><th>Category</th><th>Severity</th><th>Status</th><th>Rectified By</th><th>Rectified At</th><th>Raised</th></tr></thead>
+          <tbody>${defects.map(function(d){
+            var sevChip = d.severity==='critical'?'chip-critical':d.severity==='major'?'chip-advisory':'chip-pending';
+            var status = d.resolved ? '<span class="chip chip-done">Rectified</span>' : '<span class="chip chip-fail">Outstanding</span>';
+            return '<tr><td><b style="font-family:monospace;">'+d.vehicle_reg+'</b></td><td>'+d.title+'</td><td>'+(d.category||'-')+'</td><td><span class="chip '+sevChip+'">'+d.severity+'</span></td><td>'+status+'</td><td>'+(d.resolved_by||'-')+'</td><td>'+fmt(d.resolved_at)+'</td><td>'+fmt(d.created_at)+'</td></tr>';
+          }).join('')}</tbody>
+        </table>` : '<div class="empty-state">No defects found</div>'}
+      </div>`;
+    window._defectData = defects;
+  });
+}
+
+// ── WIP REPORT ──
+function renderWIP() {
+  var content = document.getElementById('report-content');
+  content.innerHTML = '<div class="loading">Loading work in progress...</div>';
+
+  api('/jobs').then(function(d) {
+    var jobs = (d.data ? d.data.jobs : d.jobs) || [];
+    var inProg = jobs.filter(function(j){return j.status==='in_progress';});
+    var queued = jobs.filter(function(j){return j.status==='queued'||j.status==='pending';});
+    var done = jobs.filter(function(j){return j.status==='done'||j.status==='complete';});
+    var urgent = jobs.filter(function(j){return j.priority==='urgent';});
+
+    content.innerHTML = `
+      <div class="report-cards">
+        <div class="stat-card orange"><div class="stat-label">In Progress</div><div class="stat-val">${inProg.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Queued</div><div class="stat-val">${queued.length}</div></div>
+        <div class="stat-card green"><div class="stat-label">Completed</div><div class="stat-val">${done.length}</div></div>
+        <div class="stat-card red"><div class="stat-label">Urgent</div><div class="stat-val">${urgent.length}</div></div>
+      </div>
+      <div class="report-table-wrap">
+        <div class="report-table-header">
+          <div class="report-table-title">Work in Progress</div>
+          <div class="report-table-count">${jobs.length} jobs</div>
+        </div>
+        ${jobs.length ? `<table class="report-table">
+          <thead><tr><th>Job #</th><th>Registration</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Inspect</th><th>Parts</th><th>Created</th></tr></thead>
+          <tbody>${jobs.map(function(j){
+            var priChip = j.priority==='urgent'?'chip-fail':j.priority==='high'?'chip-advisory':'chip-pending';
+            var statChip = j.status==='done'||j.status==='complete'?'chip-done':j.status==='in_progress'?'chip-advisory':'chip-pending';
+            return '<tr><td style="font-family:monospace;font-size:11px;">'+(j.job_number||j.id)+'</td><td><b style="font-family:monospace;">'+j.vehicle_reg+'</b></td><td>'+(j.customer_name||'-')+'</td><td>'+(j.technician_name||'-')+'</td><td><span class="chip '+priChip+'">'+(j.priority||'normal')+'</span></td><td><span class="chip '+statChip+'">'+j.status+'</span></td><td>'+(j.inspect_sent?'<span style="color:var(--green);font-weight:600;">Sent</span>':'<span style="color:var(--t5);">—</span>')+'</td><td>'+(j.parts_sent?'<span style="color:var(--green);font-weight:600;">Sent</span>':'<span style="color:var(--t5);">—</span>')+'</td><td>'+fmt(j.created_at)+'</td></tr>';
+          }).join('')}</tbody>
+        </table>` : '<div class="empty-state">No jobs found</div>'}
+      </div>`;
+  });
+}
+
+// ── TECHNICIANS REPORT ──
+function renderTechnicians() {
+  var content = document.getElementById('report-content');
+  content.innerHTML = '<div class="loading">Loading technician data...</div>';
+
+  Promise.all([api('/technicians'), api('/inspections')]).then(function(results) {
+    var techs = (results[0].technicians || []);
+    var insps = (results[1].data ? results[1].data.inspections : results[1].inspections) || [];
+
+    var techStats = {};
+    techs.forEach(function(t) {
+      techStats[t.name] = {name:t.name, username:t.username, total:0, pass:0, fail:0, adv:0, active:t.active};
+    });
+    insps.forEach(function(i) {
+      var n = i.inspector_name;
+      if (!n) return;
+      if (!techStats[n]) techStats[n] = {name:n, username:'-', total:0, pass:0, fail:0, adv:0, active:true};
+      techStats[n].total++;
+      if (i.result==='pass') techStats[n].pass++;
+      if (i.result==='fail') techStats[n].fail++;
+      if (i.result==='advisory') techStats[n].adv++;
+    });
+
+    var rows = Object.values(techStats);
+
+    content.innerHTML = `
+      <div class="report-cards">
+        <div class="stat-card"><div class="stat-label">Technicians</div><div class="stat-val">${techs.length}</div></div>
+        <div class="stat-card green"><div class="stat-label">Active</div><div class="stat-val">${techs.filter(function(t){return t.active;}).length}</div></div>
+        <div class="stat-card orange"><div class="stat-label">Inspections Done</div><div class="stat-val">${insps.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Per Tech</div><div class="stat-val">${techs.length ? Math.round(insps.length/techs.length) : 0}</div></div>
+      </div>
+      <div class="report-table-wrap">
+        <div class="report-table-header">
+          <div class="report-table-title">Technician Performance</div>
+          <div class="report-table-count">${rows.length} technicians</div>
+        </div>
+        ${rows.length ? `<table class="report-table">
+          <thead><tr><th>Name</th><th>Username</th><th>Status</th><th>Inspections</th><th>Pass</th><th>Fail</th><th>Advisory</th><th>Pass Rate</th></tr></thead>
+          <tbody>${rows.map(function(t){
+            var rate = t.total ? Math.round(t.pass/t.total*100) : 0;
+            var rateColor = rate>=80?'var(--green)':rate>=50?'var(--amber)':'var(--red)';
+            return '<tr><td><b>'+t.name+'</b></td><td style="font-family:monospace;font-size:12px;">'+t.username+'</td><td>'+(t.active?'<span class="chip chip-done">Active</span>':'<span class="chip chip-pending">Inactive</span>')+'</td><td>'+t.total+'</td><td style="color:var(--green);font-weight:600;">'+t.pass+'</td><td style="color:var(--red);font-weight:600;">'+t.fail+'</td><td style="color:var(--amber);font-weight:600;">'+t.adv+'</td><td><span style="font-weight:700;color:'+rateColor+';">'+(t.total?rate+'%':'-')+'</span></td></tr>';
+          }).join('')}</tbody>
+        </table>` : '<div class="empty-state">No technician data yet</div>'}
+      </div>`;
+  });
+}
+
+// ── PARTS REPORT ──
+function renderParts() {
+  var content = document.getElementById('report-content');
+  content.innerHTML = '<div class="loading">Loading parts data...</div>';
+
+  api('/parts').then(function(d) {
+    var parts = (d.data ? d.data.parts : d.parts) || [];
+    var pending = parts.filter(function(p){return p.status==='pending';}).length;
+    var ordered = parts.filter(function(p){return p.status==='ordered';}).length;
+    var received = parts.filter(function(p){return p.status==='received';}).length;
+    var urgent = parts.filter(function(p){return p.priority==='urgent';}).length;
+
+    content.innerHTML = `
+      <div class="report-cards">
+        <div class="stat-card"><div class="stat-label">Total Parts</div><div class="stat-val">${parts.length}</div></div>
+        <div class="stat-card amber"><div class="stat-label">Pending</div><div class="stat-val">${pending}</div></div>
+        <div class="stat-card orange"><div class="stat-label">Ordered</div><div class="stat-val">${ordered}</div></div>
+        <div class="stat-card green"><div class="stat-label">Received</div><div class="stat-val">${received}</div></div>
+      </div>
+      <div class="report-table-wrap">
+        <div class="report-table-header">
+          <div class="report-table-title">Parts Register</div>
+          <div class="report-table-count">${parts.length} parts</div>
+        </div>
+        ${parts.length ? `<table class="report-table">
+          <thead><tr><th>Part ID</th><th>Name</th><th>Registration</th><th>Category</th><th>Priority</th><th>Status</th><th>Cost</th><th>Raised</th></tr></thead>
+          <tbody>${parts.map(function(p){
+            var priChip = p.priority==='urgent'?'chip-fail':p.priority==='high'?'chip-advisory':'chip-pending';
+            var statChip = p.status==='received'?'chip-done':p.status==='ordered'?'chip-advisory':'chip-pending';
+            return '<tr><td style="font-family:monospace;font-size:11px;">'+(p.part_id||p.id)+'</td><td>'+p.name+'</td><td><b style="font-family:monospace;">'+(p.vehicle_reg||'-')+'</b></td><td>'+(p.category||'-')+'</td><td><span class="chip '+priChip+'">'+(p.priority||'normal')+'</span></td><td><span class="chip '+statChip+'">'+p.status+'</span></td><td>'+(p.unit_cost?'£'+parseFloat(p.unit_cost).toFixed(2):'-')+'</td><td>'+fmt(p.created_at)+'</td></tr>';
+          }).join('')}</tbody>
+        </table>` : '<div class="empty-state">No parts data yet</div>'}
+      </div>`;
+  });
+}
+
+// ── CSV EXPORT ──
+function exportCSV(type) {
+  var data = [];
+  var headers = [];
+  if (type==='fleet' && window._fleetData) {
+    headers = ['Registration','Inspections','Pass','Fail','Advisory','Pass Rate %','Last Inspection'];
+    data = window._fleetData.vehs.map(function(v){
+      return [v.reg, v.inspections, v.pass, v.fail, v.adv, v.inspections?Math.round(v.pass/v.inspections*100):0, v.lastInsp?new Date(v.lastInsp).toLocaleDateString('en-GB'):''];
+    });
+  } else if (type==='inspections' && window._inspData) {
+    headers = ['ID','Registration','Type','Inspector','Result','Status','Completed'];
+    data = window._inspData.map(function(i){
+      return [i.inspection_id, i.vehicle_reg, i.inspection_type, i.inspector_name||'', i.result||'pending', i.status, i.completed_at?new Date(i.completed_at).toLocaleDateString('en-GB'):''];
+    });
+  } else if (type==='defects' && window._defectData) {
+    headers = ['Registration','Title','Category','Severity','Status','Rectified By','Rectified At','Raised'];
+    data = window._defectData.map(function(d){
+      return [d.vehicle_reg, d.title, d.category||'', d.severity, d.resolved?'Rectified':'Outstanding', d.resolved_by||'', d.resolved_at?new Date(d.resolved_at).toLocaleDateString('en-GB'):'', new Date(d.created_at).toLocaleDateString('en-GB')];
+    });
+  }
+  if (!data.length) { alert('No data to export — run the report first'); return; }
+  var csv = [headers.join(',')].concat(data.map(function(row){return row.map(function(v){return '"'+(v||'').toString().replace(/"/g,'""')+'"';}).join(',');})).join('\n');
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = type+'-report-'+today()+'.csv';
+  a.click();
+}
+
+// Load default
+window.addEventListener('load', function() { renderFleet(); });
+</script>
+</body>
+</html>

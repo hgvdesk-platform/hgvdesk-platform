@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0a1628;
+    --navy-mid: #0f2040;
+    --navy-light: #1a3055;
+    --orange: #e8520a;
+    --orange-light: #ff6b2b;
+    --steel: #4a6080;
+    --mist: #b8c8d8;
+    --white: #f4f7fa;
+    --pure: #ffffff;
+    --line: rgba(255,255,255,0.08);
+    --error: #e8520a;
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    display: flex; flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ── GRID BG ── */
+  .bg {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  }
+  .bg-glow {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 50% 60% at 50% 40%, rgba(232,82,10,0.1) 0%, transparent 70%);
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-logo {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 1.4rem;
+    color: var(--pure); text-decoration: none;
+  }
+  .nav-logo span { color: var(--orange); }
+  .nav-back {
+    font-size: 0.85rem; color: var(--mist);
+    text-decoration: none; font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-back:hover { color: var(--pure); }
+
+  /* ── SCREENS ── */
+  #login-screen, #hub-screen {
+    position: relative; z-index: 10;
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 2rem;
+  }
+  #hub-screen { display: none; align-items: flex-start; padding: 3rem 2rem; }
+
+  /* ── LOGIN CARD ── */
+  .login-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 2.5rem;
+    width: 100%; max-width: 420px;
+  }
+  .login-header { margin-bottom: 2rem; }
+  .login-label {
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 0.5rem;
+  }
+  .login-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 1.8rem;
+    text-transform: uppercase; color: var(--pure);
+    line-height: 1;
+  }
+
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label {
+    display: block; font-size: 0.8rem; font-weight: 600;
+    color: var(--mist); margin-bottom: 0.5rem;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .form-group input {
+    width: 100%; padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px; color: var(--pure);
+    font-family: 'Barlow', sans-serif; font-size: 0.95rem;
+    transition: border-color 0.2s, background 0.2s;
+    outline: none;
+  }
+  .form-group input:focus {
+    border-color: rgba(232,82,10,0.5);
+    background: rgba(255,255,255,0.06);
+  }
+  .form-group input::placeholder { color: var(--steel); }
+
+  .error-msg {
+    display: none;
+    background: rgba(232,82,10,0.1);
+    border: 1px solid rgba(232,82,10,0.3);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    font-size: 0.85rem; color: var(--orange-light);
+    margin-bottom: 1.25rem;
+  }
+  .error-msg.show { display: block; }
+
+  .btn-login {
+    width: 100%; padding: 0.85rem;
+    background: var(--orange); color: var(--pure);
+    border: none; border-radius: 6px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s, transform 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn-login:hover:not(:disabled) { background: var(--orange-light); transform: translateY(-1px); }
+  .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .login-footer {
+    margin-top: 1.5rem; padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.8rem; color: var(--steel); text-align: center;
+  }
+  .login-footer a { color: var(--mist); text-decoration: none; }
+  .login-footer a:hover { color: var(--pure); }
+
+  /* ── HUB ── */
+  .hub-inner { width: 100%; max-width: 900px; margin: 0 auto; }
+
+  .hub-header { margin-bottom: 2.5rem; }
+  .hub-greeting {
+    font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 0.5rem;
+  }
+  .hub-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 2.2rem;
+    text-transform: uppercase; color: var(--pure);
+    line-height: 1;
+  }
+  .hub-subtitle { font-size: 0.9rem; color: var(--mist); margin-top: 0.5rem; }
+
+  .hub-meta {
+    display: flex; gap: 1.5rem; margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+  .hub-meta-item {
+    font-size: 0.78rem; color: var(--steel);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .hub-meta-item strong { color: var(--mist); font-weight: 600; }
+
+  .hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .hub-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.75rem 1.5rem;
+    text-decoration: none; color: inherit;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    position: relative; overflow: hidden;
+    display: block;
+  }
+  .hub-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 3px; background: var(--orange);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .hub-card:hover {
+    background: var(--navy-light);
+    border-color: rgba(232,82,10,0.25);
+    transform: translateY(-2px);
+  }
+  .hub-card:hover::before { transform: scaleX(1); }
+
+  .hub-card-icon {
+    width: 44px; height: 44px; border-radius: 8px;
+    background: rgba(232,82,10,0.1);
+    border: 1px solid rgba(232,82,10,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.25rem;
+  }
+  .hub-card-icon svg {
+    width: 20px; height: 20px;
+    stroke: var(--orange-light); fill: none;
+    stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .hub-card-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 1.2rem;
+    text-transform: uppercase; color: var(--pure);
+    margin-bottom: 0.4rem; letter-spacing: 0.02em;
+  }
+  .hub-card-desc { font-size: 0.82rem; color: var(--mist); line-height: 1.55; }
+  .hub-card-arrow {
+    position: absolute; bottom: 1.5rem; right: 1.5rem;
+    color: var(--steel); font-size: 1rem;
+    transition: color 0.2s, transform 0.2s;
+  }
+  .hub-card:hover .hub-card-arrow { color: var(--orange); transform: translate(2px, -2px); }
+
+  .hub-logout {
+    margin-top: 2.5rem; padding-top: 2rem;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: flex-end;
+  }
+  .btn-logout {
+    background: transparent; border: 1px solid rgba(255,255,255,0.12);
+    color: var(--mist); padding: 0.5rem 1.25rem;
+    border-radius: 4px; font-family: 'Barlow', sans-serif;
+    font-size: 0.85rem; font-weight: 500; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-logout:hover { border-color: rgba(255,255,255,0.3); color: var(--pure); }
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="bg-glow"></div>
+
+<nav>
+  <a href="/" class="nav-logo">HGV<span>Manager</span></a>
+  <a href="/" class="nav-back">← Back to site</a>
+</nav>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-label">Operator access</div>
+      <div class="login-title">Sign in to your fleet</div>
+    </div>
+
+    <div class="error-msg" id="error-msg">Invalid email or password. Please try again.</div>
+
+    <div class="form-group">
+      <label for="email">Email address</label>
+      <input type="email" id="email" placeholder="you@company.com" autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="btn-login" id="login-btn" onclick="doLogin()">Sign in</button>
+
+    <div class="login-footer">
+      Need access? <a href="mailto:hello@hgvdesk.co.uk">Contact us</a>
+    </div>
+  </div>
+</div>
+
+<!-- HUB SCREEN -->
+<div id="hub-screen">
+  <div class="hub-inner">
+    <div class="hub-header">
+      <div class="hub-greeting">Welcome back</div>
+      <div class="hub-title" id="hub-name">Operator</div>
+      <div class="hub-meta">
+        <div class="hub-meta-item">Organisation: <strong id="hub-org">—</strong></div>
+        <div class="hub-meta-item">Role: <strong id="hub-role">—</strong></div>
+        <div class="hub-meta-item">Plan: <strong id="hub-plan">—</strong></div>
+      </div>
+    </div>
+
+    <div class="hub-grid">
+
+      <a href="/command" class="hub-card">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <div class="hub-card-name">Command Centre</div>
+        <div class="hub-card-desc">Live fleet overview, stats and real-time status across all systems.</div>
+        <div class="hub-card-arrow">↗</div>
+      </a>
+
+      <a href="/workshop" class="hub-card">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <div class="hub-card-name">Workshop</div>
+        <div class="hub-card-desc">Create and manage jobs, send to the workshop floor, track progress.</div>
+        <div class="hub-card-arrow">↗</div>
+      </a>
+
+      <a href="/inspect" class="hub-card">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <div class="hub-card-name">Inspect</div>
+        <div class="hub-card-desc">Full digital pre-use inspections with defect diagrams and photo evidence.</div>
+        <div class="hub-card-arrow">↗</div>
+      </a>
+
+      <a href="/parts" class="hub-card">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <div class="hub-card-name">Parts</div>
+        <div class="hub-card-desc">Track components through the full lifecycle — pending, ordered, ready.</div>
+        <div class="hub-card-arrow">↗</div>
+      </a>
+
+    </div>
+
+    <div class="hub-logout">
+      <button class="btn-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const LOGIN = document.getElementById('login-screen');
+  const HUB   = document.getElementById('hub-screen');
+  const ERR   = document.getElementById('error-msg');
+  const BTN   = document.getElementById('login-btn');
+
+  // Check if already logged in
+  const saved = sessionStorage.getItem('hgv_user');
+  if (saved) {
+    showHub(JSON.parse(saved));
+  }
+
+  // Allow Enter key to submit
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('email').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  async function doLogin() {
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    ERR.classList.remove('show');
+
+    if (!email || !password) {
+      ERR.textContent = 'Please enter your email and password.';
+      ERR.classList.add('show');
+      return;
+    }
+
+    BTN.disabled = true;
+    BTN.textContent = 'Signing in…';
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      sessionStorage.setItem('hgv_token', data.token);
+      sessionStorage.setItem('hgv_user', JSON.stringify(data.user));
+
+      showHub(data.user);
+
+    } catch (err) {
+      ERR.textContent = err.message || 'Invalid email or password. Please try again.';
+      ERR.classList.add('show');
+      BTN.disabled = false;
+      BTN.textContent = 'Sign in';
+    }
+  }
+
+  function showHub(user) {
+    LOGIN.style.display = 'none';
+    HUB.style.display = 'flex';
+
+    document.getElementById('hub-name').textContent = user.fullName || user.email;
+    document.getElementById('hub-org').textContent  = user.orgName || '—';
+    document.getElementById('hub-role').textContent = (user.role || 'operator').charAt(0).toUpperCase() + (user.role || 'operator').slice(1);
+    document.getElementById('hub-plan').textContent = (user.plan || 'standard').charAt(0).toUpperCase() + (user.plan || 'standard').slice(1);
+  }
+
+  function doLogout() {
+    sessionStorage.removeItem('hgv_token');
+    sessionStorage.removeItem('hgv_user');
+    HUB.style.display = 'none';
+    LOGIN.style.display = 'flex';
+    BTN.disabled = false;
+    BTN.textContent = 'Sign in';
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+  }
+</script>
+
+</body>
+</html>
