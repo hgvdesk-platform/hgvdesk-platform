@@ -227,6 +227,60 @@ async function initSchema() {
 // SEED — creates first organisation + admin user
 // ═══════════════════════════════════════════════
 
+const DEMO_JOBS = [
+  ['BX19 KLM', 'T50', 'Eddie Stobart', 'T. Harris', 'urgent', 'on_floor', 'on_floor', true, true],
+  ['LK23 XPT', 'T50', 'Stobart Fleet', 'J. Patel', 'high', 'on_floor', 'on_floor', true, true],
+  ['MV71 RHD', 'T60', 'DHL Logistics', 'M. Clarke', 'normal', 'on_floor', 'on_floor', true, true],
+  ['YP20 DRF', 'PMI', 'XPO Logistics', 'D. Thompson', 'normal', 'pending', 'created', false, false],
+];
+
+const DEMO_PART_NAMES = {
+  'BX19 KLM': 'Brake Caliper Set',
+  'LK23 XPT': 'Inspection Parts Kit',
+  'MV71 RHD': 'Axle Shaft'
+};
+
+function demoInspectionStatus(reg) {
+  return reg === 'BX19 KLM' ? 'complete' : 'in_progress';
+}
+
+function demoInspectionResult(reg) {
+  if (reg === 'BX19 KLM') return 'fail';
+  if (reg === 'LK23 XPT') return 'advisory';
+  return 'pass';
+}
+
+async function insertDemoInspection(orgId, jobId, i, reg, type, tech) {
+  await query(`
+    INSERT INTO inspections (org_id, inspection_id, job_id, vehicle_reg, inspection_type, inspector_name, status, result)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+  `, [orgId, `INS-${200 + i + 1}`, jobId, reg, type, tech, demoInspectionStatus(reg), demoInspectionResult(reg)]);
+}
+
+async function insertDemoPart(orgId, jobId, i, reg, priority) {
+  await query(`
+    INSERT INTO parts (org_id, part_id, job_id, vehicle_reg, name, category, priority, status, unit_cost)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+  `, [orgId, `PRT-${300 + i + 1}`, jobId, reg,
+      DEMO_PART_NAMES[reg] || 'General Parts', 'General', priority,
+      reg === 'MV71 RHD' ? 'ready' : 'pending',
+      reg === 'BX19 KLM' ? 285 : 120]);
+}
+
+async function seedDemoJobs(orgId) {
+  for (let i = 0; i < DEMO_JOBS.length; i++) {
+    const [reg, type, customer, tech, priority, status, wip, iSent, pSent] = DEMO_JOBS[i];
+    const jobNum = `JOB-${100 + i + 1}`;
+    const jobResult = await queryOne(`
+      INSERT INTO jobs (org_id, job_number, vehicle_reg, inspection_type, customer_name, technician_name, priority, status, wip_status, inspect_sent, parts_sent)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id
+    `, [orgId, jobNum, reg, type, customer, tech, priority, status, wip, iSent, pSent]);
+
+    if (iSent) await insertDemoInspection(orgId, jobResult.id, i, reg, type, tech);
+    if (pSent) await insertDemoPart(orgId, jobResult.id, i, reg, priority);
+  }
+}
+
 async function seedInitialData() {
   const existing = await queryOne(`SELECT id FROM organisations WHERE slug = 'midlands-transport'`);
   if (existing) {
@@ -252,42 +306,7 @@ async function seedInitialData() {
     VALUES ($1, $2, $3, $4, $5)
   `, [orgId, process.env.ADMIN_EMAIL || 'admin@fleetcommand.co.uk', passwordHash, 'Admin User', 'admin']);
 
-  // Seed demo jobs
-  const demoJobs = [
-    ['BX19 KLM', 'T50', 'Eddie Stobart', 'T. Harris', 'urgent', 'on_floor', 'on_floor', true, true],
-    ['LK23 XPT', 'T50', 'Stobart Fleet', 'J. Patel', 'high', 'on_floor', 'on_floor', true, true],
-    ['MV71 RHD', 'T60', 'DHL Logistics', 'M. Clarke', 'normal', 'on_floor', 'on_floor', true, true],
-    ['YP20 DRF', 'PMI', 'XPO Logistics', 'D. Thompson', 'normal', 'pending', 'created', false, false],
-  ];
-
-  for (let i = 0; i < demoJobs.length; i++) {
-    const [reg, type, customer, tech, priority, status, wip, iSent, pSent] = demoJobs[i];
-    const jobNum = `JOB-${100 + i + 1}`;
-    const jobResult = await queryOne(`
-      INSERT INTO jobs (org_id, job_number, vehicle_reg, inspection_type, customer_name, technician_name, priority, status, wip_status, inspect_sent, parts_sent)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id
-    `, [orgId, jobNum, reg, type, customer, tech, priority, status, wip, iSent, pSent]);
-
-    if (iSent) {
-      await query(`
-        INSERT INTO inspections (org_id, inspection_id, job_id, vehicle_reg, inspection_type, inspector_name, status, result)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      `, [orgId, `INS-${200+i+1}`, jobResult.id, reg, type, tech,
-          reg === 'BX19 KLM' ? 'complete' : 'in_progress',
-          reg === 'BX19 KLM' ? 'fail' : reg === 'LK23 XPT' ? 'advisory' : 'pass']);
-    }
-
-    if (pSent) {
-      const partNames = { 'BX19 KLM': 'Brake Caliper Set', 'LK23 XPT': 'Inspection Parts Kit', 'MV71 RHD': 'Axle Shaft' };
-      await query(`
-        INSERT INTO parts (org_id, part_id, job_id, vehicle_reg, name, category, priority, status, unit_cost)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-      `, [orgId, `PRT-${300+i+1}`, jobResult.id, reg,
-          partNames[reg] || 'General Parts', 'General', priority,
-          reg === 'MV71 RHD' ? 'ready' : 'pending',
-          reg === 'BX19 KLM' ? 285 : 120]);
-    }
-  }
+  await seedDemoJobs(orgId);
 
   await query(`
     INSERT INTO activity_log (org_id, system, event, detail)

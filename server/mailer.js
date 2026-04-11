@@ -55,7 +55,7 @@ async function sendFailedInspectionAlert({ vehicleReg, inspectorName, inspection
             <a href="https://hgvmanager.co.uk/inspect" style="background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View in HGV Manager</a>
           </div>
         </div>
-        <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">HGV Manager &bull; hgvmanager.co.uk</p>
+        <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">HGVDesk &bull; hgvdesk.co.uk</p>
       </div>
     `
   };
@@ -82,21 +82,21 @@ async function sendInspectionReport({ to, vehicleReg, inspectionId, result, insp
       <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
         <div style="background:#1d1d1f;color:#fff;padding:16px 20px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:space-between;">
           <h2 style="margin:0;font-size:18px;">Inspection Report</h2>
-          <span style="background:${resultColor};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${(result||'').toUpperCase()}</span>
+          <span style="background:${resultColor};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${(result||'Pending').toUpperCase()}</span>
         </div>
         <div style="background:#f5f5f7;padding:20px;border-radius:0 0 10px 10px;border:1px solid #e5e5e7;border-top:none;">
           <table style="width:100%;border-collapse:collapse;">
             <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Vehicle</td><td style="padding:8px 0;font-size:14px;font-weight:700;font-family:monospace;">${vehicleReg}</td></tr>
             <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Inspection ID</td><td style="padding:8px 0;font-size:14px;">${inspectionId}</td></tr>
             <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Inspector</td><td style="padding:8px 0;font-size:14px;">${inspectorName || 'Unknown'}</td></tr>
-            <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Result</td><td style="padding:8px 0;font-size:14px;font-weight:700;color:${resultColor};">${(result||'').toUpperCase()}</td></tr>
+            <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Result</td><td style="padding:8px 0;font-size:14px;font-weight:700;color:${resultColor};">${(result||'Pending').toUpperCase()}</td></tr>
             ${notes ? '<tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;vertical-align:top;">Notes</td><td style="padding:8px 0;font-size:14px;">' + notes + '</td></tr>' : ''}
           </table>
           <div style="margin-top:20px;">
             <a href="https://hgvmanager.co.uk/inspect" style="background:#FF6B00;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View Full Report</a>
           </div>
         </div>
-        <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">HGV Manager &bull; hgvmanager.co.uk</p>
+        <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">HGVDesk &bull; hgvdesk.co.uk</p>
       </div>
     `
   };

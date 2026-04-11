@@ -150,11 +150,8 @@ body{font-family:"Helvetica Neue",Arial,sans-serif;background:#fff;color:#1d1d1f
     return '<span class="chip chip-pending">Advisory</span>';
   }
 
-  function renderPage(job, insp, defects, dvla, jobLines) {
-    var html = '';
-
-    // Status bar
-    html += '<div class="status-bar">';
+  function renderStatusBar(job, insp) {
+    var html = '<div class="status-bar">';
     html += '<div class="sb-item"><div class="sb-label">Job Status</div><div class="sb-val">' + statusChip(job.status) + '</div></div>';
     html += '<div class="sb-item"><div class="sb-label">Priority</div><div class="sb-val">' + priorityChip(job.priority) + '</div></div>';
     html += '<div class="sb-item"><div class="sb-label">Created</div><div class="sb-val">' + fmt(job.created_at) + '</div></div>';
@@ -163,174 +160,191 @@ body{font-family:"Helvetica Neue",Arial,sans-serif;background:#fff;color:#1d1d1f
       html += '<div class="sb-item"><div class="sb-label">Inspection Result</div><div class="sb-val">' + resultChip(insp.result) + '</div></div>';
       if (insp.completed_at) html += '<div class="sb-item"><div class="sb-label">Completed</div><div class="sb-val">' + fmtDt(insp.completed_at) + '</div></div>';
     }
-    html += '</div>';
+    return html + '</div>';
+  }
 
-    // Vehicle & Job Details
-    html += '<div class="section"><div class="section-title">Vehicle & Job Details</div>';
+  function renderVehicleDetails(job) {
+    var html = '<div class="section"><div class="section-title">Vehicle & Job Details</div>';
     html += '<div class="grid" style="margin-bottom:12px;">';
     html += '<div class="field"><div class="field-label">Registration</div><div class="field-val reg">' + job.vehicle_reg + '</div></div>';
     html += '<div class="field"><div class="field-label">Inspection Type</div><div class="field-val">' + (job.inspection_type || '-') + '</div></div>';
     html += '</div><div class="grid">';
     html += '<div class="field"><div class="field-label">Customer / Operator</div><div class="field-val">' + (job.customer_name || '-') + '</div></div>';
     html += '<div class="field"><div class="field-label">Assigned Technician</div><div class="field-val">' + (job.technician_name || 'Unassigned') + '</div></div>';
-    html += '</div></div>';
+    return html + '</div></div>';
+  }
 
-    // DVLA Data
-    if (dvla && dvla.make) {
-      html += '<div class="section"><div class="section-title">DVLA Vehicle Data</div>';
-      html += '<div class="dvla-grid">';
-      html += '<div class="dvla-item"><div class="dvla-label">Make</div><div class="dvla-val">' + (dvla.make||'-') + '</div></div>';
-      html += '<div class="dvla-item"><div class="dvla-label">Colour</div><div class="dvla-val">' + (dvla.colour||'-') + '</div></div>';
-      html += '<div class="dvla-item"><div class="dvla-label">Year</div><div class="dvla-val">' + (dvla.year||'-') + '</div></div>';
-      html += '<div class="dvla-item"><div class="dvla-label">Fuel</div><div class="dvla-val">' + (dvla.fuelType||'-') + '</div></div>';
-      html += '<div class="dvla-item"><div class="dvla-label">MOT</div><div class="dvla-val" style="color:' + (dvla.motStatus==='Valid'?'#1d9e75':'#ff3b30') + '">' + (dvla.motStatus||'-') + '</div></div>';
-      html += '<div class="dvla-item"><div class="dvla-label">Tax</div><div class="dvla-val" style="color:' + (dvla.taxStatus==='Taxed'?'#1d9e75':'#ff3b30') + '">' + (dvla.taxStatus||'-') + '</div></div>';
-      html += '</div></div>';
-    }
+  function renderDvlaSection(dvla) {
+    if (!dvla || !dvla.make) return '';
+    var html = '<div class="section"><div class="section-title">DVLA Vehicle Data</div>';
+    html += '<div class="dvla-grid">';
+    html += '<div class="dvla-item"><div class="dvla-label">Make</div><div class="dvla-val">' + (dvla.make || '-') + '</div></div>';
+    html += '<div class="dvla-item"><div class="dvla-label">Colour</div><div class="dvla-val">' + (dvla.colour || '-') + '</div></div>';
+    html += '<div class="dvla-item"><div class="dvla-label">Year</div><div class="dvla-val">' + (dvla.year || '-') + '</div></div>';
+    html += '<div class="dvla-item"><div class="dvla-label">Fuel</div><div class="dvla-val">' + (dvla.fuelType || '-') + '</div></div>';
+    html += '<div class="dvla-item"><div class="dvla-label">MOT</div><div class="dvla-val" style="color:' + (dvla.motStatus === 'Valid' ? '#1d9e75' : '#ff3b30') + '">' + (dvla.motStatus || '-') + '</div></div>';
+    html += '<div class="dvla-item"><div class="dvla-label">Tax</div><div class="dvla-val" style="color:' + (dvla.taxStatus === 'Taxed' ? '#1d9e75' : '#ff3b30') + '">' + (dvla.taxStatus || '-') + '</div></div>';
+    return html + '</div></div>';
+  }
 
-    // Inspection Details
-    if (insp) {
-      html += '<div class="section"><div class="section-title">Inspection Details</div>';
-      html += '<div class="grid">';
-      html += '<div class="field"><div class="field-label">Inspector</div><div class="field-val">' + (insp.inspector_name || '-') + '</div></div>';
-      html += '<div class="field"><div class="field-label">Mileage</div><div class="field-val">' + (insp.overall_mileage ? insp.overall_mileage.toLocaleString() + ' miles' : '-') + '</div></div>';
-      html += '</div>';
-      if (insp.notes) {
-        html += '<div style="margin-top:12px;"><div class="field-label" style="margin-bottom:6px;">Inspector Notes</div>';
-        html += '<div class="notes-box">' + insp.notes + '</div></div>';
+  function maybeParseJson(v) {
+    return typeof v === 'string' ? JSON.parse(v) : v;
+  }
+
+  function renderTyreSection(insp) {
+    if (!insp.tyre_data) return '';
+    var tyres = maybeParseJson(insp.tyre_data);
+    var keys = Object.keys(tyres || {});
+    if (!keys.length) return '';
+    var html = '<div class="section"><div class="section-title">Tyre Report</div><div class="tyre-grid">';
+    keys.forEach(function(k) {
+      var t = tyres[k];
+      html += '<div class="tyre-item"><div class="tyre-pos">' + k + '</div>';
+      if (typeof t === 'object') {
+        html += '<div class="tyre-val">' + (t.depth || t.tread || '-') + 'mm</div>';
+        if (t.condition) html += '<div style="font-size:10px;color:#636366;">' + t.condition + '</div>';
+      } else {
+        html += '<div class="tyre-val">' + t + '</div>';
       }
       html += '</div>';
+    });
+    return html + '</div></div>';
+  }
 
-      // Nil Defect
-      if (insp.nil_defect) {
-        html += '<div class="section"><div class="nil-defect-box"><div class="nil-defect-icon">&#10003;</div><div class="nil-defect-text">NIL DEFECT — No defects found during inspection</div></div></div>';
-      }
+  function renderBrakeSection(insp) {
+    if (!insp.brake_test_data) return '';
+    var brakes = maybeParseJson(insp.brake_test_data);
+    var keys = Object.keys(brakes || {});
+    if (!keys.length) return '';
+    var html = '<div class="section"><div class="section-title">Brake Test Report</div><div class="brake-grid">';
+    keys.forEach(function(k) {
+      html += '<div class="brake-item"><div class="brake-label">' + k + '</div><div class="brake-val">' + brakes[k] + '</div></div>';
+    });
+    return html + '</div></div>';
+  }
 
-      // Tyre Data
-      if (insp.tyre_data) {
-        var tyres = typeof insp.tyre_data === 'string' ? JSON.parse(insp.tyre_data) : insp.tyre_data;
-        var tyreKeys = Object.keys(tyres);
-        if (tyreKeys.length) {
-          html += '<div class="section"><div class="section-title">Tyre Report</div><div class="tyre-grid">';
-          tyreKeys.forEach(function(k) {
-            var t = tyres[k];
-            html += '<div class="tyre-item"><div class="tyre-pos">' + k + '</div>';
-            if (typeof t === 'object') {
-              html += '<div class="tyre-val">' + (t.depth || t.tread || '-') + 'mm</div>';
-              if (t.condition) html += '<div style="font-size:10px;color:#636366;">' + t.condition + '</div>';
-            } else {
-              html += '<div class="tyre-val">' + t + '</div>';
-            }
-            html += '</div>';
-          });
-          html += '</div></div>';
-        }
-      }
-
-      // Brake Test Data
-      if (insp.brake_test_data) {
-        var brakes = typeof insp.brake_test_data === 'string' ? JSON.parse(insp.brake_test_data) : insp.brake_test_data;
-        var brakeKeys = Object.keys(brakes);
-        if (brakeKeys.length) {
-          html += '<div class="section"><div class="section-title">Brake Test Report</div><div class="brake-grid">';
-          brakeKeys.forEach(function(k) {
-            html += '<div class="brake-item"><div class="brake-label">' + k + '</div><div class="brake-val">' + brakes[k] + '</div></div>';
-          });
-          html += '</div></div>';
-        }
-      }
-    }
-
-    // Defects
-    html += '<div class="section"><div class="section-title">Defects (' + defects.length + ')</div>';
-    if (!defects.length) {
-      html += '<div class="notes-box no-data">No defects recorded</div>';
-    } else {
-      var open = defects.filter(function(d) { return !d.resolved; });
-      var resolved = defects.filter(function(d) { return d.resolved; });
-
-      if (open.length) {
-        html += '<div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#ff3b30;">OUTSTANDING (' + open.length + ')</div>';
-        open.forEach(function(d) {
-          html += '<div class="defect-card severity-' + (d.severity||'advisory') + '">';
-          html += '<div class="defect-title">' + (d.title||'Defect') + ' ' + severityChip(d.severity) + '</div>';
-          if (d.description) html += '<div class="defect-desc">' + d.description + '</div>';
-          html += '<div class="defect-meta">';
-          if (d.category) html += '<span>Category: ' + d.category + '</span>';
-          if (d.part_name) html += '<span>Part: ' + d.part_name + '</span>';
-          if (d.estimated_cost) html += '<span>Est. Cost: &pound;' + parseFloat(d.estimated_cost).toFixed(2) + '</span>';
-          html += '</div>';
-          if (d.photo_url) html += '<div class="defect-photo"><img src="' + d.photo_url + '" alt="Defect photo"></div>';
-          html += '</div>';
-        });
-      }
-
-      if (resolved.length) {
-        html += '<div style="margin-top:16px;margin-bottom:8px;font-size:11px;font-weight:700;color:#1d9e75;">RECTIFIED (' + resolved.length + ')</div>';
-        resolved.forEach(function(d) {
-          html += '<div class="defect-card resolved">';
-          html += '<div class="defect-title">' + (d.title||'Defect') + ' <span class="chip chip-resolved">Rectified</span></div>';
-          if (d.description) html += '<div class="defect-desc">' + d.description + '</div>';
-          html += '<div class="rectified-box"><div class="rectified-label">Rectification Details</div>';
-          if (d.resolved_by) html += '<div>Rectified by: <strong>' + d.resolved_by + '</strong></div>';
-          if (d.resolved_at) html += '<div>Date: <strong>' + fmtDt(d.resolved_at) + '</strong></div>';
-          if (d.resolution_notes) html += '<div style="margin-top:4px;">' + d.resolution_notes + '</div>';
-          html += '</div>';
-          if (d.photo_url) html += '<div class="defect-photo"><img src="' + d.photo_url + '" alt="Defect photo"></div>';
-          html += '</div>';
-        });
-      }
+  function renderInspectionSection(insp) {
+    if (!insp) return '';
+    var html = '<div class="section"><div class="section-title">Inspection Details</div>';
+    html += '<div class="grid">';
+    html += '<div class="field"><div class="field-label">Inspector</div><div class="field-val">' + (insp.inspector_name || '-') + '</div></div>';
+    html += '<div class="field"><div class="field-label">Mileage</div><div class="field-val">' + (insp.overall_mileage ? insp.overall_mileage.toLocaleString() + ' miles' : '-') + '</div></div>';
+    html += '</div>';
+    if (insp.notes) {
+      html += '<div style="margin-top:12px;"><div class="field-label" style="margin-bottom:6px;">Inspector Notes</div>';
+      html += '<div class="notes-box">' + insp.notes + '</div></div>';
     }
     html += '</div>';
-
-    // Sold Hours
-    if (jobLines && jobLines.length) {
-      var totalSold = jobLines.reduce(function(s, l) { return s + parseFloat(l.sold_hours) * parseFloat(l.quantity); }, 0);
-      html += '<div class="section"><div class="section-title">Sold Hours</div>';
-      html += '<table style="width:100%;border-collapse:collapse;">';
-      html += '<thead><tr style="background:#f5f5f7;">';
-      html += '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Code</th>';
-      html += '<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Job Description</th>';
-      html += '<th style="text-align:center;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Qty</th>';
-      html += '<th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Sold Hrs</th>';
-      html += '<th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;">Total</th>';
-      html += '</tr></thead><tbody>';
-      jobLines.forEach(function(l) {
-        var lineTotal = (parseFloat(l.sold_hours) * parseFloat(l.quantity)).toFixed(2);
-        html += '<tr style="border-bottom:1px solid #f0f0f0;">';
-        html += '<td style="padding:8px 12px;font-size:11px;color:#86868b;font-family:monospace;">' + (l.code || '-') + '</td>';
-        html += '<td style="padding:8px 12px;font-size:13px;font-weight:500;">' + l.name + '</td>';
-        html += '<td style="padding:8px 12px;font-size:13px;text-align:center;">' + parseFloat(l.quantity).toFixed(1) + '</td>';
-        html += '<td style="padding:8px 12px;font-size:13px;text-align:right;">' + parseFloat(l.sold_hours).toFixed(2) + '</td>';
-        html += '<td style="padding:8px 12px;font-size:13px;font-weight:600;text-align:right;">' + lineTotal + '</td>';
-        html += '</tr>';
-      });
-      html += '</tbody></table>';
-      html += '<div style="display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:2px solid #1d1d1f;">';
-      html += '<div style="font-size:14px;font-weight:700;">Total Sold Hours: ' + totalSold.toFixed(2) + ' hrs</div>';
-      html += '</div></div>';
+    if (insp.nil_defect) {
+      html += '<div class="section"><div class="nil-defect-box"><div class="nil-defect-icon">&#10003;</div><div class="nil-defect-text">NIL DEFECT — No defects found during inspection</div></div></div>';
     }
+    html += renderTyreSection(insp);
+    html += renderBrakeSection(insp);
+    return html;
+  }
 
-    // Dispatch Status
-    html += '<div class="section"><div class="section-title">Dispatch Status</div><div class="dispatch-row">';
+  function renderOpenDefect(d) {
+    var html = '<div class="defect-card severity-' + (d.severity || 'advisory') + '">';
+    html += '<div class="defect-title">' + (d.title || 'Defect') + ' ' + severityChip(d.severity) + '</div>';
+    if (d.description) html += '<div class="defect-desc">' + d.description + '</div>';
+    html += '<div class="defect-meta">';
+    if (d.category) html += '<span>Category: ' + d.category + '</span>';
+    if (d.part_name) html += '<span>Part: ' + d.part_name + '</span>';
+    if (d.estimated_cost) html += '<span>Est. Cost: &pound;' + parseFloat(d.estimated_cost).toFixed(2) + '</span>';
+    html += '</div>';
+    if (d.photo_url) html += '<div class="defect-photo"><img src="' + d.photo_url + '" alt="Defect photo"></div>';
+    return html + '</div>';
+  }
+
+  function renderResolvedDefect(d) {
+    var html = '<div class="defect-card resolved">';
+    html += '<div class="defect-title">' + (d.title || 'Defect') + ' <span class="chip chip-resolved">Rectified</span></div>';
+    if (d.description) html += '<div class="defect-desc">' + d.description + '</div>';
+    html += '<div class="rectified-box"><div class="rectified-label">Rectification Details</div>';
+    if (d.resolved_by) html += '<div>Rectified by: <strong>' + d.resolved_by + '</strong></div>';
+    if (d.resolved_at) html += '<div>Date: <strong>' + fmtDt(d.resolved_at) + '</strong></div>';
+    if (d.resolution_notes) html += '<div style="margin-top:4px;">' + d.resolution_notes + '</div>';
+    html += '</div>';
+    if (d.photo_url) html += '<div class="defect-photo"><img src="' + d.photo_url + '" alt="Defect photo"></div>';
+    return html + '</div>';
+  }
+
+  function renderDefectsSection(defects) {
+    var html = '<div class="section"><div class="section-title">Defects (' + defects.length + ')</div>';
+    if (!defects.length) {
+      return html + '<div class="notes-box no-data">No defects recorded</div></div>';
+    }
+    var open = defects.filter(function(d) { return !d.resolved; });
+    var resolved = defects.filter(function(d) { return d.resolved; });
+    if (open.length) {
+      html += '<div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#ff3b30;">OUTSTANDING (' + open.length + ')</div>';
+      open.forEach(function(d) { html += renderOpenDefect(d); });
+    }
+    if (resolved.length) {
+      html += '<div style="margin-top:16px;margin-bottom:8px;font-size:11px;font-weight:700;color:#1d9e75;">RECTIFIED (' + resolved.length + ')</div>';
+      resolved.forEach(function(d) { html += renderResolvedDefect(d); });
+    }
+    return html + '</div>';
+  }
+
+  function renderSoldHoursSection(jobLines) {
+    if (!jobLines || !jobLines.length) return '';
+    var totalSold = jobLines.reduce(function(s, l) { return s + parseFloat(l.sold_hours) * parseFloat(l.quantity); }, 0);
+    var th = 'style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#86868b;border-bottom:1px solid #e5e5e7;"';
+    var thR = th.replace('text-align:left', 'text-align:right');
+    var thC = th.replace('text-align:left', 'text-align:center');
+    var html = '<div class="section"><div class="section-title">Sold Hours</div>';
+    html += '<table style="width:100%;border-collapse:collapse;">';
+    html += '<thead><tr style="background:#f5f5f7;">';
+    html += '<th ' + th + '>Code</th><th ' + th + '>Job Description</th>';
+    html += '<th ' + thC + '>Qty</th><th ' + thR + '>Sold Hrs</th><th ' + thR + '>Total</th>';
+    html += '</tr></thead><tbody>';
+    jobLines.forEach(function(l) {
+      var lineTotal = (parseFloat(l.sold_hours) * parseFloat(l.quantity)).toFixed(2);
+      html += '<tr style="border-bottom:1px solid #f0f0f0;">';
+      html += '<td style="padding:8px 12px;font-size:11px;color:#86868b;font-family:monospace;">' + (l.code || '-') + '</td>';
+      html += '<td style="padding:8px 12px;font-size:13px;font-weight:500;">' + l.name + '</td>';
+      html += '<td style="padding:8px 12px;font-size:13px;text-align:center;">' + parseFloat(l.quantity).toFixed(1) + '</td>';
+      html += '<td style="padding:8px 12px;font-size:13px;text-align:right;">' + parseFloat(l.sold_hours).toFixed(2) + '</td>';
+      html += '<td style="padding:8px 12px;font-size:13px;font-weight:600;text-align:right;">' + lineTotal + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    html += '<div style="display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:2px solid #1d1d1f;">';
+    html += '<div style="font-size:14px;font-weight:700;">Total Sold Hours: ' + totalSold.toFixed(2) + ' hrs</div>';
+    return html + '</div></div>';
+  }
+
+  function renderDispatchSection(job) {
+    var html = '<div class="section"><div class="section-title">Dispatch Status</div><div class="dispatch-row">';
     html += '<div class="dispatch-item"><div class="dispatch-label">HGV Inspect</div><div class="' + (job.inspect_sent ? 'dispatch-sent' : 'dispatch-pending') + '">' + (job.inspect_sent ? 'Dispatched' : 'Not sent') + '</div></div>';
     html += '<div class="dispatch-item"><div class="dispatch-label">HGV Parts</div><div class="' + (job.parts_sent ? 'dispatch-sent' : 'dispatch-pending') + '">' + (job.parts_sent ? 'Dispatched' : 'Not sent') + '</div></div>';
-    html += '</div></div>';
+    return html + '</div></div>';
+  }
 
-    // Job Notes
-    if (job.notes) {
-      html += '<div class="section"><div class="section-title">Job Notes</div><div class="notes-box">' + job.notes + '</div></div>';
-    }
-
-    // Sign-off
-    html += '<div class="section"><div class="section-title">Authorisation</div><div class="grid">';
+  function renderFooterSection() {
+    var html = '<div class="section"><div class="section-title">Authorisation</div><div class="grid">';
     html += '<div><div style="font-size:11px;color:#636366;margin-bottom:6px;">Technician Signature</div><div class="sig-box"><span class="sig-line">Signature & Date</span></div></div>';
     html += '<div><div style="font-size:11px;color:#636366;margin-bottom:6px;">Authorised By</div><div class="sig-box"><span class="sig-line">Signature & Date</span></div></div>';
     html += '</div></div>';
-
-    // Footer
     html += '<div class="footer"><div class="footer-text">Generated by HGVDesk &bull; hgvdesk.co.uk</div>';
     html += '<div class="footer-text">Printed: ' + new Date().toLocaleString('en-GB') + '</div></div>';
+    return html;
+  }
+
+  function renderPage(job, insp, defects, dvla, jobLines) {
+    var html = '';
+    html += renderStatusBar(job, insp);
+    html += renderVehicleDetails(job);
+    html += renderDvlaSection(dvla);
+    html += renderInspectionSection(insp);
+    html += renderDefectsSection(defects);
+    html += renderSoldHoursSection(jobLines);
+    html += renderDispatchSection(job);
+    if (job.notes) {
+      html += '<div class="section"><div class="section-title">Job Notes</div><div class="notes-box">' + job.notes + '</div></div>';
+    }
+    html += renderFooterSection();
 
     document.getElementById('main-content').innerHTML = html;
     document.getElementById('doc-num').innerHTML = 'Job #' + job.id + ' &bull; ' + job.vehicle_reg;

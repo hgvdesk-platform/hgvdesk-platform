@@ -288,6 +288,67 @@ function dotColor(sys) {
   return 'b';
 }
 
+function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+function renderOverviewCounts(ov) {
+  var w = ov.workshop || {};
+  var i = ov.inspect || {};
+  var p = ov.parts || {};
+  setText('w-active', w.active || 0);
+  setText('w-floor', w.onFloor || 0);
+  setText('w-urgent', w.urgent || 0);
+  setText('w-total', w.total || 0);
+  setText('i-pass', i.passed || 0);
+  setText('i-fail', i.failed || 0);
+  setText('i-adv', i.advisory || 0);
+  setText('i-queue', i.queued || 0);
+  setText('p-pending', p.pending || 0);
+  setText('p-ordered', p.ordered || 0);
+  setText('p-ready', p.ready || 0);
+  setText('p-total', p.total || 0);
+}
+
+function renderAlertStrip(alerts) {
+  var strip = document.getElementById('alert-strip');
+  if (!strip) return;
+  if (!alerts || !alerts.length) { strip.innerHTML = ''; return; }
+  strip.innerHTML = alerts.slice(0, 3).map(function(a) {
+    var cls = a.severity === 'critical' ? 'ab-crit' : 'ab-high';
+    var icon = a.severity === 'critical' ? 'X' : '!';
+    return '<div class="alert-banner ' + cls + '">' +
+      '<div class="ab-icon">' + icon + '</div>' +
+      '<div><div class="ab-title">' + a.title + '</div><div class="ab-sub">' + a.detail + '</div></div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderJobsTable(jobs) {
+  if (!jobs || !jobs.jobs) return;
+  var jl = jobs.jobs.slice(0, 8);
+  setText('jobs-badge', jobs.total || 0);
+  document.getElementById('jobs-tb').innerHTML = jl.length ? jl.map(function(j) {
+    var sc = j.status === 'done' ? 'c-p' : j.status === 'on_floor' ? 'c-a' : 'c-o';
+    return '<tr><td><span class="reg">' + j.vehicle_reg + '</span></td><td style="font-size:12px;">' + j.inspection_type + '</td><td><span class="chip ' + sc + '">' + j.status + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(j.created_at) + '</td></tr>';
+  }).join('') : '<tr><td colspan="4" class="empty">No jobs yet</td></tr>';
+}
+
+function inspResultClass(result) {
+  if (result === 'pass') return 'c-p';
+  if (result === 'fail') return 'c-f';
+  if (result === 'advisory') return 'c-a';
+  return 'c-o';
+}
+
+function renderInspectionsTable(insps) {
+  if (!insps || !insps.inspections) return;
+  var il = insps.inspections.slice(0, 8);
+  setText('insp-badge', insps.total || 0);
+  document.getElementById('insp-tb').innerHTML = il.length ? il.map(function(i) {
+    var rc = inspResultClass(i.result);
+    return '<tr><td><span class="reg">' + i.vehicle_reg + '</span></td><td style="font-size:12px;">' + i.inspection_type + '</td><td><span class="chip ' + rc + '">' + (i.result || 'pending') + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(i.created_at) + '</td></tr>';
+  }).join('') : '<tr><td colspan="4" class="empty">No inspections yet</td></tr>';
+}
+
 function loadDashboard() {
   Promise.all([
     api('GET', '/command/overview'),
@@ -296,61 +357,16 @@ function loadDashboard() {
     api('GET', '/activity?limit=20')
   ]).then(function(results) {
     var ov = results[0];
-    var jobs = results[1];
-    var insps = results[2];
-    var acts = results[3];
-
     if (ov) {
-      document.getElementById('w-active').textContent = ov.workshop ? ov.workshop.active : 0;
-      document.getElementById('w-floor').textContent = ov.workshop ? ov.workshop.onFloor : 0;
-      document.getElementById('w-urgent').textContent = ov.workshop ? ov.workshop.urgent : 0;
-      document.getElementById('w-total').textContent = ov.workshop ? ov.workshop.total : 0;
-      document.getElementById('i-pass').textContent = ov.inspect ? ov.inspect.passed : 0;
-      document.getElementById('i-fail').textContent = ov.inspect ? ov.inspect.failed : 0;
-      document.getElementById('i-adv').textContent = ov.inspect ? ov.inspect.advisory : 0;
-      document.getElementById('i-queue').textContent = ov.inspect ? ov.inspect.queued : 0;
-      document.getElementById('p-pending').textContent = ov.parts ? ov.parts.pending : 0;
-      document.getElementById('p-ordered').textContent = ov.parts ? ov.parts.ordered : 0;
-      document.getElementById('p-ready').textContent = ov.parts ? ov.parts.ready : 0;
-      document.getElementById('p-total').textContent = ov.parts ? ov.parts.total : 0;
-
-      var alerts = ov.alerts || [];
-      var strip = document.getElementById('alert-strip');
-      if (alerts.length > 0) {
-        strip.innerHTML = alerts.slice(0,3).map(function(a) {
-          return '<div class="alert-banner ' + (a.severity === 'critical' ? 'ab-crit' : 'ab-high') + '">' +
-            '<div class="ab-icon">' + (a.severity === 'critical' ? 'X' : '!') + '</div>' +
-            '<div><div class="ab-title">' + a.title + '</div><div class="ab-sub">' + a.detail + '</div></div>' +
-            '</div>';
-        }).join('');
-      } else {
-        strip.innerHTML = '';
-      }
+      renderOverviewCounts(ov);
+      renderAlertStrip(ov.alerts || []);
     }
-
-    if (jobs && jobs.jobs) {
-      var jl = jobs.jobs.slice(0,8);
-      document.getElementById('jobs-badge').textContent = jobs.total || 0;
-      document.getElementById('jobs-tb').innerHTML = jl.length ? jl.map(function(j) {
-        var sc = j.status === 'done' ? 'c-p' : j.status === 'on_floor' ? 'c-a' : 'c-o';
-        return '<tr><td><span class="reg">' + j.vehicle_reg + '</span></td><td style="font-size:12px;">' + j.inspection_type + '</td><td><span class="chip ' + sc + '">' + j.status + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(j.created_at) + '</td></tr>';
-      }).join('') : '<tr><td colspan="4" class="empty">No jobs yet</td></tr>';
+    renderJobsTable(results[1]);
+    renderInspectionsTable(results[2]);
+    if (results[3] && results[3].activity) {
+      renderActivity(results[3].activity, 'activity-feed');
     }
-
-    if (insps && insps.inspections) {
-      var il = insps.inspections.slice(0,8);
-      document.getElementById('insp-badge').textContent = insps.total || 0;
-      document.getElementById('insp-tb').innerHTML = il.length ? il.map(function(i) {
-        var rc = i.result === 'pass' ? 'c-p' : i.result === 'fail' ? 'c-f' : i.result === 'advisory' ? 'c-a' : 'c-o';
-        return '<tr><td><span class="reg">' + i.vehicle_reg + '</span></td><td style="font-size:12px;">' + i.inspection_type + '</td><td><span class="chip ' + rc + '">' + (i.result || 'pending') + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(i.created_at) + '</td></tr>';
-      }).join('') : '<tr><td colspan="4" class="empty">No inspections yet</td></tr>';
-    }
-
-    if (acts && acts.activity) {
-      renderActivity(acts.activity, 'activity-feed');
-    }
-
-    document.getElementById('last-refresh').textContent = 'Updated ' + ago(new Date().toISOString());
+    setText('last-refresh', 'Updated ' + ago(new Date().toISOString()));
   });
 }
 

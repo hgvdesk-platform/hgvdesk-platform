@@ -698,6 +698,64 @@ document.getElementById('f-type').addEventListener('change', function() {
 });
 
 // ── DVLA LOOKUP ──
+function fmtDvlaDate(d) {
+  return d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+}
+
+function dvlaExpiryColor(daysLeft) {
+  if (daysLeft === null) return '#86868b';
+  if (daysLeft < 30) return '#ff3b30';
+  if (daysLeft < 90) return '#ff9500';
+  return '#1d9e75';
+}
+
+function buildDvlaHistoryRows(history) {
+  return (history || []).map(function(t) {
+    var tDate = fmtDvlaDate(t.date);
+    var tColor = t.result === 'PASSED' ? '#1d9e75' : '#ff3b30';
+    return '<tr style="border-bottom:1px solid #e5e5e7;"><td style="padding:5px 8px;font-size:11px;">' + tDate + '</td><td style="padding:5px 8px;font-size:11px;font-weight:700;color:' + tColor + ';">' + (t.result || '-') + '</td><td style="padding:5px 8px;font-size:11px;">' + (t.mileage || '-') + '</td><td style="padding:5px 8px;font-size:11px;color:#ff3b30;">' + (t.defects || 0) + ' fail</td><td style="padding:5px 8px;font-size:11px;color:#ff9500;">' + (t.advisories || 0) + ' adv</td></tr>';
+  }).join('');
+}
+
+function buildDvlaIssueList(items, label, color, bg) {
+  if (!items || !items.length) return '';
+  return '<div style="padding:0 14px 10px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:' + color + ';margin-bottom:6px;">' + label + '</div>' +
+    items.map(function(a) { return '<div style="font-size:11px;padding:4px 8px;background:' + bg + ';border-radius:4px;margin-bottom:3px;">' + a + '</div>'; }).join('') + '</div>';
+}
+
+function renderDvlaResult(v, targetEl) {
+  if (!targetEl) return;
+  var motColor = (v.motResult === 'PASSED') ? '#1d9e75' : '#ff3b30';
+  var motExpiry = fmtDvlaDate(v.motExpiry);
+  var motDate = fmtDvlaDate(v.motDate);
+  var expiryDate = v.motExpiry ? new Date(v.motExpiry) : null;
+  var daysLeft = expiryDate ? Math.floor((expiryDate - new Date()) / 86400000) : null;
+  var expiryColor = dvlaExpiryColor(daysLeft);
+  var historyRows = buildDvlaHistoryRows(v.testHistory);
+
+  var card = '<div style="margin-top:12px;background:#f5f5f7;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">' +
+    '<div style="padding:10px 14px;background:#1d1d1f;color:#fff;display:flex;align-items:center;justify-content:space-between;">' +
+    '<div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">DVSA Vehicle Data</div>' +
+    '<div style="font-size:11px;color:#aeaeb2;">' + (v.make || '') + ' ' + (v.model || '') + '</div></div>' +
+    '<div style="padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">' +
+    '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Make / Model</div><div style="font-size:13px;font-weight:700;">' + (v.make || '-') + ' ' + (v.model || '') + '</div></div>' +
+    '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Colour</div><div style="font-size:13px;font-weight:600;">' + (v.colour || '-') + '</div></div>' +
+    '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Fuel / Engine</div><div style="font-size:13px;font-weight:600;">' + (v.fuelType || '-') + (v.engineSize ? ' ' + (parseInt(v.engineSize) / 1000).toFixed(1) + 'L' : '') + '</div></div>' +
+    '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Last Test</div><div style="font-size:13px;font-weight:700;color:' + motColor + ';">' + (v.motResult || '-') + '</div><div style="font-size:10px;color:#888;">' + motDate + '</div></div>' +
+    '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Test Expiry</div><div style="font-size:13px;font-weight:700;color:' + expiryColor + ';">' + motExpiry + '</div>' + (daysLeft !== null ? '<div style="font-size:10px;color:' + expiryColor + ';">' + (daysLeft > 0 ? daysLeft + ' days' : 'EXPIRED') + '</div>' : '') + '</div>' +
+    '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Mileage</div><div style="font-size:13px;font-weight:600;">' + (v.mileage || '-') + '</div></div>' +
+    '</div>';
+
+  card += buildDvlaIssueList(v.advisoriesOnLatest, 'Advisories on Last Test', '#ff9500', '#fff3e0');
+  card += buildDvlaIssueList(v.defectsOnLatest, 'Failures on Last Test', '#ff3b30', '#fff0f0');
+
+  if (historyRows) {
+    card += '<div style="padding:0 14px 14px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:6px;">Test History</div><table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;"><thead><tr style="background:#e5e5e7;"><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Date</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Result</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Mileage</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Fails</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Adv</th></tr></thead><tbody>' + historyRows + '</tbody></table></div>';
+  }
+  card += '</div>';
+  targetEl.innerHTML = card;
+}
+
 function dvlaLookup(regVal, targetEl) {
   var reg = (regVal || '').trim().toUpperCase().replace(/\s/g, '');
   if (reg.length < 2) return;
@@ -708,43 +766,9 @@ function dvlaLookup(regVal, targetEl) {
     body: JSON.stringify({ reg: reg })
   }).then(function(r) { return r.json(); }).then(function(d) {
     if (d && d.data && d.data.make) {
-      var v = d.data;
-      var motColor = (v.motResult === 'PASSED') ? '#1d9e75' : '#ff3b30';
-      var motExpiry = v.motExpiry ? new Date(v.motExpiry).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '-';
-      var motDate = v.motDate ? new Date(v.motDate).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '-';
-      var expiryDate = v.motExpiry ? new Date(v.motExpiry) : null;
-      var daysLeft = expiryDate ? Math.floor((expiryDate - new Date()) / 86400000) : null;
-      var expiryColor = daysLeft !== null ? (daysLeft < 30 ? '#ff3b30' : daysLeft < 90 ? '#ff9500' : '#1d9e75') : '#86868b';
-      var historyRows = (v.testHistory || []).map(function(t) {
-        var tDate = t.date ? new Date(t.date).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}) : '-';
-        var tColor = t.result === 'PASSED' ? '#1d9e75' : '#ff3b30';
-        return '<tr style="border-bottom:1px solid #e5e5e7;"><td style="padding:5px 8px;font-size:11px;">' + tDate + '</td><td style="padding:5px 8px;font-size:11px;font-weight:700;color:' + tColor + ';">' + (t.result||'-') + '</td><td style="padding:5px 8px;font-size:11px;">' + (t.mileage||'-') + '</td><td style="padding:5px 8px;font-size:11px;color:#ff3b30;">' + (t.defects||0) + ' fail</td><td style="padding:5px 8px;font-size:11px;color:#ff9500;">' + (t.advisories||0) + ' adv</td></tr>';
-      }).join('');
-      var card = '<div style="margin-top:12px;background:#f5f5f7;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">' +
-        '<div style="padding:10px 14px;background:#1d1d1f;color:#fff;display:flex;align-items:center;justify-content:space-between;">' +
-        '<div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">DVSA Vehicle Data</div>' +
-        '<div style="font-size:11px;color:#aeaeb2;">' + (v.make||'') + ' ' + (v.model||'') + '</div></div>' +
-        '<div style="padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">' +
-        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Make / Model</div><div style="font-size:13px;font-weight:700;">' + (v.make||'-') + ' ' + (v.model||'') + '</div></div>' +
-        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Colour</div><div style="font-size:13px;font-weight:600;">' + (v.colour||'-') + '</div></div>' +
-        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Fuel / Engine</div><div style="font-size:13px;font-weight:600;">' + (v.fuelType||'-') + (v.engineSize ? ' ' + (parseInt(v.engineSize)/1000).toFixed(1) + 'L' : '') + '</div></div>' +
-        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Last Test</div><div style="font-size:13px;font-weight:700;color:' + motColor + ';">' + (v.motResult||'-') + '</div><div style="font-size:10px;color:#888;">' + motDate + '</div></div>' +
-        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Test Expiry</div><div style="font-size:13px;font-weight:700;color:' + expiryColor + ';">' + motExpiry + '</div>' + (daysLeft !== null ? '<div style="font-size:10px;color:' + expiryColor + ';">' + (daysLeft > 0 ? daysLeft + ' days' : 'EXPIRED') + '</div>' : '') + '</div>' +
-        '<div><div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Mileage</div><div style="font-size:13px;font-weight:600;">' + (v.mileage||'-') + '</div></div>' +
-        '</div>';
-      if (v.advisoriesOnLatest && v.advisoriesOnLatest.length) {
-        card += '<div style="padding:0 14px 10px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#ff9500;margin-bottom:6px;">Advisories on Last Test</div>' + v.advisoriesOnLatest.map(function(a){return '<div style="font-size:11px;padding:4px 8px;background:#fff3e0;border-radius:4px;margin-bottom:3px;">' + a + '</div>';}).join('') + '</div>';
-      }
-      if (v.defectsOnLatest && v.defectsOnLatest.length) {
-        card += '<div style="padding:0 14px 10px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#ff3b30;margin-bottom:6px;">Failures on Last Test</div>' + v.defectsOnLatest.map(function(a){return '<div style="font-size:11px;padding:4px 8px;background:#fff0f0;border-radius:4px;margin-bottom:3px;">' + a + '</div>';}).join('') + '</div>';
-      }
-      if (historyRows) {
-        card += '<div style="padding:0 14px 14px;"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#888;margin-bottom:6px;">Test History</div><table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;"><thead><tr style="background:#e5e5e7;"><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Date</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Result</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Mileage</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Fails</th><th style="padding:5px 8px;font-size:9px;font-weight:700;text-align:left;">Adv</th></tr></thead><tbody>' + historyRows + '</tbody></table></div>';
-      }
-      card += '</div>';
-      if (targetEl) targetEl.innerHTML = card;
-    } else {
-      if (targetEl) targetEl.innerHTML = '<div style="margin-top:10px;padding:10px;background:#fff0f0;border-radius:10px;font-size:12px;color:#ff3b30;">Vehicle not found in DVSA database</div>';
+      renderDvlaResult(d.data, targetEl);
+    } else if (targetEl) {
+      targetEl.innerHTML = '<div style="margin-top:10px;padding:10px;background:#fff0f0;border-radius:10px;font-size:12px;color:#ff3b30;">Vehicle not found in DVSA database</div>';
     }
   }).catch(function() { if (targetEl) targetEl.innerHTML = ''; });
 }
