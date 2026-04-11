@@ -391,30 +391,37 @@
   }
 
   .compliance-visual {
-    background: var(--navy-mid);
+    position: relative;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 420px;
+    background-image: url('/images/compliance.jpg');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: flex-end;
+  }
+  .compliance-visual::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(10,22,40,0.35) 0%, rgba(10,22,40,0.65) 55%, rgba(10,22,40,0.92) 100%);
+  }
+  .compliance-caption {
+    position: relative;
     padding: 2rem;
+    color: var(--white);
   }
-
-  .cv-title {
-    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--steel);
-    margin-bottom: 1.5rem;
+  .compliance-caption .cc-label {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--orange-light);
+    margin-bottom: 0.5rem;
   }
-
-  .cv-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0.7rem 0;
-    border-bottom: 1px solid var(--line);
-    font-size: 0.85rem;
+  .compliance-caption .cc-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 1.4rem;
+    line-height: 1.15; color: var(--pure);
   }
-  .cv-row:last-child { border-bottom: none; }
-  .cv-label { color: var(--mist); }
-  .cv-status { font-weight: 600; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 3px; letter-spacing: 0.04em; }
-  .status-pass { background: rgba(30,160,80,0.15); color: #5de09a; }
-  .status-warn { background: rgba(220,140,0,0.15); color: #fbbf24; }
-  .status-due  { background: rgba(232,82,10,0.15); color: var(--orange-light); }
 
   /* PRICING */
   .pricing {
@@ -497,19 +504,26 @@
 
   /* CTA SECTION */
   .cta-section {
-    padding: 6rem 2.5rem;
+    padding: 7rem 2.5rem;
     text-align: center;
     border-top: 1px solid var(--line);
     position: relative;
     overflow: hidden;
+    background-image: url('/images/fleet.jpg');
+    background-size: cover;
+    background-position: center;
   }
+  /* Dark overlay — slightly darker than the hero so the CTA text really
+     pops against the photo (this is the final conversion prompt). */
   .cta-section::before {
     content: '';
-    position: absolute; top: -50%; left: 50%; transform: translateX(-50%);
-    width: 600px; height: 600px;
-    background: radial-gradient(circle, rgba(232,82,10,0.1) 0%, transparent 65%);
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(10,22,40,0.75) 0%, rgba(10,22,40,0.88) 100%),
+      radial-gradient(ellipse 60% 50% at 50% 50%, rgba(232,82,10,0.15) 0%, transparent 70%);
   }
-  .cta-section .section-title { margin: 1rem auto; max-width: 700px; }
+  .cta-section > * { position: relative; z-index: 1; }
+  .cta-section .section-title { margin: 1rem auto; max-width: 700px; color: var(--pure); }
   .cta-section p { color: var(--mist); max-width: 480px; margin: 1.5rem auto 2.5rem; font-size: 1rem; line-height: 1.65; }
 
   /* FOOTER */
@@ -711,14 +725,11 @@
           <li><div class="check"></div>T60 trailer records with optional plate — handles all asset types</li>
         </ul>
       </div>
-      <div class="compliance-visual">
-        <div class="cv-title">Live fleet status — example</div>
-        <div class="cv-row"><span class="cv-label">MX21 HGV — Daily inspection</span><span class="cv-status status-pass">PASS</span></div>
-        <div class="cv-row"><span class="cv-label">OU70 HGV — Brake test</span><span class="cv-status status-pass">PASS</span></div>
-        <div class="cv-row"><span class="cv-label">BF19 HGV — Tyre depth (NS)</span><span class="cv-status status-warn">MONITOR</span></div>
-        <div class="cv-row"><span class="cv-label">T60 Trailer — Next PMI</span><span class="cv-status status-due">DUE</span></div>
-        <div class="cv-row"><span class="cv-label">YE68 HGV — Daily inspection</span><span class="cv-status status-pass">PASS</span></div>
-        <div class="cv-row"><span class="cv-label">Workshop Job #WS-041</span><span class="cv-status status-pass">CLOSED</span></div>
+      <div class="compliance-visual" role="img" aria-label="Workshop technician inspecting an HGV">
+        <div class="compliance-caption">
+          <div class="cc-label">Audit-ready</div>
+          <div class="cc-title">Every inspection, every defect, every sign-off — on the record.</div>
+        </div>
       </div>
     </div>
   </div>
