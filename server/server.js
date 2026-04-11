@@ -252,7 +252,7 @@ async function handleWorkshop(ctx, req, res) {
   return false;
 }
 
-async function handleInspect(ctx, res) {
+async function handleInspections(ctx, res) {
   const { p, method, body, caller, qs } = ctx;
 
   if (p === '/api/inspections' && method === 'GET') { ok(res, await inspect.getInspections(caller, qs)); return true; }
@@ -267,12 +267,23 @@ async function handleInspect(ctx, res) {
 
   if (p === '/api/sync/assigned-job' && method === 'POST') { ok(res, await inspect.receiveAssignedJob(body, caller)); return true; }
 
+  return false;
+}
+
+async function handleDefects(ctx, res) {
+  const { p, method, body, caller, qs } = ctx;
+
   if (p === '/api/defects' && method === 'GET') { ok(res, await inspect.getDefects(caller, qs)); return true; }
   const defectIdMatch = p.match(/^\/api\/defects\/(\d+)$/);
   if (defectIdMatch && method === 'PUT') { ok(res, await inspect.updateDefect(body, caller, parseInt(defectIdMatch[1]))); return true; }
   if (p === '/api/inspection-defects' && method === 'POST') { ok(res, await inspect.raiseDefects(body, caller)); return true; }
 
   return false;
+}
+
+async function handleInspect(ctx, res) {
+  if (await handleInspections(ctx, res)) return true;
+  return handleDefects(ctx, res);
 }
 
 async function handleParts(ctx, res) {

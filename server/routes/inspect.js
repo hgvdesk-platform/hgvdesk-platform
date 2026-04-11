@@ -25,6 +25,71 @@ async function getInspections(org, queryParams) {
   return { inspections, total: inspections.length };
 }
 
+function hasFailingDefect(defects) {
+  const open = (defects || []).filter(d => !d.resolved);
+  return open.some(d => d.severity === 'critical');
+}
+
+function hasAdvisoryDefect(defects) {
+  const open = (defects || []).filter(d => !d.resolved);
+  return open.some(d => d.severity === 'advisory' || d.severity === 'major');
+}
+
+function countFailedChecks(checkItems) {
+  return Object.values(checkItems || {}).filter(s => s === 'fail').length;
+}
+
+function brakesFail(brakeTestData) {
+  if (!brakeTestData) return false;
+  const axles = brakeTestData.axles ? Object.values(brakeTestData.axles) : [];
+  if (axles.some(b => !b.pass)) return true;
+  const sbe = parseFloat(brakeTestData.sbe);
+  const pbe = parseFloat(brakeTestData.pbe);
+  return (!isNaN(sbe) && sbe < 50) || (!isNaN(pbe) && pbe < 16);
+}
+
+function countFailedTyres(tyreData) {
+  return Object.values(tyreData || {}).filter(t => t.condition === 'def').length;
+}
+
+function calculateInspectionResult({ nilDefect, defects, checkItems, brakeTestData, tyreData }) {
+  if (nilDefect) return 'pass';
+  const failing = hasFailingDefect(defects)
+    || countFailedChecks(checkItems) > 0
+    || brakesFail(brakeTestData)
+    || countFailedTyres(tyreData) > 0;
+  if (failing) return 'fail';
+  if (hasAdvisoryDefect(defects)) return 'advisory';
+  return 'pass';
+}
+
+async function insertInspectionDefects(orgId, inspectionId, jobId, vehicleReg, defects) {
+  if (!defects || !defects.length) return;
+  for (const d of defects) {
+    await query(
+      `INSERT INTO defects
+        (org_id, inspection_id, job_id, vehicle_reg, title, description, category,
+         severity, part_name, estimated_cost, photo_url, resolved, resolved_by,
+         resolved_at, resolution_notes, part_raised)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+      [orgId, inspectionId, jobId || null,
+       vehicleReg.toUpperCase().trim(),
+       d.title || d.description || 'Defect',
+       d.description || null,
+       d.category || 'General',
+       d.severity || 'advisory',
+       d.partName || d.part_name || null,
+       d.estimatedCost || d.estimated_cost || null,
+       d.photoUrl || d.photo_url || null,
+       d.resolved || false,
+       d.resolvedBy || d.resolved_by || null,
+       d.resolvedAt || d.resolved_at || null,
+       d.resolutionNotes || d.resolution_notes || null,
+       false]
+    ).catch((e) => { console.error('Defect insert error:', e.message); });
+  }
+}
+
 async function createInspection(body, org) {
   const orgId = org.id || org.org_id;
   const {
@@ -33,27 +98,8 @@ async function createInspection(body, org) {
     defects, nilDefect, overallMileage
   } = body;
   if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
-  // SERVER-SIDE result calculation — never trust the client
-  let result = 'pass';
-  if (!nilDefect) {
-    const openDefects = (defects || []).filter(function(d) { return !d.resolved; });
-    const hasCritical = openDefects.some(function(d) { return d.severity === 'critical'; });
-    const hasAdvisory = openDefects.some(function(d) { return d.severity === 'advisory' || d.severity === 'major'; });
-    const checks = checkItems || {};
-    const failedChecks = Object.values(checks).filter(function(s) { return s === 'fail'; }).length;
-    const brakeAxles = (brakeTestData && brakeTestData.axles) ? Object.values(brakeTestData.axles) : [];
-    const failedBrakes = brakeAxles.filter(function(b) { return !b.pass; }).length;
-    const sbe = brakeTestData ? parseFloat(brakeTestData.sbe) : NaN;
-    const pbe = brakeTestData ? parseFloat(brakeTestData.pbe) : NaN;
-    const brakeEffFail = (!isNaN(sbe) && sbe < 50) || (!isNaN(pbe) && pbe < 16);
-    const tyreVals = tyreData ? Object.values(tyreData) : [];
-    const failedTyres = tyreVals.filter(function(t) { return t.condition === 'def'; }).length;
-    if (hasCritical || failedChecks > 0 || failedBrakes > 0 || brakeEffFail || failedTyres > 0) {
-      result = 'fail';
-    } else if (hasAdvisory) {
-      result = 'advisory';
-    }
-  }
+
+  const result = calculateInspectionResult({ nilDefect, defects, checkItems, brakeTestData, tyreData });
   const inspId = 'INS-' + Date.now().toString().slice(-6);
   const isComplete = status === 'complete';
   const finalStatus = isComplete ? 'complete' : (status || 'in_progress');
@@ -81,32 +127,7 @@ async function createInspection(body, org) {
      completedAt]
   );
 
-  // Save defects with all new fields
-  if (defects && defects.length) {
-    for (const d of defects) {
-      await query(
-        `INSERT INTO defects
-          (org_id, inspection_id, job_id, vehicle_reg, title, description, category,
-           severity, part_name, estimated_cost, photo_url, resolved, resolved_by,
-           resolved_at, resolution_notes, part_raised)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
-        [orgId, inspection.id, jobId || null,
-         vehicleReg.toUpperCase().trim(),
-         d.title || d.description || 'Defect',
-         d.description || null,
-         d.category || 'General',
-         d.severity || 'advisory',
-         d.partName || d.part_name || null,
-         d.estimatedCost || d.estimated_cost || null,
-         d.photoUrl || d.photo_url || null,
-         d.resolved || false,
-         d.resolvedBy || d.resolved_by || null,
-         d.resolvedAt || d.resolved_at || null,
-         d.resolutionNotes || d.resolution_notes || null,
-         false]
-      ).catch((e) => { console.error('Defect insert error:', e.message); });
-    }
-  }
+  await insertInspectionDefects(orgId, inspection.id, jobId, vehicleReg, defects);
 
   await logActivity(orgId, 'INSPECT',
     isComplete ? 'INSPECTION_COMPLETED' : 'INSPECTION_CREATED',
