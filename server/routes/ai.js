@@ -336,11 +336,47 @@ async function nlSearchInterpret({ query }) {
   return { parsed, model: message.model, usage: message.usage };
 }
 
+// Returns { clause, param } for a single validated filter, or null if the
+// value should be silently dropped. Each helper below handles exactly one
+// filter type so validateAndBuildQuery can stay a thin dispatcher.
+
+function boolFragment(column, value) {
+  const b = (value === true || value === 'true' || value === 1);
+  return { clause: `${column} = $PH`, param: b };
+}
+
+function dateFragment(column, op, value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  return { clause: `${column} ${op} $PH`, param: value };
+}
+
+function stringFragment(column, cfg, value) {
+  if (cfg.match === 'exact-upper') {
+    return {
+      clause: `UPPER(REPLACE(${column}, ' ', '')) = REPLACE($PH, ' ', '')`,
+      param: String(value).toUpperCase().trim(),
+    };
+  }
+  if (cfg.match === 'ilike' || cfg.op === 'ilike-wrap') {
+    return { clause: `${column} ILIKE $PH`, param: '%' + String(value).trim() + '%' };
+  }
+  return { clause: `${column} = $PH`, param: String(value).trim() };
+}
+
+function fragmentFor(column, cfg, value) {
+  if (cfg.type === 'enum') {
+    if (!cfg.values.includes(String(value).toLowerCase())) return null;
+    return { clause: `${column} = $PH`, param: String(value).toLowerCase() };
+  }
+  if (cfg.type === 'bool') return boolFragment(column, value);
+  if (cfg.type === 'date') return dateFragment(column, cfg.op, value);
+  return stringFragment(column, cfg, value);
+}
+
 function validateAndBuildQuery(parsed, orgId) {
   if (!parsed || typeof parsed !== 'object') throw { status: 502, message: 'AI returned invalid shape' };
-  const entity = parsed.entity;
-  const def = SEARCH_SCHEMA[entity];
-  if (!def) throw { status: 400, message: `Unknown entity: ${entity}` };
+  const def = SEARCH_SCHEMA[parsed.entity];
+  if (!def) throw { status: 400, message: `Unknown entity: ${parsed.entity}` };
 
   const filters = (parsed.filters && typeof parsed.filters === 'object') ? parsed.filters : {};
   const where = ['org_id = $1'];
@@ -348,39 +384,16 @@ function validateAndBuildQuery(parsed, orgId) {
 
   for (const [key, value] of Object.entries(filters)) {
     const cfg = def.filters[key];
-    if (!cfg) continue; // silently drop unknown keys — never reach the DB
-    if (value == null || value === '') continue;
-
-    const column = cfg.column || key;
-    if (cfg.type === 'enum' && !cfg.values.includes(String(value).toLowerCase())) continue;
-    if (cfg.type === 'bool') {
-      const b = (value === true || value === 'true' || value === 1);
-      params.push(b);
-      where.push(`${column} = $${params.length}`);
-      continue;
-    }
-    if (cfg.type === 'date') {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) continue;
-      params.push(value);
-      where.push(`${column} ${cfg.op} $${params.length}`);
-      continue;
-    }
-    // string-based
-    if (cfg.match === 'exact-upper') {
-      params.push(String(value).toUpperCase().trim());
-      where.push(`UPPER(REPLACE(${column}, ' ', '')) = REPLACE($${params.length}, ' ', '')`);
-    } else if (cfg.match === 'ilike' || cfg.op === 'ilike-wrap') {
-      params.push('%' + String(value).trim() + '%');
-      where.push(`${column} ILIKE $${params.length}`);
-    } else {
-      params.push(String(value).trim());
-      where.push(`${column} = $${params.length}`);
-    }
+    if (!cfg || value == null || value === '') continue; // unknown key or empty → drop
+    const frag = fragmentFor(cfg.column || key, cfg, value);
+    if (!frag) continue;
+    params.push(frag.param);
+    where.push(frag.clause.replace('$PH', '$' + params.length));
   }
 
   const cols = def.columns.join(', ');
-  const sql = `SELECT ${cols} FROM ${entity} WHERE ${where.join(' AND ')} ORDER BY created_at DESC LIMIT 50`;
-  return { sql, params, entity, columns: def.columns };
+  const sql = `SELECT ${cols} FROM ${parsed.entity} WHERE ${where.join(' AND ')} ORDER BY created_at DESC LIMIT 50`;
+  return { sql, params, entity: parsed.entity, columns: def.columns };
 }
 
 async function nlSearch({ query, caller }) {
