@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HGVDesk - Invoices</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--t5:#aeaeb2;--green:#34c759;--gs:rgba(52,199,89,0.1);--red:#ff3b30;--rs:rgba(255,59,48,0.1);--amber:#ff9500;--ams:rgba(255,149,0,0.1);--orange:#FF6B00;--ors:rgba(255,107,0,0.1);--teal:#0071e3;--ts:rgba(0,113,227,0.1);--sw:230px;}
@@ -269,6 +269,7 @@ var currentFilter = 'all';
 var labourRate = 75;
 var lineCount = 0;
 
+function esc(s) { return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmt(iso) { if (!iso) return '-'; return new Date(iso).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'}); }
 function fmtMoney(v) { return '£' + parseFloat(v || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
 
@@ -487,35 +488,60 @@ function showDetail(id) {
     if (!inv) return;
     document.getElementById('detail-title').textContent = inv.invoice_number;
     var chip = '<span class="chip ' + chipClass(inv.status) + '">' + inv.status.toUpperCase() + '</span>';
-    document.getElementById('detail-body').innerHTML =
-      '<div class="action-bar">' +
-        (inv.status === 'draft' ? '<button class="btn btn-primary btn-sm" onclick="markStatus(' + id + ',\'sent\');closeModal(\'detail-modal\')">Mark as Sent</button>' : '') +
-        (inv.status === 'sent' || inv.status === 'overdue' ? '<button class="btn btn-green btn-sm" onclick="markStatus(' + id + ',\'paid\');closeModal(\'detail-modal\')">Mark as Paid</button>' : '') +
-        '<button class="btn btn-secondary btn-sm" onclick="window.print()">Print / PDF</button>' +
-      '</div>' +
-      '<div class="inv-detail">' +
-        '<div class="inv-detail-hd">' +
-          '<div><div class="inv-number">' + inv.invoice_number + '</div><div class="inv-meta">Issued: ' + fmt(inv.issue_date) + ' · Due: ' + fmt(inv.due_date) + '</div></div>' +
-          chip +
-        '</div>' +
-        '<div class="inv-section"><div class="inv-section-title">Customer</div>' +
-        '<div class="inv-grid">' +
-          '<div class="inv-field"><div class="inv-field-label">Name</div><div class="inv-field-val">' + (inv.customer_name || inv.customer_name_full || '-') + '</div></div>' +
-          '<div class="inv-field"><div class="inv-field-label">Email</div><div class="inv-field-val">' + (inv.customer_email || inv.customer_email_full || '-') + '</div></div>' +
-        '</div></div>' +
-        '<div class="inv-section"><div class="inv-section-title">Line Items</div>' +
-        '<table style="width:100%;border-collapse:collapse;">' +
-        '<thead><tr style="background:var(--bg);"><th style="padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t4);text-align:left;">Description</th><th style="padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t4);text-align:right;">Qty</th><th style="padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t4);text-align:right;">Unit Price</th><th style="padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t4);text-align:right;">Total</th></tr></thead>' +
-        '<tbody>' + lines.map(function(l) {
-          return '<tr style="border-bottom:1px solid var(--border);"><td style="padding:10px 12px;font-size:13px;">' + l.description + '</td><td style="padding:10px 12px;font-size:13px;text-align:right;">' + l.quantity + '</td><td style="padding:10px 12px;font-size:13px;text-align:right;">' + fmtMoney(l.unit_price) + '</td><td style="padding:10px 12px;font-size:13px;font-weight:600;text-align:right;">' + fmtMoney(l.line_total) + '</td></tr>';
-        }).join('') + '</tbody></table></div>' +
-        '<div class="total-section" style="margin-top:0;">' +
-          '<div class="total-row"><span>Subtotal</span><span>' + fmtMoney(inv.subtotal) + '</span></div>' +
-          '<div class="total-row"><span>VAT (20%)</span><span>' + fmtMoney(inv.vat_amount) + '</span></div>' +
-          '<div class="total-row final"><span>Total Due</span><span>' + fmtMoney(inv.total) + '</span></div>' +
-        '</div>' +
-        (inv.notes ? '<div style="margin-top:16px;padding:12px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--t3);">' + inv.notes + '</div>' : '') +
-      '</div>';
+    var h = '';
+    // Action bar
+    h += '<div class="action-bar">';
+    if (inv.status==='draft') h += '<button class="btn btn-primary btn-sm" onclick="markStatus('+id+',\'sent\');closeModal(\'detail-modal\')">Mark as Sent</button>';
+    if (inv.status==='sent'||inv.status==='overdue') h += '<button class="btn btn-green btn-sm" onclick="markStatus('+id+',\'paid\');closeModal(\'detail-modal\')">Mark as Paid</button>';
+    h += '<button class="btn btn-secondary btn-sm" onclick="window.open(\'/api/invoices/'+id+'/pdf\',\'_blank\')">Download PDF</button>';
+    h += '</div>';
+    // Premium invoice
+    h += '<div style="border-radius:8px;overflow:hidden;border:1px solid #e8e8e8;">';
+    // Navy header
+    h += '<div style="background:#0d1f2d;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;">';
+    h += '<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:#fff;">HGV<span style="color:#f55a00;">Desk</span></div>';
+    h += '<div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;">INVOICE</div>';
+    h += '</div>';
+    // Orange bar
+    h += '<div style="background:#f55a00;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;">';
+    h += '<div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:22px;color:#fff;">'+inv.invoice_number+'</div><div style="font-size:12px;color:rgba(255,255,255,0.8);">'+esc(inv.customer_name||'')+'</div></div>';
+    h += '<div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.7);">Due: '+fmt(inv.due_date)+'</div>'+chip+'</div>';
+    h += '</div>';
+    // Body
+    h += '<div style="background:#fff;padding:24px;">';
+    // Bill To + Details
+    h += '<div style="display:flex;gap:16px;margin-bottom:20px;">';
+    h += '<div style="flex:1;background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;"><div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;margin-bottom:6px;">Bill To</div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:15px;">'+esc(inv.customer_name||'—')+'</div>'+(inv.customer_email?'<div style="font-size:12px;color:#6b7280;margin-top:2px;">'+esc(inv.customer_email)+'</div>':'')+'</div>';
+    h += '<div style="flex:1;background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;"><div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;margin-bottom:6px;">Details</div><div style="font-size:12px;line-height:2;">Invoice: <strong>'+esc(inv.invoice_number)+'</strong><br>Issued: '+fmt(inv.issue_date)+'<br>Due: '+fmt(inv.due_date)+'<br>Terms: 30 days net</div></div>';
+    h += '</div>';
+    // Line items section title
+    h += '<div style="padding:16px 0 8px;border-bottom:1px solid #e8e8e8;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;">Line Items</div>';
+    h += '<table style="width:100%;border-collapse:collapse;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;margin:8px 0;">';
+    h += '<thead><tr style="background:#f8f8f8;"><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:left;width:8%;">#</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:left;">Description</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:center;">Qty</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:right;">Unit</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:right;">Total</th></tr></thead><tbody>';
+    lines.forEach(function(l,i) {
+      var bg = i%2?'#f8f8f8':'#fff';
+      h += '<tr style="background:'+bg+';border-bottom:1px solid #e8e8e8;"><td style="padding:10px 12px;font-size:12px;color:#6b7280;">'+(i+1)+'</td><td style="padding:10px 12px;font-size:13px;font-weight:500;">'+esc(l.description)+'</td><td style="padding:10px 12px;text-align:center;">'+l.quantity+'</td><td style="padding:10px 12px;text-align:right;">'+fmtMoney(l.unit_price)+'</td><td style="padding:10px 12px;text-align:right;font-weight:600;">'+fmtMoney(l.line_total)+'</td></tr>';
+    });
+    h += '</tbody></table>';
+    // Totals
+    h += '<div style="display:flex;justify-content:flex-end;margin-top:12px;"><div style="width:250px;">';
+    h += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#6b7280;"><span>Subtotal</span><span>'+fmtMoney(inv.subtotal)+'</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#6b7280;"><span>VAT (20%)</span><span>'+fmtMoney(inv.vat_amount)+'</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;padding:10px 0 4px;border-top:2px solid #0d1f2d;font-family:Barlow Condensed,sans-serif;"><span style="font-weight:700;font-size:15px;">Total Due</span><span style="font-weight:700;font-size:22px;color:#f55a00;">'+fmtMoney(inv.total)+'</span></div>';
+    h += '</div></div>';
+    // Payment details
+    h += '<div style="padding:16px 0 8px;border-bottom:1px solid #e8e8e8;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;margin-top:16px;">Payment Details</div>';
+    h += '<div style="background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;font-size:12px;line-height:1.8;margin-top:8px;">Bank: <strong>Barclays Business</strong><br>Sort Code: <strong>20-45-45</strong><br>Account: <strong>73024689</strong><br>Reference: <strong>'+esc(inv.invoice_number)+'</strong></div>';
+    // Terms
+    h += '<div style="font-size:10px;color:#6b7280;line-height:1.6;margin-top:14px;">Payment is due within 30 days of the invoice date. Late payments may incur interest at 8% above the Bank of England base rate under the Late Payment of Commercial Debts Act 1998.</div>';
+    // Thank you
+    h += '<div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #e8e8e8;"><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:18px;color:#0d1f2d;">Thank you for your business</div><div style="font-size:12px;color:#6b7280;margin-top:4px;">hgvdesk.co.uk · hello@hgvdesk.co.uk</div></div>';
+    h += '</div>';
+    // Orange footer line
+    h += '<div style="height:3px;background:#f55a00;"></div>';
+    h += '</div>';
+    if (inv.notes) h += '<div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--t3);">'+esc(inv.notes)+'</div>';
+    document.getElementById('detail-body').innerHTML = h;
     document.getElementById('detail-footer').innerHTML =
       '<button class="btn btn-secondary" onclick="closeModal(\'detail-modal\')">Close</button>';
     document.getElementById('detail-modal').classList.add('open');
