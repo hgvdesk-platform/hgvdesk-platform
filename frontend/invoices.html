@@ -498,12 +498,12 @@ function showDetail(id) {
     // Premium invoice
     h += '<div style="border-radius:8px;overflow:hidden;border:1px solid #e8e8e8;">';
     // Navy header
-    h += '<div style="background:#0d1f2d;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;">';
-    h += '<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:#fff;">HGV<span style="color:#f55a00;">Desk</span></div>';
-    h += '<div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;">INVOICE</div>';
+    h += '<div style="background:#0a1929;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ff5500;">';
+    h += '<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:#fff;">HGV<span style="color:#ff5500;">Desk</span></div>';
+    h += '<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;">INVOICE</div>';
     h += '</div>';
     // Orange bar
-    h += '<div style="background:#f55a00;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;">';
+    h += '<div style="background:#ff5500;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cc4400;">';
     h += '<div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:22px;color:#fff;">'+inv.invoice_number+'</div><div style="font-size:12px;color:rgba(255,255,255,0.8);">'+esc(inv.customer_name||'')+'</div></div>';
     h += '<div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.7);">Due: '+fmt(inv.due_date)+'</div>'+chip+'</div>';
     h += '</div>';
@@ -511,11 +511,11 @@ function showDetail(id) {
     h += '<div style="background:#fff;padding:24px;">';
     // Bill To + Details
     h += '<div style="display:flex;gap:16px;margin-bottom:20px;">';
-    h += '<div style="flex:1;background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;"><div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;margin-bottom:6px;">Bill To</div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:15px;">'+esc(inv.customer_name||'—')+'</div>'+(inv.customer_email?'<div style="font-size:12px;color:#6b7280;margin-top:2px;">'+esc(inv.customer_email)+'</div>':'')+'</div>';
-    h += '<div style="flex:1;background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;"><div style="font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;margin-bottom:6px;">Details</div><div style="font-size:12px;line-height:2;">Invoice: <strong>'+esc(inv.invoice_number)+'</strong><br>Issued: '+fmt(inv.issue_date)+'<br>Due: '+fmt(inv.due_date)+'<br>Terms: 30 days net</div></div>';
+    h += '<div style="flex:1;background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;"><div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;margin-bottom:6px;">Bill To</div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:15px;">'+esc(inv.customer_name||'—')+'</div>'+(inv.customer_email?'<div style="font-size:12px;color:#6b7280;margin-top:2px;">'+esc(inv.customer_email)+'</div>':'')+'</div>';
+    h += '<div style="flex:1;background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;"><div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;margin-bottom:6px;">Details</div><div style="font-size:12px;line-height:2;">Invoice: <strong>'+esc(inv.invoice_number)+'</strong><br>Issued: '+fmt(inv.issue_date)+'<br>Due: '+fmt(inv.due_date)+'<br>Terms: 30 days net</div></div>';
     h += '</div>';
     // Line items section title
-    h += '<div style="padding:16px 0 8px;border-bottom:1px solid #e8e8e8;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;">Line Items</div>';
+    h += '<div style="padding:16px 0 8px;border-bottom:1px solid #e8e8e8;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;">Line Items</div>';
     h += '<table style="width:100%;border-collapse:collapse;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;margin:8px 0;">';
     h += '<thead><tr style="background:#f8f8f8;"><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:left;width:8%;">#</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:left;">Description</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:center;">Qty</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:right;">Unit</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:right;">Total</th></tr></thead><tbody>';
     lines.forEach(function(l,i) {
@@ -527,18 +527,18 @@ function showDetail(id) {
     h += '<div style="display:flex;justify-content:flex-end;margin-top:12px;"><div style="width:250px;">';
     h += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#6b7280;"><span>Subtotal</span><span>'+fmtMoney(inv.subtotal)+'</span></div>';
     h += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#6b7280;"><span>VAT (20%)</span><span>'+fmtMoney(inv.vat_amount)+'</span></div>';
-    h += '<div style="display:flex;justify-content:space-between;padding:10px 0 4px;border-top:2px solid #0d1f2d;font-family:Barlow Condensed,sans-serif;"><span style="font-weight:700;font-size:15px;">Total Due</span><span style="font-weight:700;font-size:22px;color:#f55a00;">'+fmtMoney(inv.total)+'</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;padding:10px 0 4px;border-top:2px solid #0a1929;font-family:Barlow Condensed,sans-serif;"><span style="font-weight:700;font-size:15px;">Total Due</span><span style="font-weight:700;font-size:22px;color:#ff5500;">'+fmtMoney(inv.total)+'</span></div>';
     h += '</div></div>';
     // Payment details
-    h += '<div style="padding:16px 0 8px;border-bottom:1px solid #e8e8e8;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#f55a00;margin-top:16px;">Payment Details</div>';
+    h += '<div style="padding:16px 0 8px;border-bottom:1px solid #e8e8e8;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;margin-top:16px;">Payment Details</div>';
     h += '<div style="background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;font-size:12px;line-height:1.8;margin-top:8px;">Bank: <strong>Barclays Business</strong><br>Sort Code: <strong>20-45-45</strong><br>Account: <strong>73024689</strong><br>Reference: <strong>'+esc(inv.invoice_number)+'</strong></div>';
     // Terms
     h += '<div style="font-size:10px;color:#6b7280;line-height:1.6;margin-top:14px;">Payment is due within 30 days of the invoice date. Late payments may incur interest at 8% above the Bank of England base rate under the Late Payment of Commercial Debts Act 1998.</div>';
     // Thank you
-    h += '<div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #e8e8e8;"><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:18px;color:#0d1f2d;">Thank you for your business</div><div style="font-size:12px;color:#6b7280;margin-top:4px;">hgvdesk.co.uk · hello@hgvdesk.co.uk</div></div>';
+    h += '<div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #e8e8e8;"><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:18px;color:#0a1929;">Thank you for your business</div><div style="font-size:12px;color:#6b7280;margin-top:4px;">hgvdesk.co.uk · hello@hgvdesk.co.uk</div></div>';
     h += '</div>';
     // Orange footer line
-    h += '<div style="height:3px;background:#f55a00;"></div>';
+    h += '<div style="height:4px;background:#ff5500;"></div>';
     h += '</div>';
     if (inv.notes) h += '<div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--t3);">'+esc(inv.notes)+'</div>';
     document.getElementById('detail-body').innerHTML = h;

@@ -5,9 +5,9 @@
  */
 
 const C = {
-  dark: '#0d1f2d',
-  darkMid: '#142636',
-  orange: '#f55a00',
+  dark: '#0a1929',
+  darkMid: '#0f2030',
+  orange: '#ff5500',
   orangeLight: '#ff7a2e',
   surface: '#f8f8f8',
   card: '#ffffff',
@@ -48,7 +48,7 @@ function fmtDateTime(d) { if(!d) return '—'; const dt=new Date(d); return fmtS
 function fmtMoney(n) { return '£' + Number(n||0).toFixed(2); }
 
 function badge(label, bg, color) {
-  return `<span style="display:inline-block;padding:3px 10px;border-radius:3px;background:${bg};color:${color};font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.5px;line-height:1.4;">${label}</span>`;
+  return `<span style="display:inline-block;padding:3px 10px;border-radius:3px;background:${bg};color:${color};border:1px solid ${color};font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.5px;line-height:1.4;">${label}</span>`;
 }
 function resultBadge(r) {
   const v = (r||'pending').toLowerCase();
@@ -67,7 +67,7 @@ function sevBadge(s) {
   return (s||'advisory').toLowerCase()==='critical' ? badge('CRITICAL',C.failBg,C.failRed) : badge('ADVISORY',C.advBg,C.advAmber);
 }
 
-const LBL = `font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:${C.label};`;
+const LBL = `font-family:'Barlow',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${C.label};`;
 const SEC_TITLE = `padding:20px 0 8px;border-bottom:1px solid ${C.border};margin-bottom:0;`;
 const BODY_S = `font-family:'Barlow',sans-serif;font-size:13px;line-height:1.6;color:${C.text};`;
 const HEAD_S = `font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:-0.5px;`;
@@ -89,7 +89,7 @@ function pageShell(title, bodyHtml) {
 // ══════════════════════════════════════════════
 
 function docHeader(docType, docNum, dateStr) {
-  return `<tr><td style="background:${C.dark};padding:20px 32px;border-radius:8px 8px 0 0;">
+  return `<tr><td style="background:${C.dark};padding:20px 32px;border-radius:8px 8px 0 0;border-bottom:1px solid ${C.orange};">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
       <td style="vertical-align:middle;">${LOGO_SVG}</td>
       <td style="text-align:right;vertical-align:middle;">
@@ -101,11 +101,11 @@ function docHeader(docType, docNum, dateStr) {
 }
 
 function vehicleBar(reg, subtitle, resultHtml) {
-  return `<tr><td style="background:${C.orange};padding:16px 32px;">
+  return `<tr><td style="background:${C.orange};padding:16px 32px;border-bottom:1px solid #cc4400;">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
       <td><div style="${HEAD_S}font-size:28px;color:#fff;letter-spacing:1px;">${esc(reg)}</div>
         <div style="font-family:'Barlow',sans-serif;font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;">${esc(subtitle)}</div></td>
-      <td style="text-align:right;vertical-align:middle;">${resultHtml}</td>
+      <td style="text-align:right;vertical-align:middle;"><span style="border:1.5px solid #fff;border-radius:5px;display:inline-block;">${resultHtml}</span></td>
     </tr></table>
   </td></tr>`;
 }
@@ -118,7 +118,7 @@ function docFooter(docNum, orgName) {
       <td style="text-align:right;font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">Generated ${fmtDateTime(new Date())}</td>
     </tr></table>
   </td></tr>
-  <tr><td style="height:3px;background:${C.orange};border-radius:0 0 8px 8px;"></td></tr>`;
+  <tr><td style="height:4px;background:${C.orange};border-radius:0 0 8px 8px;"></td></tr>`;
 }
 
 // ══════════════════════════════════════════════

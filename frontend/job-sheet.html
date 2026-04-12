@@ -8,27 +8,27 @@
 <script src="/config.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-:root{--dark:#0d1f2d;--orange:#f55a00;--surface:#f8f8f8;--card:#fff;--border:#e8e8e8;--text:#1a1a1a;--muted:#6b7280;--label:#8694a5;--pass-bg:#eaf3de;--pass:#3b6d11;--adv-bg:#faeeda;--adv:#854f0b;--fail-bg:#fcebeb;--fail:#a32d2d;--repair-bg:#e8f8f2;--repair:#1d9e75;}
+:root{--dark:#0a1929;--orange:#ff5500;--surface:#f8f8f8;--card:#fff;--border:#e8e8e8;--text:#1a1a1a;--muted:#6b7280;--label:#8694a5;--pass-bg:#eaf3de;--pass:#3b6d11;--adv-bg:#faeeda;--adv:#854f0b;--fail-bg:#fcebeb;--fail:#a32d2d;--repair-bg:#e8f8f2;--repair:#1d9e75;}
 body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text);font-size:13px;line-height:1.6;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 .wrap{max-width:700px;margin:20px auto;border-radius:8px;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,0.08);}
 /* Header */
-.hdr{background:var(--dark);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;}
+.hdr{background:var(--dark);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--orange);}
 .hdr-right{text-align:right;}
-.doc-type{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--orange);}
+.doc-type{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--orange);}
 .doc-meta{font-size:11px;color:rgba(255,255,255,0.45);margin-top:3px;}
 /* Vehicle bar */
-.vbar{background:var(--orange);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;}
+.vbar{background:var(--orange);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #cc4400;}
 .vbar-reg{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:28px;color:#fff;letter-spacing:1px;}
 .vbar-sub{font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;}
 /* Badge */
 .bdg{display:inline-block;padding:3px 10px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:0.5px;}
-.bdg-pass{background:var(--pass-bg);color:var(--pass);}.bdg-adv{background:var(--adv-bg);color:var(--adv);}.bdg-fail{background:var(--fail-bg);color:var(--fail);}
-.bdg-status{background:var(--pass-bg);color:var(--pass);}
-.bdg-pending{background:var(--adv-bg);color:var(--adv);}
+.bdg-pass{background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass);}.bdg-adv{background:var(--adv-bg);color:var(--adv);border:1px solid var(--adv);}.bdg-fail{background:var(--fail-bg);color:var(--fail);border:1px solid var(--fail);}
+.bdg-status{background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass);}
+.bdg-pending{background:var(--adv-bg);color:var(--adv);border:1px solid var(--adv);}
 /* Body */
 .body{background:var(--card);padding:28px 32px;}
 /* Section title */
-.sec-t{padding:20px 0 8px;border-bottom:1px solid var(--border);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--orange);}
+.sec-t{padding:20px 0 8px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--orange);}
 /* Metric boxes */
 .metrics{display:flex;gap:8px;margin:8px 0 16px;}
 .metric{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px 14px;text-align:center;}
@@ -55,7 +55,7 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
 .chk:nth-child(odd){background:var(--surface);}
 /* Footer */
 .ftr{background:var(--surface);padding:16px 32px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--muted);}
-.ftr-line{height:3px;background:var(--orange);border-radius:0 0 8px 8px;}
+.ftr-line{height:4px;background:var(--orange);border-radius:0 0 8px 8px;}
 /* Print */
 .dl-btn{position:fixed;bottom:24px;right:24px;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:12px 20px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(245,90,0,0.3);z-index:100;}
 .dl-btn:hover{background:#ff7a2e;}
@@ -70,7 +70,7 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
 
 <div class="wrap" id="wrap">
   <div class="hdr">
-    <svg width="120" height="28" viewBox="0 0 120 28" fill="none"><rect x="0" y="2" width="42" height="24" rx="4" fill="#f55a00"/><text x="7" y="19" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="14" fill="#fff">HGV</text><text x="48" y="19" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="16" fill="#fff" letter-spacing="0.5">HGVDesk</text></svg>
+    <svg width="120" height="28" viewBox="0 0 120 28" fill="none"><rect x="0" y="2" width="42" height="24" rx="4" fill="#ff5500"/><text x="7" y="19" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="14" fill="#fff">HGV</text><text x="48" y="19" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="16" fill="#fff" letter-spacing="0.5">HGVDesk</text></svg>
     <div class="hdr-right">
       <div class="doc-type">Workshop Job Sheet</div>
       <div class="doc-meta" id="doc-meta">Loading...</div>
