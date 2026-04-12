@@ -210,8 +210,8 @@
     <div class="modal-title" id="org-modal-title">New Organisation</div>
     <div class="modal-err" id="org-err"></div>
     <input type="hidden" id="org-id">
-    <div class="form-group"><label class="form-label">Organisation name</label><input class="form-input" id="org-name" placeholder="e.g. Smith Haulage Ltd"></div>
-    <div class="form-group"><label class="form-label">Plan</label>
+    <div class="form-group"><label class="form-label" for="org-name">Organisation name</label><input class="form-input" id="org-name" placeholder="e.g. Smith Haulage Ltd"></div>
+    <div class="form-group"><label class="form-label" for="org-plan">Plan</label>
       <select class="form-select" id="org-plan">
         <option value="starter">Starter</option>
         <option value="operator" selected>Operator</option>
@@ -219,7 +219,7 @@
         <option value="full_platform">Full Platform</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">Status</label>
+    <div class="form-group"><label class="form-label" for="org-active">Status</label>
       <select class="form-select" id="org-active">
         <option value="true">Active</option>
         <option value="false">Inactive</option>
@@ -238,13 +238,13 @@
     <div class="modal-title" id="user-modal-title">New User</div>
     <div class="modal-err" id="user-err"></div>
     <input type="hidden" id="user-id">
-    <div class="form-group"><label class="form-label">Full name</label><input class="form-input" id="user-name" placeholder="e.g. John Driver"></div>
-    <div class="form-group"><label class="form-label">Email address</label><input class="form-input" id="user-email" type="email" placeholder="e.g. john@company.com"></div>
-    <div class="form-group" id="user-password-group"><label class="form-label">Password</label><input class="form-input" id="user-password" type="password" placeholder="Min 8 characters"></div>
-    <div class="form-group"><label class="form-label">Organisation</label>
+    <div class="form-group"><label class="form-label" for="user-name">Full name</label><input class="form-input" id="user-name" placeholder="e.g. John Driver"></div>
+    <div class="form-group"><label class="form-label" for="user-email">Email address</label><input class="form-input" id="user-email" type="email" placeholder="e.g. john@company.com"></div>
+    <div class="form-group" id="user-password-group"><label class="form-label" for="user-password">Password</label><input class="form-input" id="user-password" type="password" placeholder="Min 8 characters"></div>
+    <div class="form-group"><label class="form-label" for="user-org">Organisation</label>
       <select class="form-select" id="user-org"></select>
     </div>
-    <div class="form-group"><label class="form-label">Role</label>
+    <div class="form-group"><label class="form-label" for="user-role">Role</label>
       <select class="form-select" id="user-role">
         <option value="driver">Driver</option>
         <option value="technician">Technician</option>
@@ -252,7 +252,7 @@
         <option value="admin">Admin</option>
       </select>
     </div>
-    <div class="form-group"><label class="form-label">Status</label>
+    <div class="form-group"><label class="form-label" for="user-active">Status</label>
       <select class="form-select" id="user-active">
         <option value="true">Active</option>
         <option value="false">Inactive</option>
