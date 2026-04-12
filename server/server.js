@@ -25,6 +25,7 @@ const parts = require('./routes/parts');
 const command = require('./routes/command');
 const ai = require('./routes/ai');
 const stripeRoutes = require('./routes/stripe');
+const pdf = require('./routes/pdf');
 
 const PORT = process.env.PORT || 3000;
 const FRONTEND = path.join(__dirname, '..', 'frontend');
@@ -433,6 +434,38 @@ async function handleAi(ctx, res) {
   return false;
 }
 
+async function handlePdf(ctx, res) {
+  const { p, method, caller } = ctx;
+  if (method !== 'GET') return false;
+  const orgId = caller.id || caller.org_id;
+
+  const inspPdf = p.match(/^\/api\/inspections\/(\d+)\/pdf$/);
+  if (inspPdf) {
+    const { pdf: buf, filename } = await pdf.inspectionPdf(parseInt(inspPdf[1]), orgId);
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Content-Length': buf.length });
+    res.end(buf);
+    return true;
+  }
+
+  const invPdf = p.match(/^\/api\/invoices\/(\d+)\/pdf$/);
+  if (invPdf) {
+    const { pdf: buf, filename } = await pdf.invoicePdf(parseInt(invPdf[1]), orgId);
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Content-Length': buf.length });
+    res.end(buf);
+    return true;
+  }
+
+  const jobPdf = p.match(/^\/api\/jobs\/(\d+)\/pdf$/);
+  if (jobPdf) {
+    const { pdf: buf, filename } = await pdf.jobPdf(parseInt(jobPdf[1]), orgId);
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Content-Length': buf.length });
+    res.end(buf);
+    return true;
+  }
+
+  return false;
+}
+
 async function handleBilling(ctx, res) {
   const { p, method, caller } = ctx;
   if (p === '/api/billing/me' && method === 'GET') {
@@ -639,7 +672,7 @@ async function handleInvoices(ctx, res) {
 // ══════════════════════════════════════════════
 
 const AUTHED_HANDLERS = [
-  handleAdmin, handleWorkshop, handleInspect, handleAi, handleBilling,
+  handleAdmin, handleWorkshop, handleInspect, handleAi, handlePdf, handleBilling,
   handleParts, handleCommand, handleInspectionReports, handleTechnicians,
   handleJobLibrary, handleCustomers, handleInvoices,
 ];
