@@ -217,18 +217,20 @@ async function updateDefect(body, org, defectId) {
   );
   if (!defect) throw { status: 404, message: 'Defect not found' };
 
-  // Auto-update inspection result when all defects resolved
-  if (resolved === true && defect.inspection_id) {
+  // Recalculate inspection result based on remaining unresolved defects.
+  // Resolved defects don't count toward the result.
+  if (resolved !== undefined && defect.inspection_id) {
     const openDefects = await queryAll(
-      'SELECT id FROM defects WHERE inspection_id = $1 AND org_id = $2 AND resolved = false',
+      'SELECT severity FROM defects WHERE inspection_id = $1 AND org_id = $2 AND resolved = false',
       [defect.inspection_id, orgId]
     );
-    if (openDefects.length === 0) {
-      await queryOne(
-        'UPDATE inspections SET result = $1, updated_at = NOW() WHERE id = $2 AND org_id = $3 RETURNING id',
-        ['pass', defect.inspection_id, orgId]
-      );
-    }
+    let newResult = 'pass';
+    if (openDefects.some(d => d.severity === 'critical')) newResult = 'fail';
+    else if (openDefects.some(d => d.severity === 'advisory' || d.severity === 'major')) newResult = 'advisory';
+    await queryOne(
+      'UPDATE inspections SET result = $1, updated_at = NOW() WHERE id = $2 AND org_id = $3 RETURNING id',
+      [newResult, defect.inspection_id, orgId]
+    );
   }
 
   return { defect };

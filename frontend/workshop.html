@@ -657,8 +657,10 @@ function previewJobReport() {
     var inspections = (d && d.data ? d.data.inspections : (d ? d.inspections : [])) || [];
     var insp = inspections.find(function(i) { return i.job_id == currentJob.id; });
     if (!insp) insp = inspections.find(function(i) { return i.vehicle_reg && i.vehicle_reg.replace(/\s/g,'').toUpperCase() === currentJob.vehicle_reg.replace(/\s/g,'').toUpperCase(); });
-    if (insp) { window.open('/api/inspections/' + insp.id + '/report/preview', '_blank'); }
-    else { alert('No inspection found for this job. Send to floor first.'); }
+    if (!insp) { alert('No inspection found for this job. Send to floor first.'); return; }
+    fetch('/api/inspections/' + insp.id + '/report/preview', { headers: { 'X-API-Key': KEY } })
+      .then(function(r) { return r.text(); })
+      .then(function(html) { var w = window.open('', '_blank'); if (w) { w.document.write(html); w.document.close(); } });
   });
 }
 

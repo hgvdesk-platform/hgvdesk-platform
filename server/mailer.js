@@ -76,38 +76,131 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-async function sendInspectionReport({ to, vehicleReg, inspectionId, result, inspectorName, notes, orgName, aiSummary }) {
+function resultColor(r) {
+  if (r === 'pass') return '#1d9e75';
+  if (r === 'advisory') return '#ff9500';
+  return '#ff3b30';
+}
+
+function sectionHead(title) {
+  return `<tr><td colspan="2" style="padding:16px 0 6px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#FF6B00;border-bottom:1px solid #e5e5e7;">${escapeHtml(title)}</td></tr>`;
+}
+
+function metaRow(label, val) {
+  return `<tr><td style="padding:6px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;width:130px;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:6px 0;font-size:13px;">${escapeHtml(val)}</td></tr>`;
+}
+
+function buildCheckItemsHtml(checkItems) {
+  if (!checkItems || typeof checkItems !== 'object') return '';
+  const entries = Object.entries(checkItems);
+  if (!entries.length) return '';
+  let html = sectionHead('Check Items');
+  for (const [item, state] of entries) {
+    const color = state === 'pass' ? '#1d9e75' : state === 'fail' ? '#ff3b30' : '#ff9500';
+    const label = String(state || 'n/a').toUpperCase();
+    html += `<tr><td style="padding:4px 0;font-size:12px;">${escapeHtml(item)}</td><td style="padding:4px 0;font-size:12px;font-weight:700;color:${color};">${label}</td></tr>`;
+  }
+  return html;
+}
+
+function buildTyreHtml(tyreData) {
+  if (!tyreData || typeof tyreData !== 'object') return '';
+  const entries = Object.entries(tyreData);
+  if (!entries.length) return '';
+  let html = sectionHead('Tyre Data');
+  html += '<tr><td colspan="2"><table style="width:100%;border-collapse:collapse;">';
+  html += '<tr style="background:#f0f0f2;"><th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:left;">Position</th><th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:center;">Depth</th><th style="padding:5px 8px;font-size:10px;font-weight:700;text-align:center;">Condition</th></tr>';
+  for (const [pos, data] of entries) {
+    const d = typeof data === 'object' ? data : { depth: data };
+    const cond = (d.condition || 'ok').toUpperCase();
+    const condColor = cond === 'DEF' ? '#ff3b30' : cond === 'ADV' ? '#ff9500' : '#1d9e75';
+    html += `<tr><td style="padding:4px 8px;font-size:12px;">${escapeHtml(pos)}</td><td style="padding:4px 8px;font-size:12px;text-align:center;">${escapeHtml(d.depth || d.tread || '-')}mm</td><td style="padding:4px 8px;font-size:12px;text-align:center;font-weight:700;color:${condColor};">${cond}</td></tr>`;
+  }
+  html += '</table></td></tr>';
+  return html;
+}
+
+function buildBrakeHtml(brakeData) {
+  if (!brakeData || typeof brakeData !== 'object') return '';
+  let html = sectionHead('Brake Test Results');
+  if (brakeData.sbe) html += metaRow('Service Brake Eff.', brakeData.sbe + '%');
+  if (brakeData.pbe) html += metaRow('Parking Brake Eff.', brakeData.pbe + '%');
+  const axles = brakeData.axles || {};
+  for (const [axle, data] of Object.entries(axles)) {
+    const d = typeof data === 'object' ? data : {};
+    const pass = d.pass ? 'PASS' : 'FAIL';
+    const color = d.pass ? '#1d9e75' : '#ff3b30';
+    html += `<tr><td style="padding:4px 0;font-size:12px;">${escapeHtml(axle)}</td><td style="padding:4px 0;font-size:12px;font-weight:700;color:${color};">NS ${escapeHtml(d.ns||'-')}kN / OS ${escapeHtml(d.os||'-')}kN — ${pass}</td></tr>`;
+  }
+  return html;
+}
+
+function buildDefectsHtml(defects) {
+  if (!defects || !defects.length) return '';
+  let html = sectionHead('Defects (' + defects.length + ')');
+  for (const d of defects) {
+    const sevColor = d.severity === 'critical' ? '#ff3b30' : '#ff9500';
+    const status = d.resolved ? '<span style="color:#1d9e75;font-weight:700;"> [RECTIFIED]</span>' : '';
+    html += `<tr><td colspan="2" style="padding:8px 0;border-bottom:1px solid #f0f0f2;">
+      <div style="font-size:13px;font-weight:600;">${escapeHtml(d.title || d.description || 'Defect')}</div>
+      <div style="font-size:11px;color:${sevColor};font-weight:700;text-transform:uppercase;">${escapeHtml(d.severity)}${status}</div>
+      ${d.description && d.description !== d.title ? '<div style="font-size:12px;color:#636366;margin-top:2px;">' + escapeHtml(d.description) + '</div>' : ''}
+      ${d.resolved_by ? '<div style="font-size:11px;color:#1d9e75;margin-top:4px;">Rectified by: ' + escapeHtml(d.resolved_by) + '</div>' : ''}
+      ${d.resolution_notes ? '<div style="font-size:11px;color:#636366;margin-top:2px;">Notes: ' + escapeHtml(d.resolution_notes) + '</div>' : ''}
+    </td></tr>`;
+  }
+  return html;
+}
+
+async function sendInspectionReport({ to, inspection, orgName, aiSummary }) {
   if (!RESEND_API_KEY) { console.error('[MAILER] No RESEND_API_KEY set'); return { sent: false }; }
-  const resultColor = result === 'pass' ? '#1d9e75' : result === 'advisory' ? '#ff9500' : '#ff3b30';
+  const insp = inspection;
+  const rc = resultColor(insp.result);
+  const date = insp.completed_at ? new Date(insp.completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : new Date(insp.created_at).toLocaleDateString('en-GB');
+
   const summaryBlock = aiSummary ? `
-        <div style="background:#fff8f3;border:1px solid #FFD9BF;border-left:4px solid #FF6B00;border-radius:10px;padding:16px 18px;margin-bottom:14px;">
-          <div style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#FF6B00;margin-bottom:6px;">AI Summary</div>
-          <div style="font-size:14px;line-height:1.55;color:#1d1d1f;">${escapeHtml(aiSummary)}</div>
-        </div>` : '';
+          <tr><td colspan="2" style="padding:12px 0;">
+            <div style="background:#fff8f3;border:1px solid #FFD9BF;border-left:4px solid #FF6B00;border-radius:8px;padding:12px 14px;">
+              <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#FF6B00;margin-bottom:4px;">AI Summary</div>
+              <div style="font-size:13px;line-height:1.5;color:#1d1d1f;">${escapeHtml(aiSummary)}</div>
+            </div>
+          </td></tr>` : '';
+
   const payload = {
     from: FROM_EMAIL,
     to: [to],
-    subject: 'Inspection Report — ' + vehicleReg,
+    subject: `Inspection Report — ${insp.vehicle_reg} — ${(insp.result || 'Pending').toUpperCase()}`,
     html: `
-      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
-        <div style="background:#1d1d1f;color:#fff;padding:16px 20px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:space-between;">
-          <h2 style="margin:0;font-size:18px;">Inspection Report</h2>
-          <span style="background:${resultColor};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">${(result||'Pending').toUpperCase()}</span>
+      <div style="font-family:-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:24px;">
+        <div style="background:#1d1d1f;color:#fff;padding:16px 20px;border-radius:10px 10px 0 0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <h2 style="margin:0;font-size:18px;">Inspection Report</h2>
+            <span style="background:${rc};padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;">${(insp.result || 'Pending').toUpperCase()}</span>
+          </div>
+          <div style="font-size:12px;color:#aeaeb2;margin-top:4px;">${escapeHtml(insp.vehicle_reg)} &bull; ${escapeHtml(insp.inspection_type || 'T50')} &bull; ${date}</div>
         </div>
         <div style="background:#f5f5f7;padding:20px;border-radius:0 0 10px 10px;border:1px solid #e5e5e7;border-top:none;">
-          ${summaryBlock}
           <table style="width:100%;border-collapse:collapse;">
-            <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Vehicle</td><td style="padding:8px 0;font-size:14px;font-weight:700;font-family:monospace;">${vehicleReg}</td></tr>
-            <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Inspection ID</td><td style="padding:8px 0;font-size:14px;">${inspectionId}</td></tr>
-            <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Inspector</td><td style="padding:8px 0;font-size:14px;">${inspectorName || 'Unknown'}</td></tr>
-            <tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;">Result</td><td style="padding:8px 0;font-size:14px;font-weight:700;color:${resultColor};">${(result||'Pending').toUpperCase()}</td></tr>
-            ${notes ? '<tr><td style="padding:8px 0;font-size:12px;color:#888;font-weight:700;text-transform:uppercase;vertical-align:top;">Notes</td><td style="padding:8px 0;font-size:14px;">' + notes + '</td></tr>' : ''}
+            ${summaryBlock}
+            ${sectionHead('Inspection Details')}
+            ${metaRow('Vehicle', insp.vehicle_reg)}
+            ${metaRow('Inspection ID', insp.inspection_id)}
+            ${metaRow('Type', insp.inspection_type || 'T50')}
+            ${metaRow('Inspector', insp.inspector_name || 'Not recorded')}
+            ${metaRow('Mileage', insp.overall_mileage ? String(insp.overall_mileage) + ' miles' : 'Not recorded')}
+            ${metaRow('Status', insp.status || 'unknown')}
+            ${insp.nil_defect ? metaRow('Nil Defect', 'Yes — no defects found') : ''}
+            ${buildCheckItemsHtml(insp.checkItems)}
+            ${buildBrakeHtml(insp.brakeData)}
+            ${buildTyreHtml(insp.tyreData)}
+            ${buildDefectsHtml(insp.defects)}
+            ${insp.notes ? sectionHead('Inspector Notes') + '<tr><td colspan="2" style="padding:6px 0;font-size:13px;line-height:1.5;">' + escapeHtml(insp.notes) + '</td></tr>' : ''}
           </table>
           <div style="margin-top:20px;">
-            <a href="https://hgvdesk.co.uk/inspect" style="background:#FF6B00;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View Full Report</a>
+            <a href="https://hgvdesk.co.uk/inspect" style="background:#FF6B00;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View in HGVDesk</a>
           </div>
         </div>
-        <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">HGVDesk &bull; hgvdesk.co.uk</p>
+        <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">${escapeHtml(orgName || 'HGVDesk')} &bull; hgvdesk.co.uk</p>
       </div>
     `
   };

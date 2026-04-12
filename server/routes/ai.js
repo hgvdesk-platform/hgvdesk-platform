@@ -76,6 +76,45 @@ async function defectSuggestion(body) {
   return { suggestion: extractText(message), model: message.model, usage: message.usage };
 }
 
+// ── Repair description (Feature: AI repair note matching the defect) ────
+
+const REPAIR_SYSTEM_PROMPT = [
+  'You are an HGV workshop technician writing a repair note for a defect that has',
+  'just been fixed. The repair note goes on the inspection sheet next to the defect.',
+  '',
+  'Rules:',
+  '- One sentence, 8-20 words. Same blunt technician style as the defect.',
+  '- Confirm what was done: "replaced", "fitted new", "adjusted", "retorqued",',
+  '  "welded and tested", "reconditioned", "repaired leak", etc.',
+  '- End with a confirmation: "within spec", "tested OK", "torqued to spec",',
+  '  "road tested", "no further issues".',
+  '- Match the zone/component from the defect — if defect says "NS front disc"',
+  '  the repair says "NS front disc replaced..." not "brake disc repaired".',
+  '- No preamble, no quotes, no markdown. Just the repair note.',
+].join('\n');
+
+async function repairSuggestion(body) {
+  if (!client) throw { status: 503, message: 'AI assistant not configured' };
+  const { defectDescription, zone, severity } = body || {};
+  if (!defectDescription) throw { status: 400, message: 'defectDescription is required' };
+
+  const prompt = [
+    `Original defect: ${defectDescription}`,
+    zone ? `Zone: ${zone}` : '',
+    severity ? `Severity: ${severity}` : '',
+    '', 'Write the repair note.',
+  ].filter(Boolean).join('\n');
+
+  const message = await client.messages.create({
+    model: 'claude-haiku-4-5',
+    max_tokens: 150,
+    system: [{ type: 'text', text: REPAIR_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return { suggestion: extractText(message), model: message.model, usage: message.usage };
+}
+
 function extractText(message) {
   return (message.content || [])
     .filter(b => b.type === 'text')
@@ -419,4 +458,4 @@ async function nlSearch({ query, caller }) {
   };
 }
 
-module.exports = { defectSuggestion, inspectionSummarySafe, maintenancePrediction, nlSearch };
+module.exports = { defectSuggestion, repairSuggestion, inspectionSummarySafe, maintenancePrediction, nlSearch };

@@ -388,6 +388,10 @@ async function handleAi(ctx, res) {
     ok(res, await ai.defectSuggestion(body));
     return true;
   }
+  if (p === '/api/ai/repair-suggestion' && method === 'POST') {
+    ok(res, await ai.repairSuggestion(body));
+    return true;
+  }
   if (p === '/api/ai/search' && method === 'POST') {
     ok(res, await ai.nlSearch({ query: body && body.query, caller }));
     return true;
@@ -462,23 +466,27 @@ async function handleInspectionReports(ctx, res) {
   return false;
 }
 
+async function fetchFullInspection(inspId, orgId) {
+  const db = require('./db');
+  const insp = await db.queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspId, orgId]);
+  if (!insp) return null;
+  const defects = await db.queryAll(
+    'SELECT * FROM defects WHERE inspection_id = $1 ORDER BY severity DESC, created_at ASC', [insp.id]
+  );
+  insp.defects = defects;
+  insp.checkItems = parseMaybeJson(insp.check_items, {});
+  insp.tyreData = parseMaybeJson(insp.tyre_data, {});
+  insp.brakeData = parseMaybeJson(insp.brake_test_data, {});
+  return insp;
+}
+
 async function sendInspectionReportRoute(inspId, body, caller, res) {
   const { email } = body;
   if (!email) { json(res, 400, { error: 'email required' }); return true; }
-  const db = require('./db');
   const orgId = caller.id || caller.org_id;
-  const insp = await db.queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspId, orgId]);
+  const insp = await fetchFullInspection(inspId, orgId);
   if (!insp) { json(res, 404, { error: 'Inspection not found' }); return true; }
 
-  // Pull defects for the AI summary. If this fails we still send the email.
-  let defects = [];
-  try {
-    defects = await db.queryAll('SELECT title, description, severity, category, resolved FROM defects WHERE inspection_id = $1', [insp.id]);
-  } catch (e) {
-    console.error('[REPORT] defect fetch failed:', e.message || e);
-  }
-
-  // Best-effort AI summary — inspectionSummarySafe never throws.
   const { summary } = await ai.inspectionSummarySafe({
     vehicleReg: insp.vehicle_reg,
     inspectionType: insp.inspection_type,
@@ -486,17 +494,13 @@ async function sendInspectionReportRoute(inspId, body, caller, res) {
     inspectorName: insp.inspector_name,
     nilDefect: insp.nil_defect,
     notes: insp.notes,
-    defects,
+    defects: insp.defects,
   });
 
   const { sendInspectionReport } = require('./mailer');
   const result2 = await sendInspectionReport({
     to: email,
-    vehicleReg: insp.vehicle_reg,
-    inspectionId: insp.inspection_id,
-    result: insp.result,
-    inspectorName: insp.inspector_name,
-    notes: insp.notes,
+    inspection: insp,
     orgName: caller.org_name || 'HGVDesk',
     aiSummary: summary,
   });

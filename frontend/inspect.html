@@ -484,7 +484,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
       <div class="fsec-hd" data-sec="s5">
         <div class="fsec-num" id="n5">5</div>
         <div class="fsec-title">Tyre Data</div>
-        <div class="fsec-meta">Depth mm - Expiry Date - Condition</div>
+        <div class="fsec-meta">Depth mm - Expiry MM/YY - Condition</div>
       </div>
       <div class="fsec-body" id="s5"><div class="tyre-grid" id="tyre-wrap"></div></div>
     </div>
@@ -634,7 +634,7 @@ function loadData() {
       var cls = r === 'pass' ? 'c-p' : r === 'advisory' ? 'c-a' : r === 'fail' ? 'c-f' : 'c-q';
       var mins = Math.floor((Date.now() - new Date(i.created_at)) / 60000);
       var ago = mins < 1 ? 'just now' : mins < 60 ? mins + 'm ago' : Math.floor(mins/60) + 'h ago';
-      return '<tr data-id="'+i.id+'"><td><input type="checkbox" class="row-cb" data-id="'+i.id+'" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td><b style="font-family:monospace;">' + i.vehicle_reg + '</b></td><td>' + i.inspection_type + '</td><td>' + (i.inspector_name || '') + '</td><td><span class="chip ' + cls + '">' + r + '</span></td><td>' + i.status + '</td><td style="font-size:11px;color:var(--t5);">' + ago + '</td><td onclick="event.stopPropagation();deleteInspection('+i.id+')" style="cursor:pointer;color:#ff3b30;font-size:11px;font-weight:600;">Delete</td><td onclick="event.stopPropagation();openRM('+i.id+',\''+i.vehicle_reg+'\')" style="cursor:pointer;color:#0071e3;font-size:11px;font-weight:600;padding:0 8px;">Report</td><td onclick="event.stopPropagation();window.open(\'/api/inspections/'+i.id+'/report/preview\',\'_blank\')" style="cursor:pointer;color:#636366;font-size:11px;font-weight:600;padding:0 8px;">Preview</td></tr>';
+      return '<tr data-id="'+i.id+'"><td><input type="checkbox" class="row-cb" data-id="'+i.id+'" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td><b style="font-family:monospace;">' + i.vehicle_reg + '</b></td><td>' + i.inspection_type + '</td><td>' + (i.inspector_name || '') + '</td><td><span class="chip ' + cls + '">' + r + '</span></td><td>' + i.status + '</td><td style="font-size:11px;color:var(--t5);">' + ago + '</td><td onclick="event.stopPropagation();deleteInspection('+i.id+')" style="cursor:pointer;color:#ff3b30;font-size:11px;font-weight:600;">Delete</td><td onclick="event.stopPropagation();openRM('+i.id+',\''+i.vehicle_reg+'\')" style="cursor:pointer;color:#0071e3;font-size:11px;font-weight:600;padding:0 8px;">Report</td><td onclick="event.stopPropagation();previewReport('+i.id+')" style="cursor:pointer;color:#636366;font-size:11px;font-weight:600;padding:0 8px;">Preview</td></tr>';
     }).join('');
     document.getElementById('dash-tb').innerHTML = rows || empty;
     document.getElementById('list-tb').innerHTML = rows || empty;
@@ -977,7 +977,7 @@ function buildTyres() {
           '<div class="tp-name">' + pos + '</div>' +
           '<div class="tp-flds">' +
           '<div><div class="tf-lbl">Depth mm</div><input class="tf-in" type="number" step="0.1" placeholder="0" id="td-' + tid + '"></div>' +
-          '<div><div class="tf-lbl">Expiry Date</div><input class="tf-in" type="date" id="tf-' + tid + '"></div>' +
+          '<div><div class="tf-lbl">Expiry (MM/YY)</div><input class="tf-in" placeholder="01/27" maxlength="5" id="tf-' + tid + '"></div>' +
           '</div>' +
           '<div class="tp-cond">' +
           '<button class="tc tc-ok" data-tid="' + tid + '" data-cond="ok">OK</button>' +
@@ -1070,7 +1070,10 @@ function updateRectificationSection() {
         '<input type="text" id="rect-by-' + d.id + '" placeholder="Technician name" style="width:100%;padding:8px 10px;border:1px solid rgba(0,0,0,0.12);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;">' +
       '</div>' +
       '<div style="margin-bottom:10px;">' +
-        '<label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:4px;">Rectification notes</label>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+          '<label style="font-size:12px;font-weight:600;color:var(--t3);">Rectification notes</label>' +
+          '<button type="button" onclick="suggestRepair(' + d.id + ',\'' + (d.description||d.zoneLabel||'').replace(/'/g,"\\'") + '\')" style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:980px;border:1px solid rgba(255,107,0,0.3);background:rgba(255,107,0,0.06);color:#FF6B00;cursor:pointer;">AI Suggest</button>' +
+        '</div>' +
         '<textarea id="rect-notes-' + d.id + '" placeholder="Describe what was done..." rows="2" style="width:100%;padding:8px 10px;border:1px solid rgba(0,0,0,0.12);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;resize:none;"></textarea>' +
       '</div>' +
       '<label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:6px;">Rectification Evidence Photos</label>' +
@@ -1081,6 +1084,17 @@ function updateRectificationSection() {
       photoGrid +
     '</div>';
   }).join('');
+}
+
+function suggestRepair(defectId, desc) {
+  var ta = document.getElementById('rect-notes-' + defectId);
+  if (!ta) return;
+  ta.value = 'Generating repair note...';
+  api('POST', '/ai/repair-suggestion', { defectDescription: desc }).then(function(d) {
+    var data = d && (d.data || d);
+    if (data && data.suggestion) ta.value = data.suggestion;
+    else ta.value = '';
+  }).catch(function() { ta.value = ''; });
 }
 
 function addRectPhoto(defectId) {
