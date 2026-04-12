@@ -2,7 +2,7 @@
  * HGVDESK — PDF generation via Puppeteer
  * Endpoints: GET /api/inspections/:id/pdf, /api/invoices/:id/pdf, /api/jobs/:id/pdf
  */
-const { buildInspectionReportHtml, buildInvoiceHtml } = require('../report-html');
+const { buildInspectionReportHtml, buildInvoiceHtml, buildJobSheetHtml } = require('../report-html');
 
 let browserPromise = null;
 
@@ -67,22 +67,12 @@ async function jobPdf(jobId, orgId) {
     'SELECT * FROM inspections WHERE job_id = $1 AND org_id = $2 ORDER BY created_at DESC LIMIT 1',
     [jobId, orgId]
   );
-  let html;
   if (insp) {
     insp.defects = await db.queryAll('SELECT * FROM defects WHERE inspection_id = $1 ORDER BY severity DESC', [insp.id]);
-    html = buildInspectionReportHtml(insp, { orgName: 'HGVDesk' });
-  } else {
-    html = buildInspectionReportHtml({
-      vehicle_reg: job.vehicle_reg,
-      inspection_id: job.job_number,
-      inspection_type: job.inspection_type,
-      inspector_name: job.technician_name,
-      status: job.status,
-      created_at: job.created_at,
-      notes: job.notes,
-      defects: [],
-    }, { orgName: 'HGVDesk' });
   }
+  const parts = await db.queryAll('SELECT * FROM parts WHERE job_id = $1 AND org_id = $2', [jobId, orgId]);
+  const jobLines = await db.queryAll('SELECT * FROM job_lines WHERE job_id = $1 AND org_id = $2 ORDER BY created_at ASC', [jobId, orgId]);
+  const html = buildJobSheetHtml(job, { inspection: insp || null, parts, jobLines, orgName: 'HGVDesk' });
   const filename = `${(job.job_number || 'JOB').replace(/\s/g, '_')}-${(job.vehicle_reg || '').replace(/\s/g, '')}.pdf`;
   const pdf = await htmlToPdf(html);
   return { pdf, filename };
