@@ -484,7 +484,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
       <div class="fsec-hd" data-sec="s5">
         <div class="fsec-num" id="n5">5</div>
         <div class="fsec-title">Tyre Data</div>
-        <div class="fsec-meta">Depth mm - Pressure PSI - Condition</div>
+        <div class="fsec-meta">Depth mm - Date Fitted - Condition</div>
       </div>
       <div class="fsec-body" id="s5"><div class="tyre-grid" id="tyre-wrap"></div></div>
     </div>
@@ -977,7 +977,7 @@ function buildTyres() {
           '<div class="tp-name">' + pos + '</div>' +
           '<div class="tp-flds">' +
           '<div><div class="tf-lbl">Depth mm</div><input class="tf-in" type="number" step="0.1" placeholder="0" id="td-' + tid + '"></div>' +
-          '<div><div class="tf-lbl">Pressure PSI</div><input class="tf-in" type="number" step="1" placeholder="0" id="tp-psi-' + tid + '"></div>' +
+          '<div><div class="tf-lbl">Date Fitted</div><input class="tf-in" type="date" id="tf-' + tid + '"></div>' +
           '</div>' +
           '<div class="tp-cond">' +
           '<button class="tc tc-ok" data-tid="' + tid + '" data-cond="ok">OK</button>' +
