@@ -554,19 +554,12 @@ function buildDefectsHtml(defects) {
 }
 
 async function renderInspectionPreview(inspId, res) {
-  const { queryOne, queryAll } = require('./db');
-  const insp = await queryOne('SELECT * FROM inspections WHERE id = $1', [inspId]);
+  const db = require('./db');
+  const insp = await db.queryOne('SELECT * FROM inspections WHERE id = $1', [inspId]);
   if (!insp) { res.writeHead(404); res.end('Not found'); return; }
-  const defects = await queryAll('SELECT * FROM defects WHERE inspection_id = $1', [inspId]);
-  const checks = parseMaybeJson(insp.check_items, []);
-  const date = new Date(insp.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-  const resultColor = previewResultColor(insp.result);
-  const resultLabel = (insp.result || 'Pending').toUpperCase();
-  const checksHtml = buildChecksHtml(checks);
-  const defectsHtml = buildDefectsHtml(defects);
-
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inspection Report - ${insp.vehicle_reg}</title><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:"DM Sans",-apple-system,sans-serif;background:#f5f5f7;color:#1d1d1f;padding:40px 20px;}.page{max-width:800px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;}.header{background:#1d1d1f;padding:32px 40px;color:#fff;display:flex;justify-content:space-between;align-items:flex-start;}.logo{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#888;margin-bottom:8px;}.reg{font-size:36px;font-weight:700;letter-spacing:0.05em;}.result-badge{padding:8px 20px;border-radius:8px;font-size:14px;font-weight:700;letter-spacing:0.05em;background:${resultColor};color:#fff;}.body{padding:40px;}.section{margin-bottom:32px;}.section-title{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#888;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;}.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px;}.meta-item{background:#f5f5f7;border-radius:10px;padding:16px;}.meta-label{font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}.meta-value{font-size:14px;font-weight:600;color:#1d1d1f;}@media print{body{background:#fff;padding:0;}.page{box-shadow:none;border-radius:0;}}.print-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:#1d1d1f;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:24px;font-family:inherit;}@media print{.print-btn{display:none;}}</style></head><body><div style="max-width:800px;margin:0 auto 20px;"><button class="print-btn" onclick="window.print()">Print / Save PDF</button></div><div class="page"><div class="header"><div><div class="logo">HGVDesk &mdash; Inspection Report</div><div class="reg">${insp.vehicle_reg}</div><div style="font-size:14px;color:#888;margin-top:4px;">${insp.inspection_type} &bull; ${date}</div></div><div class="result-badge">${resultLabel}</div></div><div class="body"><div class="meta-grid"><div class="meta-item"><div class="meta-label">Inspection ID</div><div class="meta-value">${insp.inspection_id}</div></div><div class="meta-item"><div class="meta-label">Inspector</div><div class="meta-value">${insp.inspector_name || 'Not recorded'}</div></div><div class="meta-item"><div class="meta-label">Status</div><div class="meta-value">${insp.status}</div></div><div class="meta-item"><div class="meta-label">Nil Defect</div><div class="meta-value">${insp.nil_defect ? 'Yes' : 'No'}</div></div><div class="meta-item"><div class="meta-label">Mileage</div><div class="meta-value">${insp.overall_mileage || 'Not recorded'}</div></div><div class="meta-item"><div class="meta-label">Completed</div><div class="meta-value">${insp.completed_at ? new Date(insp.completed_at).toLocaleDateString('en-GB') : 'In progress'}</div></div></div><div class="section"><div class="section-title">Check Items</div>${checksHtml}</div><div class="section"><div class="section-title">Defects</div>${defectsHtml}</div>${insp.notes ? '<div class="section"><div class="section-title">Notes</div><p style="font-size:13px;color:#636366;line-height:1.6;">' + insp.notes + '</p></div>' : ''}</div></div></body></html>`;
-
+  insp.defects = await db.queryAll('SELECT * FROM defects WHERE inspection_id = $1 ORDER BY severity DESC, created_at ASC', [inspId]);
+  const { buildInspectionReportHtml } = require('./report-html');
+  const html = buildInspectionReportHtml(insp, { orgName: 'HGVDesk' });
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(html);
 }

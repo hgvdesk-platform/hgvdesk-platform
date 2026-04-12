@@ -71,6 +71,8 @@ async function sendFailedInspectionAlert({ vehicleReg, inspectorName, inspection
   }
 }
 
+const { buildInspectionReportHtml } = require('./report-html');
+
 function escapeHtml(s) {
   if (s == null) return '';
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -155,54 +157,11 @@ function buildDefectsHtml(defects) {
 async function sendInspectionReport({ to, inspection, orgName, aiSummary }) {
   if (!RESEND_API_KEY) { console.error('[MAILER] No RESEND_API_KEY set'); return { sent: false }; }
   const insp = inspection;
-  const rc = resultColor(insp.result);
-  const date = insp.completed_at ? new Date(insp.completed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : new Date(insp.created_at).toLocaleDateString('en-GB');
-
-  const summaryBlock = aiSummary ? `
-          <tr><td colspan="2" style="padding:12px 0;">
-            <div style="background:#fff8f3;border:1px solid #FFD9BF;border-left:4px solid #FF6B00;border-radius:8px;padding:12px 14px;">
-              <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#FF6B00;margin-bottom:4px;">AI Summary</div>
-              <div style="font-size:13px;line-height:1.5;color:#1d1d1f;">${escapeHtml(aiSummary)}</div>
-            </div>
-          </td></tr>` : '';
-
   const payload = {
     from: FROM_EMAIL,
     to: [to],
     subject: `Inspection Report — ${insp.vehicle_reg} — ${(insp.result || 'Pending').toUpperCase()}`,
-    html: `
-      <div style="font-family:-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:24px;">
-        <div style="background:#1d1d1f;color:#fff;padding:16px 20px;border-radius:10px 10px 0 0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="margin:0;font-size:18px;">Inspection Report</h2>
-            <span style="background:${rc};padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;">${(insp.result || 'Pending').toUpperCase()}</span>
-          </div>
-          <div style="font-size:12px;color:#aeaeb2;margin-top:4px;">${escapeHtml(insp.vehicle_reg)} &bull; ${escapeHtml(insp.inspection_type || 'T50')} &bull; ${date}</div>
-        </div>
-        <div style="background:#f5f5f7;padding:20px;border-radius:0 0 10px 10px;border:1px solid #e5e5e7;border-top:none;">
-          <table style="width:100%;border-collapse:collapse;">
-            ${summaryBlock}
-            ${sectionHead('Inspection Details')}
-            ${metaRow('Vehicle', insp.vehicle_reg)}
-            ${metaRow('Inspection ID', insp.inspection_id)}
-            ${metaRow('Type', insp.inspection_type || 'T50')}
-            ${metaRow('Inspector', insp.inspector_name || 'Not recorded')}
-            ${metaRow('Mileage', insp.overall_mileage ? String(insp.overall_mileage) + ' miles' : 'Not recorded')}
-            ${metaRow('Status', insp.status || 'unknown')}
-            ${insp.nil_defect ? metaRow('Nil Defect', 'Yes — no defects found') : ''}
-            ${buildCheckItemsHtml(insp.checkItems)}
-            ${buildBrakeHtml(insp.brakeData)}
-            ${buildTyreHtml(insp.tyreData)}
-            ${buildDefectsHtml(insp.defects)}
-            ${insp.notes ? sectionHead('Inspector Notes') + '<tr><td colspan="2" style="padding:6px 0;font-size:13px;line-height:1.5;">' + escapeHtml(insp.notes) + '</td></tr>' : ''}
-          </table>
-          <div style="margin-top:20px;">
-            <a href="https://hgvdesk.co.uk/inspect" style="background:#FF6B00;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-size:13px;font-weight:600;">View in HGVDesk</a>
-          </div>
-        </div>
-        <p style="font-size:11px;color:#888;margin-top:12px;text-align:center;">${escapeHtml(orgName || 'HGVDesk')} &bull; hgvdesk.co.uk</p>
-      </div>
-    `
+    html: buildInspectionReportHtml(insp, { aiSummary, orgName }),
   };
   try {
     const r = await resendSend(payload);

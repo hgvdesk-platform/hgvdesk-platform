@@ -642,13 +642,23 @@ function loadData() {
 }
 
 // CHECKLIST
+// DVSA HGV Inspection Manual — official check categories
 var CHECKS = [
-  {cat: 'Brakes and Steering', items: ['Service brake operation', 'Parking brake operation', 'Brake lines and hoses', 'ABS / EBS warning lights', 'Steering play and operation', 'Power steering fluid', 'Track rod ends', 'Wheel bearings']},
-  {cat: 'Tyres and Wheels', items: ['Tread depth all positions min 1mm', 'Tyre condition and sidewalls', 'Wheel fixings and torque', 'Spare tyre if fitted']},
-  {cat: 'Lighting', items: ['Headlights main and dipped', 'Brake lights all', 'Indicators front and rear', 'Reverse lights and alarm', 'Side marker lights', 'Rear fog lights', 'Number plate light', 'Hazard warning lights']},
-  {cat: 'Body and Structure', items: ['Chassis condition no cracks', 'Body panels and doors secure', 'Mirrors condition and adjustment', 'Windscreen and wipers', 'Cab mounts and tilt', 'Fifth wheel if applicable', 'Load securing equipment']},
-  {cat: 'Engine', items: ['Engine oil level', 'Coolant level', 'Brake fluid level', 'No fluid leaks', 'Drive belts condition', 'Exhaust system', 'DPF and emissions']},
-  {cat: 'Cab Safety', items: ['Seatbelts all positions', 'Fire extinguisher present and valid', 'Warning triangles present', 'First aid kit present', 'Speedometer and instruments', 'Horn operation']}
+  {cat: 'Audible Warning', items: ['Horn operation and effectiveness']},
+  {cat: 'Bodywork and Load Security', items: ['Body panels secure no damage', 'Load securing equipment', 'Chassis condition no cracks or corrosion', 'Coupling devices and fifth wheel']},
+  {cat: 'Brakes', items: ['Service brake operation', 'Secondary brake operation', 'Parking brake operation and efficiency', 'Brake lines hoses and connections', 'ABS EBS warning lights and operation', 'Brake chamber and actuators', 'Brake pads discs and drums']},
+  {cat: 'Cab and Doors', items: ['Doors steps and handles', 'Cab mounts and tilt mechanism', 'Driver seat adjustment and condition', 'Seatbelts all positions']},
+  {cat: 'Driver Controls', items: ['Speedometer and tachograph', 'Dashboard warning lights', 'Windscreen washers and wipers', 'Heating and demist']},
+  {cat: 'Engine and Fluids', items: ['Engine oil level', 'Coolant level', 'Power steering fluid', 'Brake fluid level', 'No fluid leaks', 'Drive belts condition']},
+  {cat: 'Exhaust and Emissions', items: ['Exhaust system secure no leaks', 'DPF and emissions system', 'Smoke opacity within limits']},
+  {cat: 'Fuel System', items: ['Fuel tank secure', 'Fuel lines no leaks', 'Fuel cap and seals']},
+  {cat: 'Lights and Electrics', items: ['Headlights main and dipped', 'Brake lights all positions', 'Indicators front and rear', 'Reverse lights and alarm', 'Side marker lights', 'Rear fog lights', 'Number plate lights', 'Hazard warning lights']},
+  {cat: 'Mirrors and Glass', items: ['Mirrors condition and adjustment', 'Windscreen condition no cracks', 'Side windows operation']},
+  {cat: 'Number Plates', items: ['Number plates legible and secure', 'Operator licence disc displayed']},
+  {cat: 'Steering', items: ['Steering play and operation', 'Track rod ends', 'Steering box and column']},
+  {cat: 'Suspension', items: ['Air suspension bags and valves', 'Leaf springs condition', 'Shock absorbers', 'Height control valves']},
+  {cat: 'Tyres and Wheels', items: ['Tread depth all positions min 1mm HGV', 'Tyre condition and sidewalls', 'Tyre pressures within spec', 'Wheel fixings and torque', 'Wheel bearings no play']},
+  {cat: 'Visibility', items: ['Windscreen clean and clear', 'All mirrors fitted and clean', 'Camera systems operational if fitted']}
 ];
 
 function eid(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
