@@ -612,6 +612,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <script>
 var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
 var checks = {}, brakes = {}, tyres = {}, defects = [], nilDef = false, curZone = null, curSev = 'advisory';
+var defectPhotos = {};
 
 // API
 function api(method, path, body) {
@@ -887,9 +888,13 @@ function switchType() {
 }
 function updateChecklistMeta() {
   var type = document.getElementById('f-type').value;
-  var total = 0; getChecks().forEach(function(c) { total += c.items.length; });
-  var done = Object.keys(checks).length;
-  var label = type ? type + ' — ' + done + ' / ' + total + ' complete' : done + ' / ' + total + ' complete';
+  var cats = getChecks();
+  var catsDone = 0;
+  cats.forEach(function(c) {
+    var allDone = c.items.every(function(item) { return checks[eid(item)]; });
+    if (allDone) catsDone++;
+  });
+  var label = type ? type + ' — ' + catsDone + ' / ' + cats.length + ' categories' : catsDone + ' / ' + cats.length + ' categories';
   document.getElementById('m2').textContent = label;
 }
 document.getElementById('f-type').addEventListener('change', switchType);
@@ -1105,13 +1110,41 @@ document.getElementById('modal-save').addEventListener('click', function() {
   toast(curSev === 'critical' ? 'Defect' : 'Advisory', curZone.label + ' - marked');
 });
 
+function addDefectPhoto(defectId) {
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*'; input.multiple = true;
+  input.onchange = function() {
+    Array.from(input.files).forEach(function(file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        if (!defectPhotos[defectId]) defectPhotos[defectId] = [];
+        defectPhotos[defectId].push({ data: e.target.result, name: file.name });
+        renderDefects();
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+  input.click();
+}
+function removeDefectPhoto(defectId, idx) {
+  if (defectPhotos[defectId]) defectPhotos[defectId].splice(idx, 1);
+  renderDefects();
+}
+
 function renderDefects() {
   var dl = document.getElementById('def-list');
   if (!defects.length) { dl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--t5);font-size:13px;">No defects marked - tap zones on the diagram above</div>'; return; }
   dl.innerHTML = defects.map(function(d) {
+    var photos = defectPhotos[d.id] || [];
+    var photoHtml = photos.length ? '<div class="photo-grid" style="margin-top:6px;">' + photos.map(function(p, pi) {
+      return '<div class="photo-thumb-wrap"><img class="photo-thumb" src="' + p.data + '"><button class="photo-remove" onclick="event.stopPropagation();removeDefectPhoto(' + d.id + ',' + pi + ')">x</button></div>';
+    }).join('') + '</div>' : '';
     return '<div class="def-item ' + (d.severity === 'critical' ? 'crit' : 'adv') + '">' +
       '<div class="def-bar"></div>' +
-      '<div style="flex:1;"><div class="def-zone">' + d.zoneLabel + (d.part ? ' - ' + d.part : '') + '</div><div class="def-desc">' + d.description + '</div></div>' +
+      '<div style="flex:1;"><div class="def-zone">' + d.zoneLabel + (d.part ? ' - ' + d.part : '') + '</div><div class="def-desc">' + d.description + '</div>' +
+      photoHtml +
+      '<div style="margin-top:6px;"><button class="btn btn-s" style="padding:3px 10px;font-size:10px;" onclick="event.stopPropagation();addDefectPhoto(' + d.id + ')">📷 Add photo</button></div>' +
+      '</div>' +
       '<span class="def-sev ' + (d.severity === 'critical' ? 'c' : 'a') + '">' + (d.severity === 'critical' ? 'Defect' : 'Advisory') + '</span>' +
       '<button class="def-rm" data-id="' + d.id + '">x</button></div>';
   }).join('');
@@ -1214,7 +1247,15 @@ function updateBanner() {
   var ri = document.getElementById('rb-icon');
   var rs = document.getElementById('rb-sub');
   var rectNote = rectCount > 0 ? ' (' + rectCount + ' rectified)' : '';
-  if (tf > 0) { rb.className = 'rb rb-f'; ri.textContent = 'FAIL'; rt.textContent = 'Inspection FAIL - ' + tf + ' outstanding defect(s)' + rectNote; rt.style.color = 'var(--red)'; }
+  if (tf > 0) {
+    var reasons = [];
+    if (fails > 0) reasons.push(fails + ' check item(s) failed');
+    if (critD > 0) reasons.push(critD + ' critical defect(s)');
+    if (tyreDef > 0) reasons.push(tyreDef + ' tyre defect(s)');
+    if (bf) reasons.push('brake efficiency below DVSA minimum');
+    if (bi > 0) reasons.push(bi + ' axle imbalance fail(s)');
+    rb.className = 'rb rb-f'; ri.textContent = 'FAIL'; rt.textContent = 'Inspection FAIL — ' + reasons.join(', ') + rectNote; rt.style.color = 'var(--red)';
+  }
   else if (ta > 0) { rb.className = 'rb rb-a'; ri.textContent = 'ADV'; rt.textContent = 'Advisory - ' + ta + ' item(s) to monitor' + rectNote; rt.style.color = 'var(--amber)'; }
   else if (rectCount > 0) { rb.className = 'rb rb-p'; ri.textContent = 'ok'; rt.textContent = 'Pass - All ' + rectCount + ' defect(s) rectified'; rt.style.color = 'var(--green)'; }
   else { rb.className = 'rb rb-p'; ri.textContent = 'ok'; rt.textContent = 'No Issues - Pass'; rt.style.color = 'var(--green)'; }
@@ -1243,8 +1284,12 @@ function updateRectificationSection() {
 
   list.innerHTML = defects.map(function(d) {
     var sevColor = d.severity === 'critical' ? 'var(--red)' : 'var(--amber)';
-    var photos = rectPhotos[d.id] || [];
-    var photoGrid = photos.length ? '<div class="photo-grid" style="margin-top:8px;">' + photos.map(function(p, pi) {
+    var dPhotos = defectPhotos[d.id] || [];
+    var defPhotoGrid = dPhotos.length ? '<div style="margin-top:8px;"><div style="font-size:10px;font-weight:600;color:var(--t4);margin-bottom:4px;">DEFECT PHOTOS</div><div class="photo-grid">' + dPhotos.map(function(p) {
+      return '<div class="photo-thumb-wrap"><img class="photo-thumb" src="' + p.data + '"></div>';
+    }).join('') + '</div></div>' : '';
+    var rPhotos = rectPhotos[d.id] || [];
+    var rectPhotoGrid = rPhotos.length ? '<div class="photo-grid" style="margin-top:8px;">' + rPhotos.map(function(p, pi) {
       return '<div class="photo-thumb-wrap"><img class="photo-thumb" src="' + p.data + '"><button class="photo-remove" onclick="removeRectPhoto(' + d.id + ',' + pi + ')">x</button></div>';
     }).join('') + '</div>' : '';
 
@@ -1267,12 +1312,13 @@ function updateRectificationSection() {
         '</div>' +
         '<textarea id="rect-notes-' + d.id + '" placeholder="Describe what was done..." rows="2" style="width:100%;padding:8px 10px;border:1px solid rgba(0,0,0,0.12);border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;resize:none;"></textarea>' +
       '</div>' +
-      '<label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:6px;">Rectification Evidence Photos</label>' +
+      defPhotoGrid +
+      '<label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:6px;">Repair Evidence Photos</label>' +
       '<div class="photo-upload-area" onclick="addRectPhoto(' + d.id + ')" style="padding:10px;">' +
         '<input type="file" id="rect-fi-' + d.id + '" accept="image/*" multiple style="display:none;">' +
-        '<div style="font-size:12px;color:var(--t4);">📷 Tap to add evidence photos</div>' +
+        '<div style="font-size:12px;color:var(--t4);">📷 Tap to add repair evidence</div>' +
       '</div>' +
-      photoGrid +
+      rectPhotoGrid +
     '</div>';
   }).join('');
 }

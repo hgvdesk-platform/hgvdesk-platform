@@ -223,16 +223,24 @@ async function updateDefect(body, org, defectId) {
   );
   if (!defect) throw { status: 404, message: 'Defect not found' };
 
-  // Recalculate inspection result based on remaining unresolved defects.
-  // Resolved defects don't count toward the result.
+  // Full recalculation using all inspection inputs (defects + check items + brakes + tyres)
   if (resolved !== undefined && defect.inspection_id) {
+    const insp = await queryOne(
+      'SELECT check_items, brake_test_data, tyre_data, nil_defect FROM inspections WHERE id = $1 AND org_id = $2',
+      [defect.inspection_id, orgId]
+    );
     const openDefects = await queryAll(
       'SELECT severity FROM defects WHERE inspection_id = $1 AND org_id = $2 AND resolved = false',
       [defect.inspection_id, orgId]
     );
-    let newResult = 'pass';
-    if (openDefects.some(d => d.severity === 'critical')) newResult = 'fail';
-    else if (openDefects.some(d => d.severity === 'advisory' || d.severity === 'major')) newResult = 'advisory';
+    const checkItems = typeof insp.check_items === 'string' ? JSON.parse(insp.check_items) : (insp.check_items || {});
+    const brakeTestData = typeof insp.brake_test_data === 'string' ? JSON.parse(insp.brake_test_data) : (insp.brake_test_data || null);
+    const tyreData = typeof insp.tyre_data === 'string' ? JSON.parse(insp.tyre_data) : (insp.tyre_data || {});
+    const newResult = calculateInspectionResult({
+      nilDefect: insp.nil_defect,
+      defects: openDefects.map(d => ({ severity: d.severity, resolved: false })),
+      checkItems, brakeTestData, tyreData
+    });
     await queryOne(
       'UPDATE inspections SET result = $1, updated_at = NOW() WHERE id = $2 AND org_id = $3 RETURNING id',
       [newResult, defect.inspection_id, orgId]
