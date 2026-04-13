@@ -872,17 +872,25 @@ function buildBrakeTable() {
 function switchType() {
   var type = (document.getElementById('f-type').value || '').toUpperCase();
   var isT60 = type === 'T60';
+  console.log('[INSPECT] switchType → type=' + type + ', isT60=' + isT60 + ', checklist items=' + getChecks().length);
   document.getElementById('diag-t50').style.display = isT60 ? 'none' : 'block';
   document.getElementById('diag-t60').style.display = isT60 ? 'block' : 'none';
   buildChecklist();
   buildBrakeTable();
   buildTyres();
   updateChecklistMeta();
+  // Auto-expand S2 checklist when type is selected so user sees the change
+  if (type) {
+    var s2 = document.getElementById('s2');
+    if (s2 && !s2.classList.contains('open')) s2.classList.add('open');
+  }
 }
 function updateChecklistMeta() {
+  var type = document.getElementById('f-type').value;
   var total = 0; getChecks().forEach(function(c) { total += c.items.length; });
   var done = Object.keys(checks).length;
-  document.getElementById('m2').textContent = done + ' / ' + total + ' complete';
+  var label = type ? type + ' — ' + done + ' / ' + total + ' complete' : done + ' / ' + total + ' complete';
+  document.getElementById('m2').textContent = label;
 }
 document.getElementById('f-type').addEventListener('change', switchType);
 
@@ -1690,6 +1698,7 @@ window.openInspRow = function(id) {
     if (oldPanel) oldPanel.remove();
     document.getElementById('f-reg').value = insp.vehicle_reg || '';
     document.getElementById('f-type').value = insp.inspection_type || '';
+    switchType();
     document.getElementById('f-insp').value = insp.inspector_name || '';
     var custEl = document.getElementById('f-cust');
     if (custEl) {
