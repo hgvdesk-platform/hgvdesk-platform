@@ -120,11 +120,12 @@ async function createInvoice(body, org) {
 
   const invoice = await queryOne(
     `INSERT INTO invoices (org_id, invoice_number, customer_id, job_id, customer_name, customer_email,
-      status, issue_date, due_date, subtotal, vat_amount, total, notes)
-     VALUES ($1,$2,$3,$4,$5,$6,'draft',$7,$8,$9,$10,$11,$12) RETURNING *`,
+      vehicle_reg, status, issue_date, due_date, subtotal, vat_amount, total, notes)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'draft',$8,$9,$10,$11,$12,$13) RETURNING *`,
     [orgId, invoiceNum, customerId || null, jobId || null,
      customer ? customer.name : (body.customerName || null),
      customer ? customer.email : (body.customerEmail || null),
+     body.vehicleReg || null,
      issue.toISOString().split('T')[0],
      due.toISOString().split('T')[0],
      subtotal, vatAmount, total, notes || null]
@@ -198,34 +199,41 @@ async function generateFromJob(body, org) {
       [orgId, '%' + job.customer_name.toLowerCase() + '%']);
   }
 
-  const labourRate = customer ? parseFloat(customer.labour_rate) : 75.00;
+  const labourRate = customer ? parseFloat(customer.labour_rate || 65) : 65.00;
 
-  // Get job lines (sold hours) for this job
   const jobLines = await queryAll(
     'SELECT * FROM job_lines WHERE job_id = $1 AND org_id = $2 ORDER BY created_at ASC', [jobId, orgId]
   );
-
-  // Get parts for this job
   const parts = await queryAll(
     'SELECT * FROM parts WHERE job_id = $1 AND org_id = $2', [jobId, orgId]
   );
 
   const lines = [];
 
-  // Labour lines from job library (sold hours)
+  // Labour from job_lines (sold hours library items)
   if (jobLines.length > 0) {
     jobLines.forEach(function(jl) {
-      const soldHrs = parseFloat(jl.sold_hours) * parseFloat(jl.quantity);
+      const hrs = parseFloat(jl.sold_hours || 0) * parseFloat(jl.quantity || 1);
       lines.push({
         type: 'labour',
-        description: (jl.code ? jl.code + ' — ' : '') + jl.name + ' (' + soldHrs.toFixed(2) + ' hrs @ £' + labourRate.toFixed(2) + '/hr)',
-        quantity: soldHrs,
+        description: 'Workshop Labour — ' + (jl.name || jl.description || 'Service') + ' (' + hrs.toFixed(1) + ' hrs @ £' + labourRate.toFixed(2) + '/hr)',
+        quantity: hrs,
         unitPrice: labourRate,
-        lineTotal: soldHrs * labourRate
+        lineTotal: hrs * labourRate
       });
     });
+  } else if (parseFloat(job.sold_hours || 0) > 0) {
+    // Fallback: use job-level sold_hours
+    const hrs = parseFloat(job.sold_hours);
+    lines.push({
+      type: 'labour',
+      description: 'Workshop Labour — ' + (job.inspection_type || 'Service') + ' ' + job.vehicle_reg + ' (' + hrs.toFixed(1) + ' hrs @ £' + labourRate.toFixed(2) + '/hr)',
+      quantity: hrs,
+      unitPrice: labourRate,
+      lineTotal: hrs * labourRate
+    });
   } else {
-    // Fallback: no job lines saved, use single inspection line
+    // Minimal fallback: single inspection charge
     lines.push({
       type: 'labour',
       description: (job.inspection_type || 'Workshop Service') + ' — ' + job.vehicle_reg,
@@ -235,25 +243,27 @@ async function generateFromJob(body, org) {
     });
   }
 
-  // Parts lines
+  // Parts as individual line items
   parts.forEach(function(p) {
-    if (p.unit_cost) {
-      lines.push({
-        type: 'parts',
-        description: p.name + (p.part_id ? ' (' + p.part_id + ')' : ''),
-        quantity: 1,
-        unitPrice: parseFloat(p.unit_cost),
-        lineTotal: parseFloat(p.unit_cost)
-      });
-    }
+    const qty = parseInt(p.qty || 1);
+    const cost = parseFloat(p.unit_cost || 0);
+    lines.push({
+      type: 'parts',
+      description: p.name + (p.part_number ? ' — ' + p.part_number : '') + (p.part_id ? ' (' + p.part_id + ')' : ''),
+      quantity: qty,
+      unitPrice: cost,
+      lineTotal: qty * cost
+    });
   });
 
   return createInvoice({
     customerId: customer ? customer.id : null,
     customerName: job.customer_name,
+    customerEmail: customer ? customer.email : null,
     jobId: jobId,
+    vehicleReg: job.vehicle_reg,
     lines: lines,
-    notes: 'Auto-generated from Job #' + (job.job_number || jobId)
+    notes: 'Vehicle: ' + job.vehicle_reg + ' · Job: ' + (job.job_number || jobId) + (job.notes ? ' · ' + job.notes : '')
   }, org);
 }
 

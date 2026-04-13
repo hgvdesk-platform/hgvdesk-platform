@@ -411,6 +411,15 @@ function buildInvoiceHtml(invoice, lines, opts={}) {
   h += `<div style="font-family:'Barlow',sans-serif;font-size:12px;line-height:2;color:${C.text};">Invoice: <strong>${esc(invoice.invoice_number)}</strong><br>Issued: ${fmtShort(invoice.issue_date)}<br>Due: ${fmtShort(invoice.due_date)}<br>Terms: 30 days net</div>`;
   h += '</div></td></tr>';
 
+  // Vehicle section (if from a job)
+  if (invoice.vehicle_reg) {
+    h += `<tr><td colspan="10" style="padding:12px 0;"><div style="background:${C.surface};border:1px solid ${C.border};border-radius:6px;padding:14px 18px;display:flex;align-items:center;gap:20px;">
+      <div><div style="${LBL}color:${C.orange};margin-bottom:4px;">Vehicle</div><div style="font-family:monospace;${HEAD_S}font-size:22px;color:${C.text};letter-spacing:1px;">${esc(invoice.vehicle_reg)}</div></div>
+      ${invoice.job_id ? '<div><div style="'+LBL+'color:'+C.muted+';margin-bottom:4px;">Job Reference</div><div style="font-family:\'Barlow\',sans-serif;font-size:13px;color:'+C.text+';">Job #'+esc(String(invoice.job_id))+'</div></div>' : ''}
+      <div><div style="${LBL}color:${C.muted};margin-bottom:4px;">Date of Work</div><div style="font-family:'Barlow',sans-serif;font-size:13px;color:${C.text};">${fmtShort(invoice.issue_date)}</div></div>
+    </div></td></tr>`;
+  }
+
   // Line items table
   h += secTitleWide('Line Items');
   const th = `style="padding:10px 12px;${LBL}border-bottom:1px solid ${C.border};"`;
