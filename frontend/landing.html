@@ -78,19 +78,21 @@
 
   /* HERO — split panel Sage/Xero style */
   .hero {
-    min-height: 100vh;
     display: grid;
     grid-template-columns: 45% 55%;
+    min-height: 100vh;
     margin-top: 64px;
   }
 
   .hero-left {
-    display: flex; flex-direction: column; justify-content: center;
-    height: calc(100vh - 64px);
-    padding: 0 56px 0 80px;
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 80px 56px 80px 80px;
     background: #ffffff;
-    position: relative;
-    z-index: 1;
     border-right: 1px solid #f0f0f0;
   }
 
