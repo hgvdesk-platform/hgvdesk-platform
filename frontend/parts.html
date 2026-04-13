@@ -212,7 +212,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page" id="page-all">
   <div class="phd">
     <div><div class="ptitle">All Parts</div><div class="pdesc">Complete parts history</div></div>
-    <div class="pacts"><button class="btn btn-p" id="btn-new-all">+ Add Part</button></div>
+    <div class="pacts"><button class="btn btn-s" onclick="selectAllParts()">Select All</button><button class="btn" style="background:#dc2626;color:#fff;" onclick="deleteSelectedParts()">Delete Selected</button><button class="btn btn-p" id="btn-new-all">+ Add Part</button></div>
   </div>
   <div class="card">
     <div class="card-hd"><div class="card-title">All Parts</div><span class="badge bg-i" id="all-tot">0</span></div>
@@ -590,6 +590,11 @@ function deleteInspection(id) {
   }).catch(function(e){ alert('Error: ' + e.message); });
 }
 
+function selectAllParts() {
+  var cbs = document.querySelectorAll('.row-cb');
+  var allChecked = Array.from(cbs).every(function(c) { return c.checked; });
+  cbs.forEach(function(c) { c.checked = !allChecked; });
+}
 function deleteSelectedParts() {
   var cbs = document.querySelectorAll('.row-cb:checked');
   if (!cbs.length) { alert('No items selected'); return; }
