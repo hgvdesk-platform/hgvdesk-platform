@@ -154,7 +154,9 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 .eff-status.ok{color:#248a3d;}
 .eff-status.ng{color:var(--red);}
 
-/* DIAGRAM */
+/* DIAGRAM — image-based with SVG overlay zones */
+.zone{fill:transparent;stroke:transparent;stroke-width:2;cursor:pointer;transition:all 0.15s;}
+.zone:hover{fill:rgba(255,85,0,0.12);stroke:#ff5500;stroke-width:2.5;}
 .diag-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);}
 .dtab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--t4);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;}
 .dtab.on{color:var(--orange);border-bottom-color:var(--orange);font-weight:600;}
@@ -460,27 +462,49 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
       </div>
     </div>
 
-    <!-- S4 DEFECT DIAGRAM -->
+    <!-- S4 DEFECT DIAGRAM — image-based with clickable SVG overlay zones -->
     <div class="fsec">
       <div class="fsec-hd" data-sec="s4">
         <div class="fsec-num" id="n4">4</div>
         <div class="fsec-title">Visual Defect Diagram</div>
-        <div class="fsec-meta" id="m4">Tap zones on truck diagram to mark defects</div>
+        <div class="fsec-meta" id="m4">Tap zones on the vehicle diagram to mark defects</div>
       </div>
       <div class="fsec-body" id="s4">
-        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-          <div class="diag-tabs">
-            <div class="dtab on" data-view="ns">Driver Side (NS)</div>
-            <div class="dtab" data-view="os">Pass. Side (OS)</div>
-            <div class="dtab" data-view="front">Front</div>
-            <div class="dtab" data-view="rear">Rear</div>
-            <div class="dtab" data-view="top">Roof</div>
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#f8f9fa;">
+          <!-- T50 truck diagram -->
+          <div id="diag-t50" style="position:relative;width:100%;">
+            <img src="/images/truck-diagram.png" style="width:100%;display:block;" alt="HGV Truck Diagram">
+            <svg viewBox="0 0 1000 600" style="position:absolute;top:0;left:0;width:100%;height:100%;" id="svg-t50">
+              <rect class="zone" data-zone="Front Lights" x="10" y="40" width="80" height="140" rx="6"/>
+              <rect class="zone" data-zone="Cab / Windscreen" x="90" y="20" width="210" height="280" rx="6"/>
+              <rect class="zone" data-zone="Engine / Fluid Leaks" x="50" y="300" width="250" height="120" rx="6"/>
+              <rect class="zone" data-zone="NS Front Tyre" x="70" y="420" width="130" height="160" rx="6"/>
+              <rect class="zone" data-zone="Chassis / Body" x="310" y="120" width="400" height="240" rx="6"/>
+              <rect class="zone" data-zone="Fuel Tank" x="380" y="360" width="160" height="120" rx="6"/>
+              <rect class="zone" data-zone="Fifth Wheel" x="500" y="200" width="120" height="100" rx="6"/>
+              <rect class="zone" data-zone="NS Rear Tyres" x="580" y="380" width="180" height="200" rx="6"/>
+              <rect class="zone" data-zone="OS Rear Tyres" x="770" y="380" width="130" height="200" rx="6"/>
+              <rect class="zone" data-zone="Rear Lights" x="900" y="80" width="80" height="180" rx="6"/>
+              <rect class="zone" data-zone="Steering" x="120" y="420" width="110" height="80" rx="6"/>
+              <rect class="zone" data-zone="Exhaust" x="310" y="380" width="70" height="80" rx="6"/>
+            </svg>
           </div>
-          <div class="dview on" id="dv-ns"></div>
-          <div class="dview" id="dv-os"></div>
-          <div class="dview" id="dv-front"></div>
-          <div class="dview" id="dv-rear"></div>
-          <div class="dview" id="dv-top"></div>
+          <!-- T60 trailer diagram -->
+          <div id="diag-t60" style="position:relative;width:100%;display:none;">
+            <img src="/images/trailer-diagram.png" style="width:100%;display:block;" alt="Trailer Diagram">
+            <svg viewBox="0 0 1000 400" style="position:absolute;top:0;left:0;width:100%;height:100%;" id="svg-t60">
+              <rect class="zone" data-zone="Trailer Front" x="10" y="20" width="80" height="280" rx="6"/>
+              <rect class="zone" data-zone="NS Curtain / Body" x="100" y="10" width="700" height="70" rx="6"/>
+              <rect class="zone" data-zone="OS Curtain / Body" x="100" y="280" width="700" height="70" rx="6"/>
+              <rect class="zone" data-zone="Trailer Rear / Doors" x="870" y="20" width="110" height="300" rx="6"/>
+              <rect class="zone" data-zone="Landing Legs" x="180" y="250" width="80" height="130" rx="6"/>
+              <rect class="zone" data-zone="Trailer Axle 1" x="530" y="260" width="100" height="120" rx="6"/>
+              <rect class="zone" data-zone="Trailer Axle 2" x="640" y="260" width="100" height="120" rx="6"/>
+              <rect class="zone" data-zone="Trailer Axle 3" x="750" y="260" width="100" height="120" rx="6"/>
+              <rect class="zone" data-zone="Trailer Floor / Chassis" x="100" y="100" width="700" height="150" rx="6"/>
+            </svg>
+          </div>
+          <div id="zone-tooltip" style="display:none;position:absolute;background:#0a1929;color:#fff;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;pointer-events:none;z-index:10;"></div>
         </div>
         <div class="def-list" id="def-list"><div style="text-align:center;padding:20px;color:var(--t5);font-size:13px;">No defects marked - tap zones on the diagram above</div></div>
       </div>
@@ -784,8 +808,46 @@ function buildBrakeTable() {
   });
 }
 
-// DIAGRAM
-var DIAG = {
+// DIAGRAM — image-based zones
+// Switch between T50 and T60 based on inspection type
+function switchDiagram() {
+  var type = (document.getElementById('f-type').value || '').toUpperCase();
+  var isT60 = type === 'T60';
+  document.getElementById('diag-t50').style.display = isT60 ? 'none' : 'block';
+  document.getElementById('diag-t60').style.display = isT60 ? 'block' : 'none';
+}
+document.getElementById('f-type').addEventListener('change', switchDiagram);
+
+// Zone click → open defect modal with zone pre-filled
+document.querySelectorAll('.zone').forEach(function(z) {
+  z.addEventListener('click', function() {
+    var label = z.dataset.zone;
+    curZone = { id: label.replace(/\s/g, '_').toLowerCase(), label: label };
+    curSev = 'advisory';
+    document.getElementById('zone-mt').textContent = 'Mark: ' + label;
+    document.getElementById('zone-desc').value = '';
+    document.getElementById('zone-part').value = '';
+    document.getElementById('sev-adv').classList.add('on');
+    document.getElementById('sev-crit').classList.remove('on');
+    resetAiPanel();
+    document.getElementById('zone-modal').classList.add('on');
+  });
+  // Tooltip on hover
+  z.addEventListener('mouseenter', function(e) {
+    var tt = document.getElementById('zone-tooltip');
+    tt.textContent = z.dataset.zone;
+    tt.style.display = 'block';
+    var rect = z.closest('div[style*="position:relative"]').getBoundingClientRect();
+    tt.style.left = (e.clientX - rect.left + 10) + 'px';
+    tt.style.top = (e.clientY - rect.top - 30) + 'px';
+  });
+  z.addEventListener('mouseleave', function() {
+    document.getElementById('zone-tooltip').style.display = 'none';
+  });
+});
+
+// --- LEGACY DIAG removed, now using image-based zones above ---
+var DIAG_LEGACY = {
   ns: [
     {id:'cab-ns', label:'Cab Driver Side', shape:'rect', x:55, y:45, w:155, h:115, rx:6},
     {id:'windscreen', label:'Windscreen', shape:'rect', x:70, y:55, w:95, h:65, rx:4},
@@ -834,7 +896,8 @@ var DIAG = {
   ]
 };
 
-function buildDiagrams() {
+function buildDiagrams() { switchDiagram(); } // Images are static; just ensure correct one is shown
+function buildDiagramsLegacy() {
   Object.keys(DIAG).forEach(function(view) {
     var el = document.getElementById('dv-' + view);
     if (!el) return;
@@ -895,16 +958,6 @@ function buildDiagrams() {
     });
   });
 }
-
-// DIAGRAM TABS
-document.querySelectorAll('.dtab').forEach(function(tab) {
-  tab.addEventListener('click', function() {
-    document.querySelectorAll('.dtab').forEach(function(t) { t.classList.remove('on'); });
-    document.querySelectorAll('.dview').forEach(function(d) { d.classList.remove('on'); });
-    tab.classList.add('on');
-    document.getElementById('dv-' + tab.dataset.view).classList.add('on');
-  });
-});
 
 // DEFECT MODAL
 document.getElementById('modal-close').addEventListener('click', function() { document.getElementById('zone-modal').classList.remove('on'); });
