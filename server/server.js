@@ -188,6 +188,7 @@ async function handleStaticPublic(ctx, res) {
   if (PAGES[p]) { servePage(res, PAGES[p]); return true; }
   if (p === '/api.js') { serveStatic(res, 'api.js', 'application/javascript'); return true; }
   if (p === '/branding.js') { serveStatic(res, 'branding.js', 'application/javascript'); return true; }
+  if (p === '/arthur.js') { serveStatic(res, 'arthur.js', 'application/javascript'); return true; }
   if (p === '/config.js') return serveConfigJs(res);
   if (p.startsWith('/images/')) return serveImage(ctx, res);
   return false;
@@ -519,6 +520,7 @@ async function handleAi(ctx, res) {
   if (p === '/api/ai/defect-suggestion' && method === 'POST') { ok(res, await ai.defectSuggestion(body)); return true; }
   if (p === '/api/ai/repair-suggestion' && method === 'POST') { ok(res, await ai.repairSuggestion(body)); return true; }
   if (p === '/api/ai/search' && method === 'POST') { ok(res, await ai.nlSearch({ query: body && body.query, caller })); return true; }
+  if (p === '/api/ai/technical-assistant' && method === 'POST') { ok(res, await ai.technicalAssistant(body)); return true; }
   const predMatch = p.match(/^\/api\/vehicles\/([^/]+)\/maintenance-prediction$/);
   if (predMatch && method === 'GET') {
     ok(res, await fetchMaintenancePrediction(decodeURIComponent(predMatch[1]).toUpperCase().trim(), caller.id || caller.org_id));
