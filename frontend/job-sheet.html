@@ -96,8 +96,36 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
   document.getElementById('doc-meta').textContent = 'Job #' + jobId;
 
   function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  var TYRE_AXLES=[{pos:['Steer NS','Steer OS']},{pos:['Drive 1 NS Outer','Drive 1 NS Inner','Drive 1 OS Inner','Drive 1 OS Outer']},{pos:['Drive 2 NS Outer','Drive 2 NS Inner','Drive 2 OS Inner','Drive 2 OS Outer']},{pos:['Trailer NS Outer','Trailer NS Inner','Trailer OS Inner','Trailer OS Outer']}];
+  var TYRE_AXLES=[{label:'Steer Axle',pos:['Steer NS','Steer OS']},{label:'Drive Axle 1',pos:['Drive 1 NS Outer','Drive 1 NS Inner','Drive 1 OS Inner','Drive 1 OS Outer']},{label:'Drive Axle 2',pos:['Drive 2 NS Outer','Drive 2 NS Inner','Drive 2 OS Inner','Drive 2 OS Outer']},{label:'Trailer / Rear',pos:['Trailer NS Outer','Trailer NS Inner','Trailer OS Inner','Trailer OS Outer']}];
   function tyreName(k){var m=k.match(/^t(\d+)_(\d+)$/);if(!m)return k;var a=TYRE_AXLES[+m[1]];return a&&a.pos[+m[2]]||k;}
+  function hasTyreVal(d){if(!d||typeof d!=='object')return false;var dp=parseFloat(d.depth||d.tread||0);return(!isNaN(dp)&&dp>0)||!!(d.expiry&&d.expiry.trim())||(d.condition&&d.condition!=='ok');}
+  function renderTyreCards(tyres) {
+    if (!tyres||typeof tyres!=='object'||!Object.keys(tyres).length) return '<div style="margin:12px 0;font-size:13px;color:var(--muted);font-style:italic;">No tyre data recorded.</div>';
+    var grouped={};
+    Object.entries(tyres).forEach(function(e){var d=typeof e[1]==='object'?e[1]:{depth:e[1]};if(!hasTyreVal(d))return;var m=e[0].match(/^t(\d+)_(\d+)$/);if(!m)return;var ai=+m[1];if(!grouped[ai])grouped[ai]=[];grouped[ai].push({posIdx:+m[2],data:d});});
+    var axleKeys=Object.keys(grouped).map(Number).sort();
+    if(!axleKeys.length) return '<div style="margin:12px 0;font-size:13px;color:var(--muted);font-style:italic;">No tyre data recorded.</div>';
+    var h='<div style="margin-top:12px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--orange);">Tyre Data</div>';
+    axleKeys.forEach(function(ai){
+      var ax=TYRE_AXLES[ai]; if(!ax)return;
+      var positions=grouped[ai].sort(function(a,b){return a.posIdx-b.posIdx;});
+      h+='<div style="margin-top:10px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--label);">'+esc(ax.label.toUpperCase())+'</div>';
+      h+='<div style="display:grid;grid-template-columns:repeat('+Math.min(positions.length,4)+',1fr);gap:6px;margin-top:6px;">';
+      positions.forEach(function(p){
+        var d=p.data; var name=ax.pos[p.posIdx]||''; var depth=d.depth||d.tread||'—'; var dn=parseFloat(depth);
+        var dc=!isNaN(dn)&&dn<1?'var(--fail)':(!isNaN(dn)&&dn<3?'var(--adv)':'var(--text)');
+        h+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center;">';
+        h+='<div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--orange);margin-bottom:6px;">'+esc(name)+'</div>';
+        h+='<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:20px;color:'+dc+';">'+esc(String(depth))+'<span style="font-size:11px;font-weight:400;color:var(--muted);"> mm</span></div>';
+        h+='<div style="font-size:11px;color:var(--muted);margin:4px 0;">'+esc(d.expiry||'—')+'</div>';
+        h+=condBdg(d.condition);
+        h+='</div>';
+      });
+      h+='</div>';
+    });
+    h+='<div class="dvsa-note">HGV legal minimum: 1mm across ¾ width. Advisory: &lt;3mm.</div>';
+    return h;
+  }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
   function fmtDT(d) { if (!d) return '—'; var dt=new Date(d); return fmtDate(d)+' '+dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
   function bdg(label, cls) { return '<span class="bdg bdg-'+cls+'">'+esc(label)+'</span>'; }
@@ -223,18 +251,7 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
       // Tyres
       var tyres = insp.tyre_data;
       if (typeof tyres === 'string') try { tyres = JSON.parse(tyres); } catch(e) { tyres = {}; }
-      var tyreEntries = Object.entries(tyres||{});
-      if (tyreEntries.length) {
-        h += '<div style="margin-top:12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">Tyre Data ('+tyreEntries.length+')</div>';
-        h += '<table class="tbl"><thead><tr><th>Position</th><th style="text-align:center;">Depth (mm)</th><th style="text-align:center;">Expiry</th><th style="text-align:center;">Condition</th></tr></thead><tbody>';
-        tyreEntries.forEach(function(e) {
-          var d = typeof e[1]==='object'?e[1]:{depth:e[1]};
-          var depth=d.depth||d.tread||'—'; var dn=parseFloat(depth); var dc=!isNaN(dn)&&dn<1?'var(--fail)':(!isNaN(dn)&&dn<3?'var(--adv)':'var(--text)');
-          h += '<tr><td>'+esc(tyreName(e[0]))+'</td><td style="text-align:center;font-weight:600;color:'+dc+';">'+esc(String(depth))+'</td><td style="text-align:center;color:var(--muted);">'+esc(d.expiry||'—')+'</td><td style="text-align:center;">'+condBdg(d.condition)+'</td></tr>';
-        });
-        h += '</tbody></table>';
-        h += '<div class="dvsa-note">HGV legal minimum: 1mm across ¾ width. Advisory: &lt;3mm.</div>';
-      }
+      h += renderTyreCards(tyres);
 
       // Defects
       if (defects && defects.length) {

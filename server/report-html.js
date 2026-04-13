@@ -149,6 +149,73 @@ function docFooter(docNum, orgName, opts={}) {
 // INSPECTION REPORT
 // ══════════════════════════════════════════════
 
+function hasTyreData(d) {
+  if (!d || typeof d !== 'object') return false;
+  const depth = parseFloat(d.depth || d.tread || 0);
+  const hasDepth = !isNaN(depth) && depth > 0;
+  const hasExpiry = !!(d.expiry && d.expiry.trim());
+  const hasCond = d.condition && d.condition !== 'ok';
+  return hasDepth || hasExpiry || hasCond;
+}
+
+function tyreCard(posName, d) {
+  const depth = d.depth || d.tread || '—';
+  const depthNum = parseFloat(depth);
+  const depthColor = !isNaN(depthNum) && depthNum < 1 ? C.failRed : (!isNaN(depthNum) && depthNum < 3 ? C.advAmber : C.text);
+  return `<td style="padding:4px;"><div style="background:${C.surface};border:1px solid ${C.border};border-radius:6px;padding:10px 12px;text-align:center;">
+    <div style="${LBL}color:${C.orange};margin-bottom:6px;font-size:9px;">${esc(posName)}</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;color:${depthColor};">${esc(String(depth))}<span style="font-size:11px;font-weight:400;color:${C.muted};"> mm</span></div>
+    <div style="font-family:'Barlow',sans-serif;font-size:11px;color:${C.muted};margin:4px 0;">${esc(d.expiry || '—')}</div>
+    ${condBadge(d.condition)}
+  </div></td>`;
+}
+
+function buildTyreSection(tyres) {
+  if (!tyres || typeof tyres !== 'object' || !Object.keys(tyres).length) {
+    return `<tr><td colspan="4" style="padding:10px 0;${BODY_S}color:${C.muted};font-style:italic;">No tyre data recorded.</td></tr>`;
+  }
+
+  // Group tyres by axle index, filter to only filled positions
+  const grouped = {};
+  for (const [key, data] of Object.entries(tyres)) {
+    const d = typeof data === 'object' ? data : { depth: data };
+    if (!hasTyreData(d)) continue;
+    const m = key.match(/^t(\d+)_(\d+)$/);
+    if (!m) continue;
+    const ai = parseInt(m[1]);
+    if (!grouped[ai]) grouped[ai] = [];
+    grouped[ai].push({ key, posIdx: parseInt(m[2]), data: d });
+  }
+
+  const axleKeys = Object.keys(grouped).map(Number).sort();
+  if (!axleKeys.length) {
+    return `<tr><td colspan="4" style="padding:10px 0;${BODY_S}color:${C.muted};font-style:italic;">No tyre data recorded.</td></tr>`;
+  }
+
+  let h = secTitle('Tyre Data');
+  for (const ai of axleKeys) {
+    const axleDef = TYRE_AXLES[ai];
+    if (!axleDef) continue;
+    const positions = grouped[ai].sort((a, b) => a.posIdx - b.posIdx);
+
+    // Axle group header
+    h += `<tr><td colspan="4" style="padding:12px 0 4px;"><div style="${LBL}color:${C.muted};font-size:9px;">${esc(axleDef.label.toUpperCase())}</div></td></tr>`;
+
+    // Cards in a row
+    h += '<tr>';
+    for (const p of positions) {
+      const posName = axleDef.pos[p.posIdx] || p.key;
+      h += tyreCard(posName, p.data);
+    }
+    // Pad empty cells if fewer than 4
+    for (let pad = positions.length; pad < 4; pad++) h += '<td></td>';
+    h += '</tr>';
+  }
+
+  h += `<tr><td colspan="4" style="padding:6px 0;"><div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">HGV legal minimum: 1mm across ¾ width. Advisory threshold: &lt;3mm.</div></td></tr>`;
+  return h;
+}
+
 function buildInspectionReportHtml(insp, opts={}) {
   const { aiSummary, orgName, logoLight, logoDark } = opts;
   const checks = (typeof insp.check_items==='string'?JSON.parse(insp.check_items):insp.check_items)||(insp.checkItems||{});
@@ -246,26 +313,8 @@ function buildInspectionReportHtml(insp, opts={}) {
     }
   }
 
-  // Tyre data table
-  const tyreEntries = Object.entries(tyres);
-  if (tyreEntries.length) {
-    h += secTitle('Tyre Data (' + tyreEntries.length + ' positions)');
-    const th = `style="padding:8px 12px;${LBL}border-bottom:1px solid ${C.border};"`;
-    h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
-    h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Position</th><th ${th} style="${LBL}text-align:center;">Depth (mm)</th><th ${th} style="${LBL}text-align:center;">Expiry</th><th ${th} style="${LBL}text-align:center;">Condition</th></tr>`;
-    let ri=0;
-    for (const [posKey, data] of tyreEntries) {
-      const pos = tyrePositionName(posKey);
-      const d = typeof data==='object'?data:{depth:data};
-      const depth = d.depth||d.tread||'—';
-      const depthNum = parseFloat(depth);
-      const depthColor = !isNaN(depthNum) && depthNum<1 ? C.failRed : (!isNaN(depthNum) && depthNum<3 ? C.advAmber : C.text);
-      const bg = ri%2 ? C.surface : C.card;
-      h += `<tr style="background:${bg};"><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;">${esc(pos)}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:${depthColor};">${esc(String(depth))}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:12px;color:${C.muted};">${esc(d.expiry||'—')}</td><td style="padding:8px 12px;text-align:center;">${condBadge(d.condition)}</td></tr>`;
-      ri++;
-    }
-    h += `</table><div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};margin-top:4px;">HGV legal minimum: 1mm across ¾ width. Advisory threshold: &lt;3mm.</div></td></tr>`;
-  }
+  // Tyre data — grouped by axle, card layout, only filled positions
+  h += buildTyreSection(tyres);
 
   // Defects
   if (defects.length) {
