@@ -154,14 +154,14 @@ function buildDefectsHtml(defects) {
   return html;
 }
 
-async function sendInspectionReport({ to, inspection, orgName, aiSummary }) {
+async function sendInspectionReport({ to, inspection, orgName, aiSummary, logoLight, logoDark }) {
   if (!RESEND_API_KEY) { console.error('[MAILER] No RESEND_API_KEY set'); return { sent: false }; }
   const insp = inspection;
   const payload = {
     from: FROM_EMAIL,
     to: [to],
     subject: `Inspection Report — ${insp.vehicle_reg} — ${(insp.result || 'Pending').toUpperCase()}`,
-    html: buildInspectionReportHtml(insp, { aiSummary, orgName }),
+    html: buildInspectionReportHtml(insp, { aiSummary, orgName, logoLight, logoDark }),
   };
   try {
     const r = await resendSend(payload);

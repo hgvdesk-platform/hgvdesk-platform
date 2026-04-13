@@ -161,19 +161,28 @@ function serveImage(ctx, res) {
   return true;
 }
 
-function serveConfigJs(res) {
+async function serveConfigJs(res) {
   const apiKey = process.env.PUBLIC_API_KEY || '';
-  const cfg = 'window.HGV_CONFIG = { apiKey: ' + JSON.stringify(apiKey) + ' };\n';
+  let logoLight = null, logoDark = null, orgName = null;
+  if (apiKey) {
+    try {
+      const db = require('./db');
+      const org = await db.queryOne('SELECT name, logo_light, logo_dark FROM organisations WHERE api_key = $1', [apiKey]);
+      if (org) { logoLight = org.logo_light; logoDark = org.logo_dark; orgName = org.name; }
+    } catch (e) { /* ignore */ }
+  }
+  const cfg = 'window.HGV_CONFIG = ' + JSON.stringify({ apiKey, orgName, logoLight, logoDark }) + ';\n';
   res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(cfg);
   return true;
 }
 
-function handleStaticPublic(ctx, res) {
+async function handleStaticPublic(ctx, res) {
   const { p, method } = ctx;
   if (method !== 'GET') return false;
   if (PAGES[p]) { servePage(res, PAGES[p]); return true; }
   if (p === '/api.js') { serveStatic(res, 'api.js', 'application/javascript'); return true; }
+  if (p === '/branding.js') { serveStatic(res, 'branding.js', 'application/javascript'); return true; }
   if (p === '/config.js') return serveConfigJs(res);
   if (p.startsWith('/images/')) return serveImage(ctx, res);
   return false;
@@ -222,7 +231,7 @@ async function handlePublicBilling(ctx, res) {
 }
 
 async function handlePublicRoutes(ctx, res) {
-  if (handleStaticPublic(ctx, res)) return true;
+  if (await handleStaticPublic(ctx, res)) return true;
   if (await handlePublicApi(ctx, res)) return true;
   if (await handlePublicBilling(ctx, res)) return true;
   return false;
@@ -466,6 +475,19 @@ async function handlePdf(ctx, res) {
   return false;
 }
 
+async function handleBranding(ctx, res) {
+  const { p, method, caller } = ctx;
+  if (p === '/api/org/branding' && method === 'GET') {
+    ok(res, {
+      orgName: caller.name || caller.org_name || 'HGVDesk',
+      logoLight: caller.logo_light || null,
+      logoDark: caller.logo_dark || null,
+    });
+    return true;
+  }
+  return false;
+}
+
 async function handleBilling(ctx, res) {
   const { p, method, caller } = ctx;
   if (p === '/api/billing/me' && method === 'GET') {
@@ -492,7 +514,7 @@ async function handleInspectionReports(ctx, res) {
 
   const previewMatch = p.match(/^\/api\/inspections\/(\d+)\/report\/preview$/);
   if (previewMatch && method === 'GET') {
-    await renderInspectionPreview(parseInt(previewMatch[1]), res);
+    await renderInspectionPreview(parseInt(previewMatch[1]), caller.id || caller.org_id, res);
     return true;
   }
 
@@ -534,8 +556,10 @@ async function sendInspectionReportRoute(inspId, body, caller, res) {
   const result2 = await sendInspectionReport({
     to: email,
     inspection: insp,
-    orgName: caller.org_name || 'HGVDesk',
+    orgName: caller.org_name || caller.name || 'HGVDesk',
     aiSummary: summary,
+    logoLight: caller.logo_light || null,
+    logoDark: caller.logo_dark || null,
   });
   ok(res, { sent: result2.sent, to: email, aiSummary: summary });
   return true;
@@ -586,13 +610,14 @@ function buildDefectsHtml(defects) {
   return html + '</tbody></table>';
 }
 
-async function renderInspectionPreview(inspId, res) {
+async function renderInspectionPreview(inspId, orgId, res) {
   const db = require('./db');
   const insp = await db.queryOne('SELECT * FROM inspections WHERE id = $1', [inspId]);
   if (!insp) { res.writeHead(404); res.end('Not found'); return; }
   insp.defects = await db.queryAll('SELECT * FROM defects WHERE inspection_id = $1 ORDER BY severity DESC, created_at ASC', [inspId]);
+  const org = orgId ? await db.queryOne('SELECT name, logo_light, logo_dark FROM organisations WHERE id = $1', [orgId]) : {};
   const { buildInspectionReportHtml } = require('./report-html');
-  const html = buildInspectionReportHtml(insp, { orgName: 'HGVDesk' });
+  const html = buildInspectionReportHtml(insp, { orgName: (org&&org.name)||'HGVDesk', logoLight: org&&org.logo_light, logoDark: org&&org.logo_dark });
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
   res.end(html);
 }
@@ -672,7 +697,7 @@ async function handleInvoices(ctx, res) {
 // ══════════════════════════════════════════════
 
 const AUTHED_HANDLERS = [
-  handleAdmin, handleWorkshop, handleInspect, handleAi, handlePdf, handleBilling,
+  handleAdmin, handleWorkshop, handleInspect, handleAi, handlePdf, handleBranding, handleBilling,
   handleParts, handleCommand, handleInspectionReports, handleTechnicians,
   handleJobLibrary, handleCustomers, handleInvoices,
 ];

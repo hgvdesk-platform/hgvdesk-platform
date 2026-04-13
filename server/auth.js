@@ -44,7 +44,8 @@ async function requireAuth(req) {
 
   const user = await queryOne(
     `SELECT u.id, u.org_id, u.email, u.full_name, u.role, u.is_platform_admin AS user_platform_admin,
-            o.name as org_name, o.plan, o.api_key, o.is_platform_admin AS org_platform_admin
+            o.name as org_name, o.plan, o.api_key, o.is_platform_admin AS org_platform_admin,
+            o.logo_light, o.logo_dark
      FROM users u JOIN organisations o ON u.org_id = o.id
      WHERE u.id = $1 AND u.active = true AND o.active = true`,
     [decoded.userId]
@@ -65,7 +66,7 @@ async function requireApiKey(req) {
   if (!apiKey) throw { status: 401, message: 'Missing X-API-Key header' };
 
   const org = await queryOne(
-    `SELECT id, name, plan, active, is_platform_admin FROM organisations WHERE api_key = $1`,
+    `SELECT id, name, plan, active, is_platform_admin, logo_light, logo_dark FROM organisations WHERE api_key = $1`,
     [apiKey]
   );
 
@@ -89,7 +90,7 @@ async function login(email, password) {
   if (!email || !password) throw { status: 400, message: 'Email and password required' };
 
   const user = await queryOne(
-    `SELECT u.*, o.name as org_name, o.plan, o.api_key
+    `SELECT u.*, o.name as org_name, o.plan, o.api_key, o.logo_light, o.logo_dark
      FROM users u JOIN organisations o ON u.org_id = o.id
      WHERE u.email = $1 AND u.active = true AND o.active = true`,
     [email.toLowerCase().trim()]
@@ -115,7 +116,9 @@ async function login(email, password) {
       orgId: user.org_id,
       orgName: user.org_name,
       plan: user.plan,
-      apiKey: user.api_key
+      apiKey: user.api_key,
+      logoLight: user.logo_light || null,
+      logoDark: user.logo_dark || null,
     }
   };
 }

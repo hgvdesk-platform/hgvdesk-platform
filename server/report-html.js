@@ -103,10 +103,19 @@ function pageShell(title, bodyHtml) {
 // HEADER + FOOTER (shared across all docs)
 // ══════════════════════════════════════════════
 
-function docHeader(docType, docNum, dateStr) {
+function logoHtml(logoDark) {
+  if (logoDark) return `<img src="${esc(logoDark)}" style="max-height:48px;width:auto;" alt="">`;
+  return LOGO_SVG;
+}
+function logoHtmlSm(logoLight) {
+  if (logoLight) return `<img src="${esc(logoLight)}" style="max-height:28px;width:auto;" alt="">`;
+  return LOGO_SVG_SM;
+}
+
+function docHeader(docType, docNum, dateStr, opts={}) {
   return `<tr><td style="background:${C.dark};padding:20px 32px;border-radius:8px 8px 0 0;border-bottom:1px solid ${C.orange};">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="vertical-align:middle;">${LOGO_SVG}</td>
+      <td style="vertical-align:middle;">${logoHtml(opts.logoDark)}</td>
       <td style="text-align:right;vertical-align:middle;">
         <div style="${LBL}color:${C.orange};margin-bottom:3px;">${esc(docType)}</div>
         <div style="font-family:'Barlow',sans-serif;font-size:11px;color:rgba(255,255,255,0.55);">${esc(docNum)} &bull; ${esc(dateStr)}</div>
@@ -125,10 +134,10 @@ function vehicleBar(reg, subtitle, resultHtml) {
   </td></tr>`;
 }
 
-function docFooter(docNum, orgName) {
+function docFooter(docNum, orgName, opts={}) {
   return `<tr><td style="background:${C.surface};padding:16px 32px;border-top:1px solid ${C.border};">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td style="vertical-align:middle;">${LOGO_SVG_SM}<div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};margin-top:2px;">hgvdesk.co.uk</div></td>
+      <td style="vertical-align:middle;">${logoHtmlSm(opts.logoLight)}<div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};margin-top:2px;">hgvdesk.co.uk</div></td>
       <td style="text-align:center;font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">${esc(docNum)} &bull; ${esc(orgName||'HGVDesk')}</td>
       <td style="text-align:right;font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">Generated ${fmtDateTime(new Date())}</td>
     </tr></table>
@@ -141,7 +150,7 @@ function docFooter(docNum, orgName) {
 // ══════════════════════════════════════════════
 
 function buildInspectionReportHtml(insp, opts={}) {
-  const { aiSummary, orgName } = opts;
+  const { aiSummary, orgName, logoLight, logoDark } = opts;
   const checks = (typeof insp.check_items==='string'?JSON.parse(insp.check_items):insp.check_items)||(insp.checkItems||{});
   const tyres = (typeof insp.tyre_data==='string'?JSON.parse(insp.tyre_data):insp.tyre_data)||(insp.tyreData||{});
   const brakes = (typeof insp.brake_test_data==='string'?JSON.parse(insp.brake_test_data):insp.brake_test_data)||(insp.brakeData||{});
@@ -150,7 +159,7 @@ function buildInspectionReportHtml(insp, opts={}) {
 
   let h = '';
   h += wrap(700);
-  h += docHeader('INSPECTION REPORT', insp.inspection_id||'', fmtDateTime(insp.completed_at||insp.created_at));
+  h += docHeader('INSPECTION REPORT', insp.inspection_id||'', fmtDateTime(insp.completed_at||insp.created_at), {logoDark});
 
   // Vehicle bar
   const sub = [insp.customer_name, insp.inspection_type, insp.overall_mileage ? Number(insp.overall_mileage).toLocaleString()+' mi' : ''].filter(Boolean).join(' · ');
@@ -297,7 +306,7 @@ function buildInspectionReportHtml(insp, opts={}) {
   h += `<tr><td colspan="4" style="padding:16px 0 0;"><div style="background:${C.surface};border:1px solid ${C.border};border-radius:6px;padding:12px 16px;font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};line-height:1.6;">This inspection has been carried out in accordance with DVSA Guide to Maintaining Roadworthiness. All check items follow the DVSA HGV Inspection Manual categories. Brake test results recorded per axle using roller brake test equipment. Tyre depths measured at central ¾ width. Defect severity classified per DVSA prohibition criteria. This report is a legal record of vehicle condition at the time of inspection.</div></td></tr>`;
 
   h += '</table></td></tr>';
-  h += docFooter(insp.inspection_id||'', orgName||'HGVDesk');
+  h += docFooter(insp.inspection_id||'', orgName||'HGVDesk', {logoLight});
   h += '</table>';
   return pageShell('Inspection Report — '+(insp.vehicle_reg||''), h);
 }
@@ -310,7 +319,7 @@ function buildInvoiceHtml(invoice, lines, opts={}) {
   const { orgName } = opts;
   let h = '';
   h += wrap(700);
-  h += docHeader('INVOICE', invoice.invoice_number||'', fmtShort(invoice.issue_date));
+  h += docHeader('INVOICE', invoice.invoice_number||'', fmtShort(invoice.issue_date), {logoDark: opts.logoDark});
 
   // Orange bar
   const statusBadge = invoice.status==='paid' ? badge('PAID',C.passBg,C.passGreen) : badge((invoice.status||'DRAFT').toUpperCase(),C.advBg,C.advAmber);
@@ -367,7 +376,7 @@ function buildInvoiceHtml(invoice, lines, opts={}) {
   h += `<tr><td colspan="10" style="padding:20px 0 0;text-align:center;"><div style="${HEAD_S}font-size:18px;color:${C.dark};">Thank you for your business</div><div style="font-family:'Barlow',sans-serif;font-size:12px;color:${C.muted};margin-top:4px;">hgvdesk.co.uk · hello@hgvdesk.co.uk</div></td></tr>`;
 
   h += '</table></td></tr>';
-  h += docFooter(invoice.invoice_number||'', orgName||'HGVDesk');
+  h += docFooter(invoice.invoice_number||'', orgName||'HGVDesk', {logoLight: opts.logoLight});
   h += '</table>';
   return pageShell('Invoice — '+(invoice.invoice_number||''), h);
 }
@@ -380,7 +389,7 @@ function buildJobSheetHtml(job, opts={}) {
   const { inspection, parts, jobLines, orgName } = opts;
   let h = '';
   h += wrap(700);
-  h += docHeader('WORKSHOP JOB SHEET', job.job_number||'', fmtDateTime(job.created_at));
+  h += docHeader('WORKSHOP JOB SHEET', job.job_number||'', fmtDateTime(job.created_at), {logoDark: opts.logoDark});
 
   const statusBadge = job.status==='complete'||job.status==='invoiced' ? badge(job.status.toUpperCase(),C.passBg,C.passGreen) : badge((job.status||'PENDING').toUpperCase(),C.advBg,C.advAmber);
   h += vehicleBar(job.vehicle_reg||'', [job.customer_name, job.inspection_type].filter(Boolean).join(' · '), statusBadge);
@@ -454,7 +463,7 @@ function buildJobSheetHtml(job, opts={}) {
   h += '</tr>';
 
   h += '</table></td></tr>';
-  h += docFooter(job.job_number||'', orgName||'HGVDesk');
+  h += docFooter(job.job_number||'', orgName||'HGVDesk', {logoLight: opts.logoLight});
   h += '</table>';
   return pageShell('Job Sheet — '+(job.vehicle_reg||''), h);
 }
