@@ -866,17 +866,19 @@ function buildBrakeTable() {
 }
 
 // Switch all type-specific sections when inspection type changes
-function switchType() {
+var _lastType = '';
+function switchType(force) {
   var type = (document.getElementById('f-type').value || '').toUpperCase();
+  if (!force && type === _lastType) return;
+  _lastType = type;
   var isT60 = type === 'T60';
-  console.log('[INSPECT] switchType → type=' + type + ', isT60=' + isT60 + ', checklist items=' + getChecks().length);
+  console.log('[INSPECT] switchType → type=' + type + ', rebuilding checklist/brakes/tyres');
   document.getElementById('diag-t50').style.display = isT60 ? 'none' : 'block';
   document.getElementById('diag-t60').style.display = isT60 ? 'block' : 'none';
   buildChecklist();
   buildBrakeTable();
   buildTyres();
   updateChecklistMeta();
-  // Auto-expand S2 checklist when type is selected so user sees the change
   if (type) {
     var s2 = document.getElementById('s2');
     if (s2 && !s2.classList.contains('open')) s2.classList.add('open');
@@ -974,7 +976,12 @@ var DIAG_LEGACY = {
   ]
 };
 
-function buildDiagrams() { switchType(); } // Images are static; just ensure correct one is shown
+function buildDiagrams() {
+  var type = (document.getElementById('f-type').value || '').toUpperCase();
+  var isT60 = type === 'T60';
+  document.getElementById('diag-t50').style.display = isT60 ? 'none' : 'block';
+  document.getElementById('diag-t60').style.display = isT60 ? 'block' : 'none';
+}
 function buildDiagramsLegacy() {
   Object.keys(DIAG).forEach(function(view) {
     var el = document.getElementById('dv-' + view);
@@ -1551,9 +1558,7 @@ function init() {
   var now = new Date();
   document.getElementById('f-date').value = now.toISOString().split('T')[0];
   document.getElementById('f-time').value = now.toTimeString().slice(0, 5);
-  buildChecklist();
-  buildBrakeTable();
-  buildTyres();
+  switchType(true);
   buildDiagrams();
   loadData();
 }
@@ -1738,7 +1743,8 @@ window.openInspRow = function(id) {
     if (oldPanel) oldPanel.remove();
     document.getElementById('f-reg').value = insp.vehicle_reg || '';
     document.getElementById('f-type').value = insp.inspection_type || '';
-    switchType();
+    _lastType = '';
+    switchType(true);
     document.getElementById('f-insp').value = insp.inspector_name || '';
     var custEl = document.getElementById('f-cust');
     if (custEl) {
