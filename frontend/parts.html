@@ -212,12 +212,12 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page" id="page-all">
   <div class="phd">
     <div><div class="ptitle">All Parts</div><div class="pdesc">Complete parts history</div></div>
-    <div class="pacts"><button class="btn btn-s" onclick="selectAllParts()">Select All</button><button class="btn" style="background:#dc2626;color:#fff;" onclick="deleteSelectedParts()">Delete Selected</button><button class="btn btn-p" id="btn-new-all">+ Add Part</button></div>
+    <div class="pacts"><button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="parts-del-btn" onclick="deleteSelectedParts()">Delete (0)</button><button class="btn btn-p" id="btn-new-all">+ Add Part</button></div>
   </div>
   <div class="card">
     <div class="card-hd"><div class="card-title">All Parts</div><span class="badge bg-i" id="all-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Cost</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="parts-sa" onclick="toggleAllParts()" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Cost</th><th></th></tr></thead>
       <tbody id="all-tb"></tbody>
     </table>
   </div>
@@ -590,18 +590,25 @@ function deleteInspection(id) {
   }).catch(function(e){ alert('Error: ' + e.message); });
 }
 
-function selectAllParts() {
-  var cbs = document.querySelectorAll('.row-cb');
-  var allChecked = Array.from(cbs).every(function(c) { return c.checked; });
-  cbs.forEach(function(c) { c.checked = !allChecked; });
+function toggleAllParts() {
+  var sa = document.getElementById('parts-sa');
+  document.querySelectorAll('.row-cb').forEach(function(c) { c.checked = sa.checked; });
+  updatePartsDelCount();
 }
+function updatePartsDelCount() {
+  var n = document.querySelectorAll('.row-cb:checked').length;
+  var btn = document.getElementById('parts-del-btn');
+  if (btn) { btn.style.display = n > 0 ? 'inline-flex' : 'none'; btn.textContent = 'Delete (' + n + ')'; }
+}
+document.addEventListener('change', function(e) { if (e.target.classList.contains('row-cb')) updatePartsDelCount(); });
+
 function deleteSelectedParts() {
   var cbs = document.querySelectorAll('.row-cb:checked');
   if (!cbs.length) { alert('No items selected'); return; }
   if (!confirm('Delete ' + cbs.length + ' part(s)? This cannot be undone.')) return;
   var ids = Array.from(cbs).map(function(c){ return parseInt(c.dataset.pid); });
   fetch('/api/parts/bulk',{method:'DELETE',headers:{'Content-Type':'application/json','X-API-Key':KEY},body:JSON.stringify({ids:ids})})
-    .then(function(){ loadParts(); });
+    .then(function(){ loadParts(); updatePartsDelCount(); });
 }
 function deletePart(id) {
   if (!confirm('Delete this part?')) return;

@@ -210,9 +210,15 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sc b"><div class="sc-lbl">Total</div><div class="sc-val" id="s-total">0</div></div>
   </div>
   <div class="card">
-    <div class="card-hd"><div class="card-title">Recent Jobs</div><span class="badge bg-o" id="dash-tot">0 Jobs</span></div>
+    <div class="card-hd">
+      <div class="card-title">Recent Jobs</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="dash-del-btn" onclick="deleteSelected()">Delete (0)</button>
+        <span class="badge bg-o" id="dash-tot">0 Jobs</span>
+      </div>
+    </div>
     <table class="tbl">
-      <thead><tr><th></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Time</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="dash-sa" onclick="toggleAll('dash-tb','dash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Time</th><th></th></tr></thead>
       <tbody id="dash-tb"><tr><td colspan="9" style="text-align:center;padding:40px;color:var(--t5);">No jobs yet</td></tr></tbody>
     </table>
   </div>
@@ -223,15 +229,14 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="phd">
     <div><div class="ptitle">All Jobs</div><div class="pdesc">Complete job history</div></div>
     <div class="pacts">
-      <button class="btn btn-s" onclick="selectAll()">Select All</button>
-      <button class="btn" style="background:#dc2626;color:#fff;" onclick="deleteSelected()">Delete Selected</button>
+      <button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="jobs-del-btn" onclick="deleteSelected()">Delete (0)</button>
       <button class="btn btn-p" id="btn-new-jobs">+ New Job</button>
     </div>
   </div>
   <div class="card">
     <div class="card-hd"><div class="card-title">Jobs</div><span class="badge bg-b" id="jobs-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="jobs-sa" onclick="toggleAll('jobs-tb','jobs-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
       <tbody id="jobs-tb"></tbody>
     </table>
   </div>
@@ -534,19 +539,35 @@ function deleteJob(id) {
     .catch(function(e) { alert('Error: ' + e.message); });
 }
 
+function toggleAll(tbodyId, saId) {
+  var sa = document.getElementById(saId);
+  var cbs = document.getElementById(tbodyId).querySelectorAll('.row-cb');
+  cbs.forEach(function(c) { c.checked = sa.checked; });
+  updateDelCount();
+}
+function updateDelCount() {
+  var n = document.querySelectorAll('.row-cb:checked').length;
+  ['dash-del-btn','jobs-del-btn'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if (btn) { btn.style.display = n > 0 ? 'inline-flex' : 'none'; btn.textContent = 'Delete (' + n + ')'; }
+  });
+}
+document.addEventListener('change', function(e) { if (e.target.classList.contains('row-cb')) updateDelCount(); });
+
 function deleteSelected() {
   var cbs = document.querySelectorAll('.row-cb:checked');
   if (!cbs.length) { alert('No items selected'); return; }
   if (!confirm('Delete ' + cbs.length + ' job(s)? This cannot be undone.')) return;
   var ids = Array.from(cbs).map(function(c) { return parseInt(c.dataset.id); });
   fetch('/api/jobs/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY }, body: JSON.stringify({ ids: ids }) })
-    .then(function() { loadJobs(); });
+    .then(function() { loadJobs(); updateDelCount(); });
 }
 
 function selectAll() {
-  var cbs = document.querySelectorAll('.row-cb');
+  var cbs = document.querySelectorAll('#page-jobs .row-cb');
   var allChecked = Array.from(cbs).every(function(c) { return c.checked; });
   cbs.forEach(function(c) { c.checked = !allChecked; });
+  updateDelCount();
 }
 
 // ── JOB MODAL ──

@@ -334,10 +334,16 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sc o"><div class="sc-lbl">Total</div><div class="sc-val" id="s-total">0</div></div>
   </div>
   <div class="card">
-    <div class="card-hd"><div class="card-title">Recent Inspections</div><span class="badge bg-b" id="dash-tot">0 Total</span></div>
+    <div class="card-hd">
+      <div class="card-title">Recent Inspections</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="idash-del-btn" onclick="deleteSelectedInspections()">Delete (0)</button>
+        <span class="badge bg-b" id="dash-tot">0 Total</span>
+      </div>
+    </div>
     <table class="tbl">
-      <thead><tr><th>Vehicle</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Time</th></tr></thead>
-      <tbody id="dash-tb"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr></tbody>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="idash-sa" onclick="toggleAllInsp('dash-tb','idash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Vehicle</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Time</th></tr></thead>
+      <tbody id="dash-tb"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -346,13 +352,13 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page" id="page-list">
   <div class="phd">
     <div><div class="ptitle">All Inspections</div><div class="pdesc">Complete inspection history</div></div>
-    <div class="pacts"><button class="btn btn-s" onclick="selectAllInsp()">Select All</button><button class="btn" style="background:#dc2626;color:#fff;" onclick="deleteSelectedInspections()">Delete Selected</button><button class="btn btn-p" id="btn-new2">+ New</button></div>
+    <div class="pacts"><button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="ilist-del-btn" onclick="deleteSelectedInspections()">Delete (0)</button><button class="btn btn-p" id="btn-new2">+ New</button></div>
   </div>
   <div class="card">
     <div class="card-hd"><div class="card-title">Inspections</div><span class="badge bg-b" id="list-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th>Vehicle</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody id="list-tb"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr></tbody>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="ilist-sa" onclick="toggleAllInsp('list-tb','ilist-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Vehicle</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody id="list-tb"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -629,7 +635,7 @@ function loadData() {
     document.getElementById('dash-tot').textContent = insp.length + ' Total';
     document.getElementById('list-tot').textContent = insp.length;
     window._lastInspections = insp;
-    var empty = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr>';
+    var empty = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr>';
     var rows = insp.map(function(i) {
       var r = i.result || 'pending';
       var cls = r === 'pass' ? 'c-p' : r === 'advisory' ? 'c-a' : r === 'fail' ? 'c-f' : 'c-q';
@@ -1401,7 +1407,7 @@ window.loadData = function() {
     document.getElementById('s-total').textContent = insp.length;
     document.getElementById('dash-tot').textContent = insp.length + ' Total';
     document.getElementById('list-tot').textContent = insp.length;
-    var empty = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr>';
+    var empty = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr>';
     var rows = insp.map(function(i) {
       var r = i.result || 'pending';
       var cls = r==='pass'?'c-p':r==='advisory'?'c-a':r==='fail'?'c-f':'c-q';
@@ -1540,18 +1546,27 @@ function deleteJob(id) {
   }).catch(function(e){ alert('Error: ' + e.message); });
 }
 
-function selectAllInsp() {
-  var cbs = document.querySelectorAll('#page-list .row-cb');
-  var allChecked = Array.from(cbs).every(function(c) { return c.checked; });
-  cbs.forEach(function(c) { c.checked = !allChecked; });
+function toggleAllInsp(tbodyId, saId) {
+  var sa = document.getElementById(saId);
+  document.getElementById(tbodyId).querySelectorAll('.row-cb').forEach(function(c) { c.checked = sa.checked; });
+  updateInspDelCount();
 }
+function updateInspDelCount() {
+  var n = document.querySelectorAll('.row-cb:checked').length;
+  ['idash-del-btn','ilist-del-btn'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if (btn) { btn.style.display = n > 0 ? 'inline-flex' : 'none'; btn.textContent = 'Delete (' + n + ')'; }
+  });
+}
+document.addEventListener('change', function(e) { if (e.target.classList.contains('row-cb')) updateInspDelCount(); });
+
 function deleteSelectedInspections() {
   var cbs = document.querySelectorAll('.row-cb:checked');
   if (!cbs.length) { alert('No items selected'); return; }
   if (!confirm('Delete ' + cbs.length + ' inspection(s)? This cannot be undone.')) return;
   var ids = Array.from(cbs).map(function(c){ return parseInt(c.dataset.id); });
   fetch('/api/inspections/bulk',{method:'DELETE',headers:{'Content-Type':'application/json','X-API-Key':KEY},body:JSON.stringify({ids:ids})})
-    .then(function(){ loadData(); });
+    .then(function(){ loadData(); updateInspDelCount(); });
 }
 function deleteInspection(id) {
   if (!confirm('Delete this inspection?')) return;
