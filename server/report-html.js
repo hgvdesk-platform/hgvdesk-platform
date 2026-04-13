@@ -268,24 +268,40 @@ function buildBrakeSection(brakes) {
   return h;
 }
 
+function buildDefectCard(d) {
+  const borderColor = d.resolved ? C.repairGreen : (d.severity==='critical'?C.failRed:C.advAmber);
+  return `<tr><td colspan="4" style="padding:6px 0;">
+    <div style="border:1px solid ${C.border};border-left:4px solid ${borderColor};border-radius:6px;overflow:hidden;">
+      <div style="padding:14px 18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="${HEAD_S}font-size:14px;color:${C.text};">${esc(d.title||d.description||'Defect')}</span>
+          ${sevBadge(d.severity)}
+        </div>
+        ${d.description&&d.description!==d.title ? '<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.muted+';line-height:1.5;">'+esc(d.description)+'</div>' : ''}
+      </div>
+      ${d.resolved ? '<div style="background:'+C.repairBg+';padding:12px 18px;border-top:1px solid #c8e0a8;"><div style="'+LBL+'color:'+C.repairGreen+';margin-bottom:4px;">RECTIFIED</div>'+(d.resolved_by?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';">By: <strong>'+esc(d.resolved_by)+'</strong></div>':'')+(d.resolution_notes?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';margin-top:2px;">'+esc(d.resolution_notes)+'</div>':'')+(d.resolved_at?'<div style="font-family:\'Barlow\',sans-serif;font-size:10px;color:'+C.muted+';margin-top:4px;">'+fmtDateTime(d.resolved_at)+'</div>':'')+'</div>' : ''}
+    </div>
+  </td></tr>`;
+}
+
 function buildDefectsSection(defects) {
   if (!defects.length) return '';
-  let h = secTitle('Defects & Advisories (' + defects.length + ')');
-  for (const d of defects) {
-    const borderColor = d.resolved ? C.repairGreen : (d.severity==='critical'?C.failRed:C.advAmber);
-    h += `<tr><td colspan="4" style="padding:6px 0;">
-      <div style="border:1px solid ${C.border};border-left:4px solid ${borderColor};border-radius:6px;overflow:hidden;">
-        <div style="padding:14px 18px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <span style="${HEAD_S}font-size:14px;color:${C.text};">${esc(d.title||d.description||'Defect')}</span>
-            ${sevBadge(d.severity)}
-          </div>
-          ${d.description&&d.description!==d.title ? '<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.muted+';line-height:1.5;">'+esc(d.description)+'</div>' : ''}
-        </div>
-        ${d.resolved ? '<div style="background:'+C.repairBg+';padding:12px 18px;border-top:1px solid #c8e0a8;"><div style="'+LBL+'color:'+C.repairGreen+';margin-bottom:4px;">REPAIRED</div>'+(d.resolved_by?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';">By: <strong>'+esc(d.resolved_by)+'</strong></div>':'')+(d.resolution_notes?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';margin-top:2px;">'+esc(d.resolution_notes)+'</div>':'')+(d.resolved_at?'<div style="font-family:\'Barlow\',sans-serif;font-size:10px;color:'+C.muted+';margin-top:4px;">'+fmtDateTime(d.resolved_at)+'</div>':'')+'</div>' : ''}
-      </div>
-    </td></tr>`;
+  const rectified = defects.filter(d => d.resolved);
+  const outstanding = defects.filter(d => !d.resolved);
+  const total = defects.length;
+
+  let h = secTitle('Defects Found (' + total + ' total, ' + rectified.length + ' rectified)');
+
+  // All defects with full audit trail
+  for (const d of defects) h += buildDefectCard(d);
+
+  // Outstanding summary
+  if (outstanding.length > 0) {
+    h += `<tr><td colspan="4" style="padding:12px 0 4px;"><div style="background:${C.failBg};border:1px solid ${C.failRed};border-radius:6px;padding:12px 16px;"><div style="${LBL}color:${C.failRed};margin-bottom:4px;">OUTSTANDING DEFECTS (${outstanding.length})</div><div style="font-family:'Barlow',sans-serif;font-size:12px;color:${C.failRed};">${outstanding.map(d => esc(d.title||d.description)).join('; ')}</div></div></td></tr>`;
+  } else {
+    h += `<tr><td colspan="4" style="padding:12px 0 4px;"><div style="background:${C.passBg};border:1px solid #c8e0a8;border-radius:6px;padding:12px 16px;text-align:center;"><div style="${LBL}color:${C.passGreen};margin-bottom:2px;">ALL DEFECTS RECTIFIED</div><div style="font-family:'Barlow',sans-serif;font-size:12px;color:${C.passGreen};">All ${total} defect(s) rectified prior to vehicle entering service</div></div></td></tr>`;
   }
+
   return h;
 }
 
