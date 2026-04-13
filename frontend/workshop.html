@@ -246,9 +246,9 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page" id="page-floor">
   <div class="phd"><div><div class="ptitle">On Floor</div><div class="pdesc">Jobs currently being worked on</div></div></div>
   <div class="card">
-    <div class="card-hd"><div class="card-title">Active Floor Jobs</div><span class="badge bg-a" id="floor-tot">0</span></div>
+    <div class="card-hd"><div class="card-title">Active Floor Jobs</div><div style="display:flex;gap:6px;align-items:center;"><button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="floor-del-btn" onclick="deleteSelected()">Delete (0)</button><span class="badge bg-a" id="floor-tot">0</span></div></div>
     <table class="tbl">
-      <thead><tr><th></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Inspect</th><th>Parts</th><th>Time</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="floor-sa" onclick="toggleAll('floor-tb','floor-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Inspect</th><th>Parts</th><th>Time</th><th></th></tr></thead>
       <tbody id="floor-tb"></tbody>
     </table>
   </div>
@@ -258,9 +258,9 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <div class="page" id="page-urgent">
   <div class="phd"><div><div class="ptitle">Urgent Jobs</div><div class="pdesc">Requires immediate attention</div></div></div>
   <div class="card">
-    <div class="card-hd"><div class="card-title">Urgent</div><span class="badge bg-r" id="urgent-tot">0</span></div>
+    <div class="card-hd"><div class="card-title">Urgent</div><div style="display:flex;gap:6px;align-items:center;"><button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="urgent-del-btn" onclick="deleteSelected()">Delete (0)</button><span class="badge bg-r" id="urgent-tot">0</span></div></div>
     <table class="tbl">
-      <thead><tr><th></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Status</th><th>Time</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="urgent-sa" onclick="toggleAll('urgent-tb','urgent-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Status</th><th>Time</th><th></th></tr></thead>
       <tbody id="urgent-tb"></tbody>
     </table>
   </div>
@@ -547,7 +547,7 @@ function toggleAll(tbodyId, saId) {
 }
 function updateDelCount() {
   var n = document.querySelectorAll('.row-cb:checked').length;
-  ['dash-del-btn','jobs-del-btn'].forEach(function(id) {
+  ['dash-del-btn','jobs-del-btn','floor-del-btn','urgent-del-btn'].forEach(function(id) {
     var btn = document.getElementById(id);
     if (btn) { btn.style.display = n > 0 ? 'inline-flex' : 'none'; btn.textContent = 'Delete (' + n + ')'; }
   });

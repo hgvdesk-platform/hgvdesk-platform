@@ -87,12 +87,16 @@ tr:hover td{background:rgba(0,0,0,0.02);}
     <div class="card">
       <div class="search-bar">
         <input class="search-input" id="search" placeholder="Search customers..." oninput="filterCustomers()">
-        <span id="count" style="font-size:12px;color:var(--t4);white-space:nowrap;"></span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;display:none;" id="cust-del-btn" onclick="deleteSelectedCustomers()">Delete (0)</button>
+          <span id="count" style="font-size:12px;color:var(--t4);white-space:nowrap;"></span>
+        </div>
       </div>
       <div id="table-wrap">
         <table>
           <thead>
             <tr>
+              <th style="width:32px;"><input type="checkbox" id="cust-sa" onclick="toggleAllCust()" style="width:16px;height:16px;cursor:pointer;"></th>
               <th>Customer</th>
               <th>Contact</th>
               <th>Email</th>
@@ -217,6 +221,7 @@ function renderTable(list) {
   empty.style.display = 'none';
   tbody.innerHTML = list.map(function(c) {
     return '<tr>' +
+      '<td><input type="checkbox" class="row-cb" data-id="' + c.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>' +
       '<td><div class="customer-name">' + esc(c.name) + '</div></td>' +
       '<td>' + esc(c.contact_name || '-') + '</td>' +
       '<td>' + (c.email ? '<a href="mailto:' + esc(c.email) + '" style="color:var(--blue);text-decoration:none;">' + esc(c.email) + '</a>' : '-') + '</td>' +
@@ -307,6 +312,26 @@ function deleteCustomer(id, name) {
 
 function esc(s) {
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toggleAllCust() {
+  var sa = document.getElementById('cust-sa');
+  document.querySelectorAll('.row-cb').forEach(function(c) { c.checked = sa.checked; });
+  updateCustDelCount();
+}
+function updateCustDelCount() {
+  var n = document.querySelectorAll('.row-cb:checked').length;
+  var btn = document.getElementById('cust-del-btn');
+  if (btn) { btn.style.display = n > 0 ? 'inline-flex' : 'none'; btn.textContent = 'Delete (' + n + ')'; }
+}
+document.addEventListener('change', function(e) { if (e.target.classList.contains('row-cb')) updateCustDelCount(); });
+function deleteSelectedCustomers() {
+  var cbs = document.querySelectorAll('.row-cb:checked');
+  if (!cbs.length) return;
+  if (!confirm('Delete ' + cbs.length + ' customer(s)? This cannot be undone.')) return;
+  var ids = Array.from(cbs).map(function(c) { return parseInt(c.dataset.id); });
+  fetch('/api/customers/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY }, body: JSON.stringify({ ids: ids }) })
+    .then(function() { loadCustomers(); updateCustDelCount(); });
 }
 
 loadCustomers();

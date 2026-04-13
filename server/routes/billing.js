@@ -257,7 +257,23 @@ async function generateFromJob(body, org) {
   }, org);
 }
 
+async function bulkDeleteInvoices(org, ids) {
+  const orgId = org.id || org.org_id;
+  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  const result = await query('DELETE FROM invoices WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
+  await logActivity(orgId, 'BILLING', 'INVOICES_BULK_DELETED', result.rowCount + ' invoices deleted');
+  return { deleted: result.rowCount };
+}
+
+async function bulkDeleteCustomers(org, ids) {
+  const orgId = org.id || org.org_id;
+  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  const result = await query('DELETE FROM customers WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
+  await logActivity(orgId, 'BILLING', 'CUSTOMERS_BULK_DELETED', result.rowCount + ' customers deleted');
+  return { deleted: result.rowCount };
+}
+
 module.exports = {
-  getCustomers, createCustomer, updateCustomer, deleteCustomer,
-  getInvoices, getInvoice, createInvoice, updateInvoiceStatus, deleteInvoice, generateFromJob
+  getCustomers, createCustomer, updateCustomer, deleteCustomer, bulkDeleteCustomers,
+  getInvoices, getInvoice, createInvoice, updateInvoiceStatus, deleteInvoice, bulkDeleteInvoices, generateFromJob
 };

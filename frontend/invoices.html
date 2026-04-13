@@ -159,10 +159,14 @@ tr:hover td{background:rgba(0,0,0,0.015);cursor:pointer;}
   <div class="table-wrap">
     <div class="table-header">
       <div class="table-title">Invoice Register</div>
-      <div class="table-count" id="inv-count">0 invoices</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn-action" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;border-radius:6px;border:none;cursor:pointer;display:none;" id="inv-del-btn" onclick="deleteSelectedInvoices()">Delete (0)</button>
+        <div class="table-count" id="inv-count">0 invoices</div>
+      </div>
     </div>
     <table>
       <thead><tr>
+        <th style="width:32px;"><input type="checkbox" id="inv-sa" onclick="toggleAllInv()" style="width:16px;height:16px;cursor:pointer;"></th>
         <th>Invoice #</th><th>Customer</th><th>Issue Date</th><th>Due Date</th>
         <th>Subtotal</th><th>VAT</th><th>Total</th><th>Status</th><th>Actions</th>
       </tr></thead>
@@ -326,7 +330,7 @@ function renderTable(invoices) {
   document.getElementById('inv-count').textContent = invoices.length + ' invoices';
   var tbody = document.getElementById('inv-tbody');
   if (!invoices.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty">No invoices found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">No invoices found</td></tr>';
     return;
   }
   tbody.innerHTML = invoices.map(function(inv) {
@@ -334,6 +338,7 @@ function renderTable(invoices) {
     var due = inv.due_date && inv.status !== 'paid' && new Date(inv.due_date) < new Date() ?
       '<span style="color:var(--red);font-weight:600;">' + fmt(inv.due_date) + '</span>' : fmt(inv.due_date);
     return '<tr onclick="showDetail(' + inv.id + ')">' +
+      '<td onclick="event.stopPropagation()"><input type="checkbox" class="row-cb" data-id="' + inv.id + '" style="width:16px;height:16px;cursor:pointer;"></td>' +
       '<td><b style="font-family:monospace;">' + inv.invoice_number + '</b></td>' +
       '<td>' + (inv.customer_name || inv.customer_name_from_table || '-') + '</td>' +
       '<td>' + fmt(inv.issue_date) + '</td>' +
@@ -547,6 +552,25 @@ function showDetail(id) {
       '<button class="btn btn-secondary" onclick="closeModal(\'detail-modal\')">Close</button>';
     document.getElementById('detail-modal').classList.add('open');
   });
+}
+
+function toggleAllInv() {
+  var sa = document.getElementById('inv-sa');
+  document.querySelectorAll('.row-cb').forEach(function(c) { c.checked = sa.checked; });
+  updateInvDelCount();
+}
+function updateInvDelCount() {
+  var n = document.querySelectorAll('.row-cb:checked').length;
+  var btn = document.getElementById('inv-del-btn');
+  if (btn) { btn.style.display = n > 0 ? 'inline-flex' : 'none'; btn.textContent = 'Delete (' + n + ')'; }
+}
+document.addEventListener('change', function(e) { if (e.target.classList.contains('row-cb')) updateInvDelCount(); });
+function deleteSelectedInvoices() {
+  var cbs = document.querySelectorAll('.row-cb:checked');
+  if (!cbs.length) return;
+  if (!confirm('Delete ' + cbs.length + ' invoice(s)? This cannot be undone.')) return;
+  var ids = Array.from(cbs).map(function(c) { return parseInt(c.dataset.id); });
+  api('DELETE', '/invoices/bulk', { ids: ids }).then(function() { loadData(); updateInvDelCount(); });
 }
 
 window.addEventListener('load', loadData);

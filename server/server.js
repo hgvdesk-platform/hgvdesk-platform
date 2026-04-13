@@ -734,6 +734,7 @@ async function handleCustomers(ctx, res) {
 
   if (p === '/api/customers' && method === 'GET') { ok(res, await billing.getCustomers(caller)); return true; }
   if (p === '/api/customers' && method === 'POST') { created(res, await billing.createCustomer(body, caller)); return true; }
+  if (p === '/api/customers/bulk' && method === 'DELETE') { ok(res, await billing.bulkDeleteCustomers(caller, body.ids)); return true; }
 
   const custMatch = p.match(/^\/api\/customers\/(\d+)$/);
   if (custMatch) {
@@ -751,6 +752,7 @@ async function handleInvoices(ctx, res) {
   if (p === '/api/invoices' && method === 'GET') { ok(res, await billing.getInvoices(caller, qs)); return true; }
   if (p === '/api/invoices' && method === 'POST') { created(res, await billing.createInvoice(body, caller)); return true; }
   if (p === '/api/invoices/generate-from-job' && method === 'POST') { created(res, await billing.generateFromJob(body, caller)); return true; }
+  if (p === '/api/invoices/bulk' && method === 'DELETE') { ok(res, await billing.bulkDeleteInvoices(caller, body.ids)); return true; }
 
   const invMatch = p.match(/^\/api\/invoices\/(\d+)$/);
   if (invMatch) {
