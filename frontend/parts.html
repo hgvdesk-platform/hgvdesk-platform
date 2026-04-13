@@ -593,11 +593,10 @@ function deleteInspection(id) {
 function deleteSelectedParts() {
   var cbs = document.querySelectorAll('.row-cb:checked');
   if (!cbs.length) { alert('No items selected'); return; }
-  if (!confirm('Delete ' + cbs.length + ' selected part(s)?')) return;
-  var ids = Array.from(cbs).map(function(c){ return c.dataset.pid; });
-  Promise.all(ids.map(function(id){
-    return fetch('/api/parts/'+id,{method:'DELETE',headers:{'X-API-Key': KEY}});
-  })).then(function(){ loadParts(); });
+  if (!confirm('Delete ' + cbs.length + ' part(s)? This cannot be undone.')) return;
+  var ids = Array.from(cbs).map(function(c){ return parseInt(c.dataset.pid); });
+  fetch('/api/parts/bulk',{method:'DELETE',headers:{'Content-Type':'application/json','X-API-Key':KEY},body:JSON.stringify({ids:ids})})
+    .then(function(){ loadParts(); });
 }
 function deletePart(id) {
   if (!confirm('Delete this part?')) return;

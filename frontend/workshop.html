@@ -537,11 +537,10 @@ function deleteJob(id) {
 function deleteSelected() {
   var cbs = document.querySelectorAll('.row-cb:checked');
   if (!cbs.length) { alert('No items selected'); return; }
-  if (!confirm('Delete ' + cbs.length + ' selected job(s)?')) return;
-  var ids = Array.from(cbs).map(function(c) { return c.dataset.id; });
-  Promise.all(ids.map(function(id) {
-    return fetch('/api/jobs/' + id, { method: 'DELETE', headers: { 'X-API-Key': KEY } });
-  })).then(function() { loadJobs(); });
+  if (!confirm('Delete ' + cbs.length + ' job(s)? This cannot be undone.')) return;
+  var ids = Array.from(cbs).map(function(c) { return parseInt(c.dataset.id); });
+  fetch('/api/jobs/bulk', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY }, body: JSON.stringify({ ids: ids }) })
+    .then(function() { loadJobs(); });
 }
 
 function selectAll() {

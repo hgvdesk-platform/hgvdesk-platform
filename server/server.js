@@ -36,7 +36,7 @@ const FRONTEND = path.join(__dirname, '..', 'frontend');
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
-    if (req.method === 'GET' || req.method === 'DELETE') return resolve({});
+    if (req.method === 'GET') return resolve({});
     let body = '';
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
@@ -422,6 +422,7 @@ async function handleWorkshop(ctx, res) {
   if (sendMatch && method === 'POST') { ok(res, await workshop.sendToFloor(body, caller, parseInt(sendMatch[1]))); return true; }
 
   if (p === '/api/sync/parts-update' && method === 'POST') { ok(res, await workshop.receivePartsUpdate(body, caller)); return true; }
+  if (p === '/api/jobs/bulk' && method === 'DELETE') { ok(res, await workshop.bulkDeleteJobs(caller, body.ids)); return true; }
 
   return false;
 }
@@ -431,6 +432,7 @@ async function handleInspections(ctx, res) {
 
   if (p === '/api/inspections' && method === 'GET') { ok(res, await inspect.getInspections(caller, qs)); return true; }
   if (p === '/api/inspections' && method === 'POST') { created(res, await inspect.createInspection(body, caller)); return true; }
+  if (p === '/api/inspections/bulk' && method === 'DELETE') { ok(res, await inspect.bulkDeleteInspections(caller, body.ids)); return true; }
 
   const inspIdMatch = p.match(/^\/api\/inspections\/(\d+)$/);
   if (inspIdMatch) {
@@ -465,6 +467,7 @@ async function handleParts(ctx, res) {
 
   if (p === '/api/parts' && method === 'GET') { ok(res, await parts.getParts(caller, qs)); return true; }
   if (p === '/api/parts' && method === 'POST') { created(res, await parts.createPart(body, caller)); return true; }
+  if (p === '/api/parts/bulk' && method === 'DELETE') { ok(res, await parts.bulkDeleteParts(caller, body.ids)); return true; }
 
   const partIdMatch = p.match(/^\/api\/parts\/(\d+)$/);
   if (partIdMatch) {
@@ -799,7 +802,7 @@ async function router(req, res) {
     return unauth(res, e.message || 'Unauthorised');
   }
 
-  ctx.body = ['POST', 'PUT', 'PATCH'].includes(ctx.method) ? await readBody(req) : {};
+  ctx.body = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(ctx.method) ? await readBody(req) : {};
 
   for (const handler of AUTHED_HANDLERS) {
     if (await handler(ctx, res)) return;

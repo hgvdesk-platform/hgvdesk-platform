@@ -69,6 +69,14 @@ async function deletePart(org, partId) {
   return { deleted: true };
 }
 
+async function bulkDeleteParts(org, ids) {
+  const orgId = org.id || org.org_id;
+  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  const result = await query('DELETE FROM parts WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
+  await logActivity(orgId, 'PARTS', 'PARTS_BULK_DELETED', `${result.rowCount} parts deleted`);
+  return { deleted: result.rowCount };
+}
+
 async function receiveInboundJob(body, org) {
   const orgId = org.id || org.org_id;
   const { vehicleReg, workshopJobId, jobId } = body;
@@ -78,4 +86,4 @@ async function receiveInboundJob(body, org) {
   return { received: true };
 }
 
-module.exports = { getParts, createPart, updatePart, deletePart, receiveInboundJob };
+module.exports = { getParts, createPart, updatePart, deletePart, bulkDeleteParts, receiveInboundJob };

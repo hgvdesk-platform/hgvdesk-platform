@@ -82,6 +82,14 @@ async function deleteJob(org, jobId) {
   return { deleted: true };
 }
 
+async function bulkDeleteJobs(org, ids) {
+  const orgId = org.id || org.org_id;
+  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  const result = await query('DELETE FROM jobs WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
+  await logActivity(orgId, 'WORKSHOP', 'JOBS_BULK_DELETED', `${result.rowCount} jobs deleted`);
+  return { deleted: result.rowCount };
+}
+
 async function sendToFloor(body, org, jobId) {
   const orgId = org.id || org.org_id;
   const job = await queryOne('SELECT * FROM jobs WHERE id = $1 AND org_id = $2', [jobId, orgId]);
@@ -181,7 +189,7 @@ async function saveJobLines(body, caller, jobId) {
   return { saved: true, totalSoldHours };
 }
 
-module.exports = { getJobs, getJob, createJob, updateJob, deleteJob, sendToFloor, receivePartsUpdate ,
+module.exports = { getJobs, getJob, createJob, updateJob, deleteJob, bulkDeleteJobs, sendToFloor, receivePartsUpdate ,
   getJobLibrary,
   getJobLines,
   saveJobLines

@@ -257,6 +257,14 @@ async function deleteInspection(org, inspectionId) {
   return { deleted: true };
 }
 
+async function bulkDeleteInspections(org, ids) {
+  const orgId = org.id || org.org_id;
+  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  const result = await query('DELETE FROM inspections WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
+  await logActivity(orgId, 'INSPECT', 'INSPECTIONS_BULK_DELETED', `${result.rowCount} inspections deleted`);
+  return { deleted: result.rowCount };
+}
+
 async function receiveAssignedJob(body, org) {
   const orgId = org.id || org.org_id;
   const { vehicleReg, inspectionType, technicianName, workshopJobId, jobId } = body;
@@ -321,6 +329,6 @@ async function raiseDefects(body, org) {
 }
 
 module.exports = {
-  getInspections, createInspection, updateInspection, deleteInspection,
+  getInspections, createInspection, updateInspection, deleteInspection, bulkDeleteInspections,
   receiveAssignedJob, raiseDefects, updateDefect, getDefects
 };

@@ -1543,11 +1543,10 @@ function deleteJob(id) {
 function deleteSelectedInspections() {
   var cbs = document.querySelectorAll('.row-cb:checked');
   if (!cbs.length) { alert('No items selected'); return; }
-  if (!confirm('Delete ' + cbs.length + ' selected inspection(s)?')) return;
-  var ids = Array.from(cbs).map(function(c){ return c.dataset.id; });
-  Promise.all(ids.map(function(id){
-    return fetch('/api/inspections/'+id,{method:'DELETE',headers:{'X-API-Key': KEY}});
-  })).then(function(){ loadData(); });
+  if (!confirm('Delete ' + cbs.length + ' inspection(s)? This cannot be undone.')) return;
+  var ids = Array.from(cbs).map(function(c){ return parseInt(c.dataset.id); });
+  fetch('/api/inspections/bulk',{method:'DELETE',headers:{'Content-Type':'application/json','X-API-Key':KEY},body:JSON.stringify({ids:ids})})
+    .then(function(){ loadData(); });
 }
 function deleteInspection(id) {
   if (!confirm('Delete this inspection?')) return;
