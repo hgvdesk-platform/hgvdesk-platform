@@ -1008,6 +1008,16 @@ function buildTyres() {
       updateBanner();
     });
   });
+  // Collect depth and expiry values on input
+  wrap.querySelectorAll('.tf-in').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      var id = inp.id;
+      var tid = id.replace(/^(td|tf)-/, '');
+      if (!tyres[tid]) tyres[tid] = {};
+      if (id.startsWith('td-')) tyres[tid].depth = inp.value;
+      if (id.startsWith('tf-')) tyres[tid].expiry = inp.value;
+    });
+  });
 }
 
 // NIL DEFECT

@@ -42,6 +42,21 @@ const LOGO_SVG_SM = `<svg width="80" height="20" viewBox="0 0 120 28" fill="none
 </svg>`;
 
 function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// Map internal tyre key (t0_0) to human-readable position name
+const TYRE_AXLES = [
+  { label: 'Steer', pos: ['Steer NS', 'Steer OS'] },
+  { label: 'Drive 1', pos: ['Drive 1 NS Outer', 'Drive 1 NS Inner', 'Drive 1 OS Inner', 'Drive 1 OS Outer'] },
+  { label: 'Drive 2', pos: ['Drive 2 NS Outer', 'Drive 2 NS Inner', 'Drive 2 OS Inner', 'Drive 2 OS Outer'] },
+  { label: 'Trailer', pos: ['Trailer NS Outer', 'Trailer NS Inner', 'Trailer OS Inner', 'Trailer OS Outer'] },
+];
+function tyrePositionName(key) {
+  const m = key.match(/^t(\d+)_(\d+)$/);
+  if (!m) return key;
+  const axle = TYRE_AXLES[parseInt(m[1])];
+  if (!axle) return key;
+  return axle.pos[parseInt(m[2])] || key;
+}
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}) : '—'; }
 function fmtShort(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
 function fmtDateTime(d) { if(!d) return '—'; const dt=new Date(d); return fmtShort(d)+' '+dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
@@ -230,7 +245,8 @@ function buildInspectionReportHtml(insp, opts={}) {
     h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
     h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Position</th><th ${th} style="${LBL}text-align:center;">Depth (mm)</th><th ${th} style="${LBL}text-align:center;">Expiry</th><th ${th} style="${LBL}text-align:center;">Condition</th></tr>`;
     let ri=0;
-    for (const [pos, data] of tyreEntries) {
+    for (const [posKey, data] of tyreEntries) {
+      const pos = tyrePositionName(posKey);
       const d = typeof data==='object'?data:{depth:data};
       const depth = d.depth||d.tread||'—';
       const depthNum = parseFloat(depth);

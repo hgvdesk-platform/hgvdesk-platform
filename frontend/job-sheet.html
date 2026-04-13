@@ -96,6 +96,8 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
   document.getElementById('doc-meta').textContent = 'Job #' + jobId;
 
   function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  var TYRE_AXLES=[{pos:['Steer NS','Steer OS']},{pos:['Drive 1 NS Outer','Drive 1 NS Inner','Drive 1 OS Inner','Drive 1 OS Outer']},{pos:['Drive 2 NS Outer','Drive 2 NS Inner','Drive 2 OS Inner','Drive 2 OS Outer']},{pos:['Trailer NS Outer','Trailer NS Inner','Trailer OS Inner','Trailer OS Outer']}];
+  function tyreName(k){var m=k.match(/^t(\d+)_(\d+)$/);if(!m)return k;var a=TYRE_AXLES[+m[1]];return a&&a.pos[+m[2]]||k;}
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
   function fmtDT(d) { if (!d) return '—'; var dt=new Date(d); return fmtDate(d)+' '+dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
   function bdg(label, cls) { return '<span class="bdg bdg-'+cls+'">'+esc(label)+'</span>'; }
@@ -228,7 +230,7 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
         tyreEntries.forEach(function(e) {
           var d = typeof e[1]==='object'?e[1]:{depth:e[1]};
           var depth=d.depth||d.tread||'—'; var dn=parseFloat(depth); var dc=!isNaN(dn)&&dn<1?'var(--fail)':(!isNaN(dn)&&dn<3?'var(--adv)':'var(--text)');
-          h += '<tr><td>'+esc(e[0])+'</td><td style="text-align:center;font-weight:600;color:'+dc+';">'+esc(String(depth))+'</td><td style="text-align:center;color:var(--muted);">'+esc(d.expiry||'—')+'</td><td style="text-align:center;">'+condBdg(d.condition)+'</td></tr>';
+          h += '<tr><td>'+esc(tyreName(e[0]))+'</td><td style="text-align:center;font-weight:600;color:'+dc+';">'+esc(String(depth))+'</td><td style="text-align:center;color:var(--muted);">'+esc(d.expiry||'—')+'</td><td style="text-align:center;">'+condBdg(d.condition)+'</td></tr>';
         });
         h += '</tbody></table>';
         h += '<div class="dvsa-note">HGV legal minimum: 1mm across ¾ width. Advisory: &lt;3mm.</div>';
