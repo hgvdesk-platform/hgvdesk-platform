@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk — Contact / Book a Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--navy:#0a1929;--orange:#ff5500;--bg:#f8f8f8;--text:#1a1a1a;--muted:#6b7280;--border:#e8e8e8;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.7;}
+.hdr{background:var(--navy);padding:20px 0;text-align:center;}
+.hdr a{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.4rem;color:#fff;text-decoration:none;}
+.hdr a span{color:var(--orange);}
+.wrap{max-width:560px;margin:0 auto;padding:48px 24px 80px;}
+h1{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:36px;color:var(--navy);margin-bottom:6px;}
+.sub{font-size:15px;color:var(--muted);margin-bottom:32px;}
+.fg{margin-bottom:16px;}
+.fg label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;font-family:'Barlow',sans-serif;font-size:14px;background:#fff;outline:none;transition:border-color 0.2s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--orange);}
+.fg textarea{resize:vertical;min-height:100px;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.btn{width:100%;padding:14px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background 0.2s;}
+.btn:hover{background:#e64d00;}
+.btn:disabled{opacity:0.6;cursor:not-allowed;}
+.err{display:none;background:#fcebeb;border:1px solid #f5c6c6;border-radius:8px;padding:12px;font-size:13px;color:#a32d2d;margin-bottom:16px;}
+.err.show{display:block;}
+.ok{display:none;background:#eaf3de;border:1px solid #c8e0a8;border-radius:8px;padding:20px;text-align:center;color:#3b6d11;font-weight:500;}
+.ok.show{display:block;}
+.ok h2{font-family:'Barlow Condensed',sans-serif;font-size:22px;color:#3b6d11;margin-bottom:6px;}
+.ftr{background:var(--navy);padding:24px;text-align:center;font-size:12px;color:#6b7b8d;margin-top:48px;}
+.ftr a{color:#8694a5;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="hdr"><a href="/">HGV<span>Desk</span></a></div>
+<div class="wrap">
+<h1>Get in touch</h1>
+<p class="sub">Book a demo, ask a question, or tell us about your fleet. We'll get back to you within one working day.</p>
+
+<div class="err" id="err"></div>
+<div class="ok" id="ok"><h2>Message sent</h2><p>Thanks — we'll be in touch shortly.</p><a href="/" style="color:var(--orange);font-weight:600;">Back to home</a></div>
+
+<form id="form">
+  <div class="row">
+    <div class="fg"><label for="name">Your name</label><input id="name" required placeholder="James Smith"></div>
+    <div class="fg"><label for="company">Company</label><input id="company" required placeholder="Smith Haulage Ltd"></div>
+  </div>
+  <div class="row">
+    <div class="fg"><label for="email">Email</label><input id="email" type="email" required placeholder="you@company.com"></div>
+    <div class="fg"><label for="phone">Phone</label><input id="phone" type="tel" placeholder="07700 900000"></div>
+  </div>
+  <div class="fg"><label for="fleet">Fleet size</label>
+    <select id="fleet">
+      <option value="">Select...</option>
+      <option value="1-5">1–5 vehicles</option>
+      <option value="6-10">6–10 vehicles</option>
+      <option value="11-25">11–25 vehicles</option>
+      <option value="26-50">26–50 vehicles</option>
+      <option value="51-100">51–100 vehicles</option>
+      <option value="100+">100+ vehicles</option>
+    </select>
+  </div>
+  <div class="fg"><label for="message">Message</label><textarea id="message" placeholder="Tell us about your fleet, what you need, or book a demo..."></textarea></div>
+  <button class="btn" type="submit" id="btn">Send message</button>
+</form>
+</div>
+<div class="ftr"><a href="/">HGVDesk</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></div>
+
+<script>
+document.getElementById('form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var btn = document.getElementById('btn');
+  var err = document.getElementById('err');
+  err.classList.remove('show');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  fetch('/api/contact', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: document.getElementById('name').value.trim(),
+      company: document.getElementById('company').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      fleet: document.getElementById('fleet').value,
+      message: document.getElementById('message').value.trim()
+    })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.success) {
+      document.getElementById('form').style.display = 'none';
+      document.getElementById('ok').classList.add('show');
+    } else {
+      err.textContent = d.error || 'Failed to send. Try again.';
+      err.classList.add('show');
+      btn.disabled = false; btn.textContent = 'Send message';
+    }
+  }).catch(function() {
+    err.textContent = 'Network error. Try again.';
+    err.classList.add('show');
+    btn.disabled = false; btn.textContent = 'Send message';
+  });
+});
+</script>
+</body>
+</html>

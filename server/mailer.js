@@ -177,4 +177,4 @@ async function sendInspectionReport({ to, inspection, orgName, aiSummary, logoLi
   }
 }
 
-module.exports = { sendFailedInspectionAlert, sendInspectionReport };
+module.exports = { sendFailedInspectionAlert, sendInspectionReport, resendSend };

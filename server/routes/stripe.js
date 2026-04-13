@@ -109,13 +109,24 @@ async function signup(body) {
     [orgName, slug, plan.key, apiKey, customer.id, 'pending', normEmail]
   );
 
+  const verifyToken = crypto.randomBytes(32).toString('hex');
   await query(
-    `INSERT INTO users (org_id, email, password_hash, full_name, role, active)
-     VALUES ($1, $2, $3, $4, 'admin', true)`,
-    [org.id, normEmail, passwordHash, fullName]
+    `INSERT INTO users (org_id, email, password_hash, full_name, role, active, email_verified, verify_token)
+     VALUES ($1, $2, $3, $4, 'admin', true, false, $5)`,
+    [org.id, normEmail, passwordHash, fullName, verifyToken]
   );
 
+  // Send verification email
   const origin = process.env.PUBLIC_BASE_URL || 'https://hgvdesk.co.uk';
+  try {
+    const { resendSend } = require('../mailer');
+    await resendSend({
+      from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk',
+      to: [normEmail],
+      subject: 'HGVDesk — Verify your email',
+      html: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;"><h2 style="color:#0a1929;">Welcome to HGVDesk</h2><p>Click below to verify your email address and activate your account.</p><a href="' + origin + '/api/auth/verify-email?token=' + verifyToken + '" style="display:inline-block;padding:12px 24px;background:#ff5500;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Verify email</a></div>'
+    });
+  } catch (e) { console.error('[SIGNUP] verify email failed:', e.message); }
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: customer.id,
