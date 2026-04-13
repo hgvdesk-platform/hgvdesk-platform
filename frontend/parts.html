@@ -164,10 +164,16 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sc i"><div class="sc-lbl">Total</div><div class="sc-val" id="s-total">0</div></div>
   </div>
   <div class="card">
-    <div class="card-hd"><div class="card-title">Parts Queue</div><span class="badge bg-i" id="dash-tot">0 Parts</span></div>
+    <div class="card-hd">
+      <div class="card-title">Parts Queue</div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="pdash-del-btn" onclick="deleteSelectedParts()">Delete (0)</button>
+        <span class="badge bg-i" id="dash-tot">0 Parts</span>
+      </div>
+    </div>
     <table class="tbl">
-      <thead><tr><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Auto-Raised</th><th></th></tr></thead>
-      <tbody id="dash-tb"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No parts yet</td></tr></tbody>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="pdash-sa" onclick="toggleAllParts()" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody id="dash-tb"><tr><td colspan="8" style="text-align:center;padding:40px;color:var(--t5);">No parts yet</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -390,9 +396,20 @@ function renderParts() {
   var empty = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--t5);">No parts found</td></tr>';
 
   var dashRows = parts.slice(0, 20).map(function(p) {
-    return '<tr data-pid="' + p.id + '"><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:12px;">' + (p.category || '-') + '</td><td>' + priorityChip(p.priority) + '</td><td>' + statusChip(p.status) + '</td><td style="font-size:11px;">' + (p.auto_raised ? '<span class="chip c-i">Auto</span>' : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+    return '<tr data-pid="' + p.id + '">' +
+      '<td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>' +
+      '<td style="font-weight:600;">' + p.name + '</td>' +
+      '<td><span class="reg">' + p.vehicle_reg + '</span></td>' +
+      '<td style="font-size:12px;">' + (p.category || '-') + '</td>' +
+      '<td>' + priorityChip(p.priority) + '</td>' +
+      '<td>' + statusChip(p.status) + '</td>' +
+      '<td style="font-size:11px;color:var(--t5);">' + ago(p.created_at) + '</td>' +
+      '<td style="display:flex;gap:6px;">' +
+        '<button class="btn btn-s" style="padding:4px 10px;font-size:11px;" data-pid="' + p.id + '">View</button>' +
+        '<button class="btn" style="padding:4px 10px;font-size:11px;background:#fff0f0;color:#ff3b30;border:1px solid rgba(255,59,48,0.2);" onclick="event.stopPropagation();deletePart(' + p.id + ')">Delete</button>' +
+      '</td></tr>';
   }).join('');
-  document.getElementById('dash-tb').innerHTML = dashRows || empty;
+  document.getElementById('dash-tb').innerHTML = dashRows || '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--t5);">No parts yet</td></tr>';
 
   var pendingRows = pending.map(function(p) {
     return '<tr data-pid="' + p.id + '"><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td>' + priorityChip(p.priority) + '</td><td style="font-size:12px;">' + (p.supplier || '-') + '</td><td style="font-size:12px;">' + (p.unit_cost ? '£' + Number(p.unit_cost).toFixed(2) : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
@@ -609,8 +626,10 @@ function toggleAllParts() {
 }
 function updatePartsDelCount() {
   var n = document.querySelectorAll('.row-cb:checked').length;
-  var btn = document.getElementById('parts-del-btn');
-  if (btn) { btn.style.display = n > 0 ? 'inline-flex' : 'none'; btn.textContent = 'Delete (' + n + ')'; }
+  ['parts-del-btn','pdash-del-btn'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if (btn) { btn.style.display = n > 0 ? 'inline-flex' : 'none'; btn.textContent = 'Delete (' + n + ')'; }
+  });
 }
 document.addEventListener('change', function(e) { if (e.target.classList.contains('row-cb')) updatePartsDelCount(); });
 
