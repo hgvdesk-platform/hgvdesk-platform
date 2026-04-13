@@ -588,18 +588,14 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
         <div class="sev-opt" id="sev-crit"><div class="sev-opt-title" style="color:var(--red);">Critical Defect</div><div class="sev-opt-sub">Requires immediate action</div></div>
       </div>
       <div class="fg">
-        <label class="fl">Description *</label>
-        <textarea class="fta" id="zone-desc" placeholder="Describe the defect in detail..."></textarea>
-        <div id="ai-panel" style="margin-top:8px;padding:10px 12px;background:#f5f5f7;border:1px solid rgba(0,0,0,0.06);border-radius:10px;display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
-            <div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#86868b;">AI Suggestion</div>
-            <button type="button" id="ai-suggest-btn" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:980px;border:1px solid rgba(0,0,0,0.15);background:#fff;cursor:pointer;">Suggest</button>
-          </div>
-          <div id="ai-suggest-text" style="font-size:13px;color:#1d1d1f;line-height:1.45;min-height:18px;"></div>
-          <div id="ai-suggest-actions" style="margin-top:8px;display:none;">
-            <button type="button" id="ai-use-btn" style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:980px;border:none;background:#1d1d1f;color:#fff;cursor:pointer;">Use this</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+          <label class="fl" style="margin-bottom:0;">Description *</label>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span id="ai-badge" style="display:none;font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#FF6B00;background:rgba(255,107,0,0.08);padding:2px 7px;border-radius:4px;">AI suggested</span>
+            <button type="button" id="ai-suggest-btn" style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:980px;border:1px solid rgba(255,107,0,0.3);background:rgba(255,107,0,0.06);color:#FF6B00;cursor:pointer;display:none;">Re-suggest</button>
           </div>
         </div>
+        <textarea class="fta" id="zone-desc" placeholder="Generating description..."></textarea>
       </div>
       <div class="fg"><label class="fl">Part / Component</label><input class="fi" id="zone-part" placeholder="e.g. Offside brake caliper"></div>
     </div>
@@ -912,6 +908,7 @@ document.querySelectorAll('.zone').forEach(function(z) {
     document.getElementById('sev-crit').classList.remove('on');
     resetAiPanel();
     document.getElementById('zone-modal').classList.add('on');
+    fetchAiSuggestion();
   });
   // Tooltip on hover
   z.addEventListener('mouseenter', function(e) {
@@ -1035,6 +1032,7 @@ function buildDiagramsLegacy() {
         document.getElementById('sev-crit').classList.remove('on');
         resetAiPanel();
         document.getElementById('zone-modal').classList.add('on');
+        fetchAiSuggestion();
       });
     });
   });
@@ -1043,59 +1041,55 @@ function buildDiagramsLegacy() {
 // DEFECT MODAL
 document.getElementById('modal-close').addEventListener('click', function() { document.getElementById('zone-modal').classList.remove('on'); });
 document.getElementById('modal-cancel').addEventListener('click', function() { document.getElementById('zone-modal').classList.remove('on'); });
-document.getElementById('sev-adv').addEventListener('click', function() { curSev = 'advisory'; document.getElementById('sev-adv').classList.add('on'); document.getElementById('sev-crit').classList.remove('on'); resetAiPanel(); });
-document.getElementById('sev-crit').addEventListener('click', function() { curSev = 'critical'; document.getElementById('sev-crit').classList.add('on'); document.getElementById('sev-adv').classList.remove('on'); resetAiPanel(); });
+document.getElementById('sev-adv').addEventListener('click', function() { curSev = 'advisory'; document.getElementById('sev-adv').classList.add('on'); document.getElementById('sev-crit').classList.remove('on'); document.getElementById('zone-desc').value = ''; fetchAiSuggestion(); });
+document.getElementById('sev-crit').addEventListener('click', function() { curSev = 'critical'; document.getElementById('sev-crit').classList.add('on'); document.getElementById('sev-adv').classList.remove('on'); document.getElementById('zone-desc').value = ''; fetchAiSuggestion(); });
 
-// AI DEFECT SUGGESTION
+// AI DEFECT SUGGESTION — auto-triggers when zone modal opens
+var _aiReqId = 0;
 function resetAiPanel() {
-  var panel = document.getElementById('ai-panel');
-  if (!panel) return;
-  panel.style.display = 'block';
-  document.getElementById('ai-suggest-text').textContent = 'Tap "Suggest" for a professional defect description.';
-  document.getElementById('ai-suggest-actions').style.display = 'none';
-  var btn = document.getElementById('ai-suggest-btn');
-  btn.disabled = false;
-  btn.textContent = 'Suggest';
+  document.getElementById('ai-badge').style.display = 'none';
+  document.getElementById('ai-suggest-btn').style.display = 'none';
 }
 
 function fetchAiSuggestion() {
   if (!curZone) return;
+  var reqId = ++_aiReqId;
+  var desc = document.getElementById('zone-desc');
+  var badge = document.getElementById('ai-badge');
   var btn = document.getElementById('ai-suggest-btn');
-  var textEl = document.getElementById('ai-suggest-text');
-  var actions = document.getElementById('ai-suggest-actions');
-  btn.disabled = true;
-  btn.textContent = 'Thinking...';
-  textEl.textContent = '';
-  actions.style.display = 'none';
+  desc.placeholder = 'AI generating description...';
+  badge.style.display = 'none';
+  btn.style.display = 'none';
   var regEl = document.getElementById('f-reg');
   var typeEl = document.getElementById('f-type');
+  var partialText = desc.value.trim();
   api('POST', '/ai/defect-suggestion', {
     zone: curZone.label,
     severity: curSev,
     vehicleReg: regEl ? regEl.value.trim().toUpperCase() : '',
-    vehicleType: typeEl ? typeEl.value : ''
+    vehicleType: typeEl ? typeEl.value : '',
+    partialText: partialText || undefined
   }).then(function(d) {
-    btn.disabled = false;
-    btn.textContent = 'Re-suggest';
+    if (reqId !== _aiReqId) return;
     var data = d && (d.data || d);
     if (data && data.suggestion) {
-      textEl.textContent = data.suggestion;
-      actions.style.display = 'block';
-    } else {
-      var err = (d && (d.error || (d.data && d.data.error))) || 'No suggestion returned.';
-      textEl.textContent = err;
+      if (!desc.value.trim() || desc.value === partialText) {
+        desc.value = data.suggestion;
+        badge.style.display = 'inline-block';
+      }
+      btn.style.display = 'inline-block';
     }
+    desc.placeholder = 'Describe the defect in detail...';
   }).catch(function() {
-    btn.disabled = false;
-    btn.textContent = 'Suggest';
-    textEl.textContent = 'AI request failed. Try again.';
+    if (reqId !== _aiReqId) return;
+    desc.placeholder = 'Describe the defect in detail...';
+    btn.style.display = 'inline-block';
   });
 }
 
 document.getElementById('ai-suggest-btn').addEventListener('click', fetchAiSuggestion);
-document.getElementById('ai-use-btn').addEventListener('click', function() {
-  var text = document.getElementById('ai-suggest-text').textContent;
-  if (text) document.getElementById('zone-desc').value = text;
+document.getElementById('zone-desc').addEventListener('input', function() {
+  document.getElementById('ai-badge').style.display = 'none';
 });
 document.getElementById('modal-save').addEventListener('click', function() {
   var desc = document.getElementById('zone-desc').value.trim();

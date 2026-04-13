@@ -44,14 +44,16 @@ const SUMMARY_SYSTEM_PROMPT = [
   '- If the inspection result is null/pending, say so honestly — do not guess.',
 ].join('\n');
 
-function buildUserPrompt({ zone, severity, vehicleType, vehicleReg }) {
+function buildUserPrompt({ zone, severity, vehicleType, vehicleReg, partialText }) {
+  const typeDesc = vehicleType === 'T60' ? 'T60 trailer' : vehicleType === 'T50' ? 'T50 rigid/artic tractor unit' : (vehicleType || 'HGV');
   const lines = [
-    `Zone: ${zone || 'unspecified'}`,
-    `Severity: ${severity || 'advisory'}`,
+    `Zone marked by inspector: ${zone || 'unspecified'}`,
+    `Severity: ${severity === 'critical' ? 'CRITICAL DEFECT — immediate action required' : 'ADVISORY — monitor/schedule repair'}`,
+    `Vehicle type: ${typeDesc}`,
   ];
-  if (vehicleType) lines.push(`Vehicle type: ${vehicleType}`);
   if (vehicleReg) lines.push(`Vehicle reg: ${vehicleReg}`);
-  lines.push('', 'Write the defect description.');
+  if (partialText) lines.push(`Inspector's partial notes: ${partialText}`);
+  lines.push('', 'Write the defect description for this zone and severity.');
   return lines.join('\n');
 }
 
@@ -59,7 +61,7 @@ async function defectSuggestion(body) {
   if (!client) {
     throw { status: 503, message: 'AI assistant not configured (ANTHROPIC_API_KEY missing)' };
   }
-  const { zone, severity, vehicleType, vehicleReg } = body || {};
+  const { zone, severity, vehicleType, vehicleReg, partialText } = body || {};
   if (!zone) throw { status: 400, message: 'zone is required' };
 
   const message = await client.messages.create({
@@ -69,7 +71,7 @@ async function defectSuggestion(body) {
       { type: 'text', text: DEFECT_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
     ],
     messages: [
-      { role: 'user', content: buildUserPrompt({ zone, severity, vehicleType, vehicleReg }) },
+      { role: 'user', content: buildUserPrompt({ zone, severity, vehicleType, vehicleReg, partialText }) },
     ],
   });
 
