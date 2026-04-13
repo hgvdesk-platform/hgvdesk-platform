@@ -147,8 +147,10 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <header class="topbar">
   <div><span class="tb-title" id="tbt">Dashboard</span><span class="tb-sub" id="tbs"> - Parts Overview</span></div>
   <div class="sp"></div>
+  <select id="veh-filter" onchange="filterByVehicle()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;background:var(--surface);outline:none;min-width:160px;">
+    <option value="">All Vehicles</option>
+  </select>
   <div class="pill">Workshop Live</div>
-  <div class="pill">Inspect Live</div>
   <button class="btn btn-p" id="btn-new-top">+ Add Part</button>
 </header>
 
@@ -359,12 +361,33 @@ function showPage(p) {
   if (p !== 'new') loadParts();
 }
 
+var currentVehFilter = '';
+
 function loadParts() {
-  api('GET', '/parts').then(function(d) {
+  var url = '/parts' + (currentVehFilter ? '?reg=' + encodeURIComponent(currentVehFilter) : '');
+  api('GET', url).then(function(d) {
     if (!d) return;
     allParts = (d.data ? d.data.parts : d.parts) || [];
+    buildVehicleFilter();
     renderParts();
   });
+}
+
+function buildVehicleFilter() {
+  var regs = {};
+  allParts.forEach(function(p) { if (p.vehicle_reg) regs[p.vehicle_reg] = true; });
+  // Also fetch all parts to get all regs when filtered
+  if (!currentVehFilter) {
+    var sel = document.getElementById('veh-filter');
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">All Vehicles</option>' +
+      Object.keys(regs).sort().map(function(r) { return '<option value="' + r + '"' + (r === prev ? ' selected' : '') + '>' + r + '</option>'; }).join('');
+  }
+}
+
+function filterByVehicle() {
+  currentVehFilter = document.getElementById('veh-filter').value;
+  loadParts();
 }
 
 function renderParts() {

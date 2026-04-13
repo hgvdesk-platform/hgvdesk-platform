@@ -372,12 +372,20 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
         <div id="jm-sh-results" style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;display:none;background:var(--surface);"></div>
         <div id="jm-sh-lines" style="margin-top:8px;"></div>
       </div>
+      <!-- Cost Summary -->
+      <div id="jm-costs" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--orange);margin-bottom:10px;">Cost Summary</div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Parts</span><span id="jm-cost-parts" style="font-weight:600;">£0.00</span></div>
+        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>Labour</span><span id="jm-cost-labour" style="font-weight:600;">£0.00</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:14px;font-weight:700;border-top:1px solid var(--border);"><span>Total</span><span id="jm-cost-total" style="color:var(--orange);">£0.00</span></div>
+      </div>
     </div>
     <div class="mfoot">
       <button class="btn btn-s" id="jm-close2">Close</button>
       <button class="btn btn-s" id="jm-preview" style="display:none;" onclick="previewJobReport()">Preview Report</button>
       <button class="btn btn-s" id="jm-print" style="display:none;" onclick="printJobSheet()">Print Job Sheet</button>
       <button class="btn btn-s" id="jm-save-sh" onclick="saveJobLines()">Save Hours</button>
+      <button class="btn btn-p" id="jm-gen-inv" style="display:none;background:var(--orange);" onclick="genInvoiceFromJob()">Generate Invoice</button>
       <button class="btn btn-g" id="jm-send" style="display:none;">Send to Floor</button>
       <button class="btn btn-r" id="jm-done" style="display:none;">Mark Complete</button>
     </div>
@@ -590,9 +598,36 @@ function openJobModal(job) {
   document.getElementById('jm-send').style.display = (job.status !== 'done' && (!job.inspect_sent || !job.parts_sent)) ? 'flex' : 'none';
   document.getElementById('jm-done').style.display = job.status !== 'done' ? 'flex' : 'none';
   document.getElementById('job-modal').classList.add('on');
+  // Cost summary
+  var costsEl = document.getElementById('jm-costs');
+  var invBtn = document.getElementById('jm-gen-inv');
+  if (parseFloat(job.total_cost || 0) > 0) {
+    costsEl.style.display = 'block';
+    document.getElementById('jm-cost-parts').textContent = '£' + Number(job.parts_cost || 0).toFixed(2);
+    document.getElementById('jm-cost-labour').textContent = '£' + Number(job.labour_cost || 0).toFixed(2);
+    document.getElementById('jm-cost-total').textContent = '£' + Number(job.total_cost || 0).toFixed(2);
+    invBtn.style.display = 'inline-flex';
+  } else {
+    costsEl.style.display = 'none';
+    invBtn.style.display = 'none';
+  }
   // Load job library and existing lines
   loadJobLibrary();
   loadJobLines(job.id);
+}
+
+function genInvoiceFromJob() {
+  if (!currentJob) return;
+  if (!confirm('Generate invoice for ' + currentJob.vehicle_reg + '?')) return;
+  api('POST', '/invoices/generate-from-job', { jobId: currentJob.id }).then(function(d) {
+    var inv = d && d.data;
+    if (inv && inv.invoiceNumber) {
+      toast('Invoice', inv.invoiceNumber + ' created — £' + Number(inv.invoice && inv.invoice.total || 0).toFixed(2));
+      document.getElementById('job-modal').classList.remove('on');
+    } else {
+      toast('Error', 'Invoice generation failed');
+    }
+  });
 }
 
 var jobLibraryCache = [];

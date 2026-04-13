@@ -520,6 +520,28 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
       </div>
     </div>
 
+    <!-- S7 PARTS USED -->
+    <div class="fsec">
+      <div class="fsec-hd" data-sec="s7">
+        <div class="fsec-num" id="n7">7</div>
+        <div class="fsec-title">Parts Used</div>
+        <div class="fsec-meta" id="m7">Add parts used during this inspection</div>
+      </div>
+      <div class="fsec-body" id="s7">
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input class="fi" id="pu-search" placeholder="Search parts by name..." style="flex:1;">
+          <button class="btn btn-s" onclick="searchPartsForInsp()">Search</button>
+        </div>
+        <div id="pu-results" style="margin-bottom:12px;"></div>
+        <div id="pu-list"></div>
+        <div id="pu-totals" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:12px;display:none;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Parts</span><span id="pu-parts-cost" style="font-weight:700;">£0.00</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>Labour (est.)</span><span id="pu-labour-cost" style="font-weight:700;">£0.00</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding-top:8px;border-top:1px solid var(--border);"><span>Total</span><span id="pu-total" style="color:var(--orange);">£0.00</span></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- end card -->
 </div><!-- end page-new -->
 
@@ -1119,6 +1141,87 @@ function updateRectificationSection() {
   }).join('');
 }
 
+// ── PARTS USED ──
+var usedParts = [];
+var inspStartTime = Date.now();
+
+function searchPartsForInsp() {
+  var q = document.getElementById('pu-search').value.trim();
+  var reg = (document.getElementById('f-reg').value || '').trim().toUpperCase().replace(/\s/g, '');
+  var url = '/parts' + (reg ? '?reg=' + encodeURIComponent(reg) : '');
+  api('GET', url).then(function(d) {
+    var parts = (d && d.data ? d.data.parts : d.parts) || [];
+    if (q) parts = parts.filter(function(p) { return (p.name + ' ' + (p.part_id || '')).toLowerCase().indexOf(q.toLowerCase()) >= 0; });
+    var el = document.getElementById('pu-results');
+    if (!parts.length) { el.innerHTML = '<div style="padding:8px;color:var(--t5);font-size:12px;">No parts found' + (reg ? ' for ' + reg : '') + '</div>'; return; }
+    el.innerHTML = parts.slice(0, 8).map(function(p) {
+      var stock = p.stock_quantity || 0;
+      var stockColor = stock <= (p.min_quantity || 0) ? 'var(--red)' : 'var(--green)';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;">' +
+        '<div><strong>' + (p.name || '') + '</strong> <span style="color:var(--t5);">' + (p.part_id || '') + '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:11px;color:' + stockColor + ';">Stock: ' + stock + '</span>' +
+          '<span style="font-weight:600;">£' + Number(p.unit_cost || p.catalogue_price || 0).toFixed(2) + '</span>' +
+          '<button class="btn btn-s" style="padding:3px 10px;font-size:11px;" onclick="addUsedPart(' + p.id + ',\'' + (p.name || '').replace(/'/g, "\\'") + '\',' + Number(p.unit_cost || p.catalogue_price || 0) + ')">Add</button>' +
+        '</div></div>';
+    }).join('');
+  });
+}
+
+function addUsedPart(partId, name, cost) {
+  usedParts.push({ partId: partId, name: name, quantity: 1, unitCost: cost });
+  renderUsedParts();
+  document.getElementById('pu-results').innerHTML = '';
+  document.getElementById('pu-search').value = '';
+}
+
+function removeUsedPart(idx) {
+  usedParts.splice(idx, 1);
+  renderUsedParts();
+}
+
+function updateUsedQty(idx, val) {
+  usedParts[idx].quantity = Math.max(1, parseInt(val) || 1);
+  renderUsedParts();
+}
+
+function renderUsedParts() {
+  var el = document.getElementById('pu-list');
+  var totals = document.getElementById('pu-totals');
+  if (!usedParts.length) { el.innerHTML = ''; totals.style.display = 'none'; return; }
+  totals.style.display = 'block';
+  el.innerHTML = usedParts.map(function(p, i) {
+    var lt = p.quantity * p.unitCost;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">' +
+      '<div style="flex:1;font-weight:500;">' + p.name + '</div>' +
+      '<input type="number" min="1" value="' + p.quantity + '" onchange="updateUsedQty(' + i + ',this.value)" style="width:50px;padding:4px;border:1px solid var(--bs);border-radius:4px;text-align:center;font-size:12px;">' +
+      '<span style="width:60px;text-align:right;">£' + p.unitCost.toFixed(2) + '</span>' +
+      '<span style="width:70px;text-align:right;font-weight:600;">£' + lt.toFixed(2) + '</span>' +
+      '<button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;" onclick="removeUsedPart(' + i + ')">✕</button>' +
+    '</div>';
+  }).join('');
+  // Totals
+  var partsCost = usedParts.reduce(function(s, p) { return s + p.quantity * p.unitCost; }, 0);
+  var labourHrs = Math.max(0.25, Math.round((Date.now() - inspStartTime) / 3600000 * 4) / 4);
+  var labourCost = labourHrs * 65;
+  document.getElementById('pu-parts-cost').textContent = '£' + partsCost.toFixed(2);
+  document.getElementById('pu-labour-cost').textContent = '£' + labourCost.toFixed(2) + ' (' + labourHrs.toFixed(2) + 'hrs @ £65/hr)';
+  document.getElementById('pu-total').textContent = '£' + (partsCost + labourCost).toFixed(2);
+  document.getElementById('m7').textContent = usedParts.length + ' part(s) — £' + partsCost.toFixed(2);
+}
+
+// Save used parts after inspection is submitted
+function saveUsedParts(inspectionId) {
+  if (!usedParts.length) return Promise.resolve();
+  return Promise.all(usedParts.map(function(p) {
+    return api('POST', '/inspections/' + inspectionId + '/parts', {
+      partId: p.partId, partName: p.name, quantity: p.quantity, unitCost: p.unitCost
+    });
+  })).then(function() {
+    return api('POST', '/inspections/' + inspectionId + '/costs');
+  });
+}
+
 function suggestRepair(defectId, desc) {
   var ta = document.getElementById('rect-notes-' + defectId);
   if (!ta) return;
@@ -1246,7 +1349,10 @@ function submitInspection() {
     var insp = res && (res.inspection || (res.data && res.data.inspection));
     if (insp) {
       var inspName = document.getElementById('f-insp').value;
-      saveRectifications(inspName).then(function() {
+      Promise.all([
+        saveRectifications(inspName),
+        saveUsedParts(insp.id)
+      ]).then(function() {
         toast(result === 'pass' ? 'Pass' : result === 'advisory' ? 'Advisory' : 'Fail', 'Inspection ' + result.toUpperCase() + ' saved');
         loadData();
         showPage('dash');
