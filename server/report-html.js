@@ -216,6 +216,79 @@ function buildTyreSection(tyres) {
   return h;
 }
 
+function buildChecklistSection(checks) {
+  const entries = Object.entries(checks);
+  if (!entries.length) return '';
+  let h = secTitle('DVSA Checklist (' + entries.length + ' items)');
+  for (let i = 0; i < entries.length; i += 3) {
+    const rowBg = (Math.floor(i/3)%2) ? C.surface : C.card;
+    h += `<tr style="background:${rowBg};">`;
+    for (let j = 0; j < 3; j++) {
+      const e = entries[i+j];
+      if (!e) { h += '<td style="width:33%;"></td>'; continue; }
+      const [name, state] = e;
+      const st = (state||'').toLowerCase();
+      let b; if (st==='pass') b=badge('PASS',C.passBg,C.passGreen); else if (st==='fail') b=badge('FAIL',C.failBg,C.failRed); else b=badge(st.toUpperCase()||'—',C.advBg,C.advAmber);
+      h += `<td style="width:33%;padding:6px 10px;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'Barlow',sans-serif;font-size:11px;color:${C.text};">${esc(name.replace(/_/g,' '))}</span>${b}</div></td>`;
+    }
+    h += '</tr>';
+  }
+  return h;
+}
+
+function buildBrakeSection(brakes) {
+  if (!brakes || (brakes.sbe==null && brakes.pbe==null && !brakes.axles)) return '';
+  let h = secTitle('Brake Test Results (Roller Brake Test)');
+  const axles = brakes.axles || {};
+  let maxImb = 0;
+  for (const a of Object.values(axles)) if (a && a.imb != null) maxImb = Math.max(maxImb, a.imb);
+
+  h += '<tr>';
+  h += metricBox('Service Brake', (brakes.sbe!=null?brakes.sbe+'%':'—'), {big:true, color: brakes.sbe>=50?C.passGreen:C.failRed});
+  h += metricBox('Secondary', (brakes.secondary!=null?brakes.secondary+'%':'—'));
+  h += metricBox('Park Brake', (brakes.pbe!=null?brakes.pbe+'%':'—'), {color: brakes.pbe>=16?C.passGreen:C.failRed});
+  h += metricBox('Max Imbalance', maxImb+'%', {color: maxImb<=30?C.passGreen:C.failRed});
+  h += '</tr>';
+  h += `<tr><td colspan="4" style="padding:6px 0 10px;"><div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">DVSA minimums: Service ≥50% · Secondary ≥25% · Park ≥16% · Axle imbalance ≤30%</div></td></tr>`;
+
+  if (Object.keys(axles).length) {
+    const th = `style="padding:8px 12px;${LBL}text-align:center;border-bottom:1px solid ${C.border};"`;
+    h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
+    h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Axle</th><th ${th}>NS (kN)</th><th ${th}>OS (kN)</th><th ${th}>Imbalance</th><th ${th}>Result</th></tr>`;
+    let ri = 0;
+    for (const [name, a] of Object.entries(axles)) {
+      const bg = ri%2 ? C.surface : C.card;
+      const pr = a.pass ? badge('PASS',C.passBg,C.passGreen) : badge('FAIL',C.failBg,C.failRed);
+      const imbColor = (a.imb!=null && a.imb>30) ? C.failRed : C.text;
+      h += `<tr style="background:${bg};"><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;">${esc(name)}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;">${a.ns!=null?a.ns:'—'}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;">${a.os!=null?a.os:'—'}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:12px;color:${imbColor};">${a.imb!=null?a.imb+'%':'—'}</td><td style="padding:8px 12px;text-align:center;">${pr}</td></tr>`;
+      ri++;
+    }
+    h += '</table></td></tr>';
+  }
+  return h;
+}
+
+function buildDefectsSection(defects) {
+  if (!defects.length) return '';
+  let h = secTitle('Defects & Advisories (' + defects.length + ')');
+  for (const d of defects) {
+    const borderColor = d.resolved ? C.repairGreen : (d.severity==='critical'?C.failRed:C.advAmber);
+    h += `<tr><td colspan="4" style="padding:6px 0;">
+      <div style="border:1px solid ${C.border};border-left:4px solid ${borderColor};border-radius:6px;overflow:hidden;">
+        <div style="padding:14px 18px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="${HEAD_S}font-size:14px;color:${C.text};">${esc(d.title||d.description||'Defect')}</span>
+            ${sevBadge(d.severity)}
+          </div>
+          ${d.description&&d.description!==d.title ? '<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.muted+';line-height:1.5;">'+esc(d.description)+'</div>' : ''}
+        </div>
+        ${d.resolved ? '<div style="background:'+C.repairBg+';padding:12px 18px;border-top:1px solid #c8e0a8;"><div style="'+LBL+'color:'+C.repairGreen+';margin-bottom:4px;">REPAIRED</div>'+(d.resolved_by?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';">By: <strong>'+esc(d.resolved_by)+'</strong></div>':'')+(d.resolution_notes?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';margin-top:2px;">'+esc(d.resolution_notes)+'</div>':'')+(d.resolved_at?'<div style="font-family:\'Barlow\',sans-serif;font-size:10px;color:'+C.muted+';margin-top:4px;">'+fmtDateTime(d.resolved_at)+'</div>':'')+'</div>' : ''}
+      </div>
+    </td></tr>`;
+  }
+  return h;
+}
+
 function buildInspectionReportHtml(insp, opts={}) {
   const { aiSummary, orgName, logoLight, logoDark } = opts;
   const checks = (typeof insp.check_items==='string'?JSON.parse(insp.check_items):insp.check_items)||(insp.checkItems||{});
@@ -260,81 +333,10 @@ function buildInspectionReportHtml(insp, opts={}) {
     h += `<tr><td colspan="4" style="padding:12px 0;"><div style="background:${C.passBg};border:1px solid #c8e0a8;border-radius:6px;padding:14px 18px;text-align:center;${HEAD_S}font-size:15px;color:${C.passGreen};">NIL DEFECT — No defects found during this inspection</div></td></tr>`;
   }
 
-  // DVSA Checklist — 3 col grid with alternating rows
-  const checkEntries = Object.entries(checks);
-  if (checkEntries.length) {
-    h += secTitle('DVSA Checklist (' + checkEntries.length + ' items)');
-    for (let i=0; i<checkEntries.length; i+=3) {
-      const rowBg = (Math.floor(i/3)%2) ? C.surface : C.card;
-      h += `<tr style="background:${rowBg};">`;
-      for (let j=0; j<3; j++) {
-        const e = checkEntries[i+j];
-        if (!e) { h += '<td style="width:33%;"></td>'; continue; }
-        const [name, state] = e;
-        const st = (state||'').toLowerCase();
-        let b; if (st==='pass') b=badge('PASS',C.passBg,C.passGreen); else if (st==='fail') b=badge('FAIL',C.failBg,C.failRed); else b=badge(st.toUpperCase()||'—',C.advBg,C.advAmber);
-        h += `<td style="width:33%;padding:6px 10px;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'Barlow',sans-serif;font-size:11px;color:${C.text};">${esc(name.replace(/_/g,' '))}</span>${b}</div></td>`;
-      }
-      h += '</tr>';
-    }
-  }
-
-  // Brake test — metric cards + per-axle table
-  if (brakes && (brakes.sbe!=null || brakes.pbe!=null || brakes.axles)) {
-    h += secTitle('Brake Test Results (Roller Brake Test)');
-    const axles = brakes.axles||{};
-    let maxImb=0; for (const a of Object.values(axles)) if (a&&a.imb!=null) maxImb=Math.max(maxImb,a.imb);
-    const allPass = Object.values(axles).every(a=>a&&a.pass);
-
-    h += '<tr>';
-    h += metricBox('Service Brake', (brakes.sbe!=null?brakes.sbe+'%':'—'), {big:true, color: brakes.sbe>=50?C.passGreen:C.failRed});
-    h += metricBox('Secondary', (brakes.secondary!=null?brakes.secondary+'%':'—'));
-    h += metricBox('Park Brake', (brakes.pbe!=null?brakes.pbe+'%':'—'), {color: brakes.pbe>=16?C.passGreen:C.failRed});
-    h += metricBox('Max Imbalance', maxImb+'%', {color: maxImb<=30?C.passGreen:C.failRed});
-    h += '</tr>';
-
-    // DVSA minimums note
-    h += `<tr><td colspan="4" style="padding:6px 0 10px;"><div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">DVSA minimums: Service ≥50% · Secondary ≥25% · Park ≥16% · Axle imbalance ≤30%</div></td></tr>`;
-
-    // Per-axle NS/OS table
-    if (Object.keys(axles).length) {
-      const th = `style="padding:8px 12px;${LBL}text-align:center;border-bottom:1px solid ${C.border};"`;
-      h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
-      h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Axle</th><th ${th}>NS (kN)</th><th ${th}>OS (kN)</th><th ${th}>Imbalance</th><th ${th}>Result</th></tr>`;
-      let ri=0;
-      for (const [name, a] of Object.entries(axles)) {
-        const bg = ri%2 ? C.surface : C.card;
-        const pr = a.pass ? badge('PASS',C.passBg,C.passGreen) : badge('FAIL',C.failBg,C.failRed);
-        const imbColor = (a.imb!=null && a.imb>30) ? C.failRed : C.text;
-        h += `<tr style="background:${bg};"><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;">${esc(name)}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;">${a.ns!=null?a.ns:'—'}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;">${a.os!=null?a.os:'—'}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:12px;color:${imbColor};">${a.imb!=null?a.imb+'%':'—'}</td><td style="padding:8px 12px;text-align:center;">${pr}</td></tr>`;
-        ri++;
-      }
-      h += '</table></td></tr>';
-    }
-  }
-
-  // Tyre data — grouped by axle, card layout, only filled positions
+  h += buildChecklistSection(checks);
+  h += buildBrakeSection(brakes);
   h += buildTyreSection(tyres);
-
-  // Defects
-  if (defects.length) {
-    h += secTitle('Defects & Advisories (' + defects.length + ')');
-    for (const d of defects) {
-      const borderColor = d.resolved ? C.repairGreen : (d.severity==='critical'?C.failRed:C.advAmber);
-      h += `<tr><td colspan="4" style="padding:6px 0;">
-        <div style="border:1px solid ${C.border};border-left:4px solid ${borderColor};border-radius:6px;overflow:hidden;">
-          <div style="padding:14px 18px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <span style="${HEAD_S}font-size:14px;color:${C.text};">${esc(d.title||d.description||'Defect')}</span>
-              ${sevBadge(d.severity)}
-            </div>
-            ${d.description&&d.description!==d.title ? '<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.muted+';line-height:1.5;">'+esc(d.description)+'</div>' : ''}
-          </div>
-          ${d.resolved ? '<div style="background:'+C.repairBg+';padding:12px 18px;border-top:1px solid #c8e0a8;"><div style="'+LBL+'color:'+C.repairGreen+';margin-bottom:4px;">REPAIRED</div>'+(d.resolved_by?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';">By: <strong>'+esc(d.resolved_by)+'</strong></div>':'')+(d.resolution_notes?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';margin-top:2px;">'+esc(d.resolution_notes)+'</div>':'')+(d.resolved_at?'<div style="font-family:\'Barlow\',sans-serif;font-size:10px;color:'+C.muted+';margin-top:4px;">'+fmtDateTime(d.resolved_at)+'</div>':'')+'</div>' : ''}
-        </div>
-      </td></tr>`;
-    }
-  }
+  h += buildDefectsSection(defects);
 
   // Notes
   if (insp.notes) {
