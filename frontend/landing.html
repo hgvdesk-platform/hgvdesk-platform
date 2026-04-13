@@ -39,38 +39,43 @@
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
     padding: 1rem 2.5rem;
-    background: rgba(255,255,255,0.95);
+    background: rgba(10,22,40,0.92);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(0,0,0,0.06);
+    border-bottom: 1px solid var(--line);
   }
 
   .nav-logo {
     font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 800; font-size: 1.4rem;
-    color: #0a1929; text-decoration: none;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: 0.02em;
+    color: var(--pure);
+    text-decoration: none;
   }
-  .nav-logo span { color: #ff5500; }
+  .nav-logo span { color: var(--orange); }
 
   .nav-links { display: flex; align-items: center; gap: 2rem; }
   .nav-links a {
-    color: #6b7280; font-size: 0.9rem; text-decoration: none;
+    color: var(--mist); font-size: 0.9rem; text-decoration: none;
     font-weight: 500; letter-spacing: 0.03em; transition: color 0.2s;
   }
-  .nav-links a:hover { color: #0a1929; }
+  .nav-links a:hover { color: var(--pure); }
 
   .nav-link {
-    font-size: 0.85rem; color: #6b7280; text-decoration: none;
-    padding: 0.45rem 0.9rem; transition: color 0.2s;
+    font-size: 0.85rem;
+    color: var(--mist);
+    text-decoration: none;
+    padding: 0.45rem 0.9rem;
+    transition: color 0.2s;
   }
-  .nav-link:hover { color: #0a1929; }
+  .nav-link:hover { color: var(--pure); }
 
   .nav-cta {
-    background: #ff5500; color: #fff !important;
-    padding: 0.5rem 1.25rem; border-radius: 6px;
+    background: var(--orange); color: var(--pure) !important;
+    padding: 0.5rem 1.25rem; border-radius: 4px;
     font-weight: 600 !important; transition: background 0.2s !important;
-    text-decoration: none;
   }
-  .nav-cta:hover { background: #e64d00 !important; }
+  .nav-cta:hover { background: var(--orange-light) !important; }
 
   /* HERO */
   .hero {
@@ -79,47 +84,53 @@
     padding: 8rem 2.5rem 4rem;
     position: relative;
     overflow: hidden;
-    background: #ffffff;
     background-image: url('/images/hero.jpg');
     background-size: cover;
     background-position: center 40%;
     background-repeat: no-repeat;
   }
 
+  /* Dark overlay: keeps the text readable over the photo. Layered so the
+     bottom is slightly darker (where headline sits) with an orange accent
+     from the top-right corner to match the rest of the site. */
   .hero::before {
     content: '';
     position: absolute; inset: 0;
     background:
-      linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.85) 45%, rgba(255,255,255,0.4) 100%);
+      linear-gradient(180deg, rgba(10,22,40,0.55) 0%, rgba(10,22,40,0.78) 60%, rgba(10,22,40,0.88) 100%),
+      radial-gradient(ellipse 60% 50% at 70% 30%, rgba(232,82,10,0.18) 0%, transparent 70%);
   }
 
   .hero-grid {
     position: absolute; inset: 0;
     background-image:
-      linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
     background-size: 60px 60px;
     mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    opacity: 0.35;
   }
 
+  /* Make sure every hero child sits above the dark overlay */
   .hero > *:not(.hero-grid) { position: relative; z-index: 1; }
 
   .hero-badge {
     display: inline-flex; align-items: center; gap: 0.5rem;
-    background: rgba(255,85,0,0.08);
-    border: 1px solid rgba(255,85,0,0.2);
+    background: rgba(232,82,10,0.12);
+    border: 1px solid rgba(232,82,10,0.3);
     border-radius: 100px;
     padding: 0.35rem 1rem;
     font-size: 0.78rem; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase;
-    color: #ff5500;
+    color: var(--orange-light);
     margin-bottom: 2rem;
     width: fit-content;
+    position: relative;
   }
 
   .badge-dot {
     width: 6px; height: 6px; border-radius: 50%;
-    background: #ff5500;
+    background: var(--orange-light);
     animation: pulse 2s infinite;
   }
 
@@ -135,61 +146,73 @@
     line-height: 0.95;
     letter-spacing: -0.01em;
     text-transform: uppercase;
-    color: #0a1929;
+    color: var(--pure);
     max-width: 900px;
+    position: relative;
   }
 
-  .hero-headline .accent { color: #ff5500; display: block; }
+  .hero-headline .accent { color: var(--orange); display: block; }
 
   .hero-sub {
     font-size: 1.15rem;
-    color: #555;
+    color: var(--mist);
     max-width: 540px;
     line-height: 1.7;
     margin-top: 1.75rem;
+    position: relative;
     font-weight: 400;
   }
 
   .hero-actions {
     display: flex; align-items: center; gap: 1rem;
     margin-top: 2.5rem;
+    position: relative;
   }
 
   .btn-primary {
-    background: #ff5500; color: #fff;
+    background: var(--orange);
+    color: var(--pure);
     padding: 0.85rem 2rem;
-    border-radius: 6px; font-weight: 600; font-size: 0.95rem;
-    text-decoration: none; transition: background 0.2s, transform 0.15s;
-    border: none; cursor: pointer; display: inline-block;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: background 0.2s, transform 0.15s;
+    border: none; cursor: pointer;
+    display: inline-block;
   }
-  .btn-primary:hover { background: #e64d00; transform: translateY(-1px); }
+  .btn-primary:hover { background: var(--orange-light); transform: translateY(-1px); }
 
   .btn-secondary {
-    color: #0a1929;
+    color: var(--mist);
     padding: 0.85rem 2rem;
-    border-radius: 6px; font-weight: 500; font-size: 0.95rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.95rem;
     text-decoration: none;
-    border: 1.5px solid #0a1929;
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: border-color 0.2s, color 0.2s;
     display: inline-block;
-    transition: all 0.2s;
   }
-  .btn-secondary:hover { background: #0a1929; color: #fff; }
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.4); color: var(--pure); }
 
   .hero-stats {
     display: flex; gap: 3rem;
     margin-top: 4rem;
     padding-top: 2.5rem;
-    border-top: 1px solid rgba(0,0,0,0.08);
+    border-top: 1px solid var(--line);
+    position: relative;
   }
 
   .stat-num {
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 2.2rem; font-weight: 800;
-    color: #0a1929;
+    color: var(--pure);
     line-height: 1;
   }
-  .stat-num span { color: #ff5500; }
-  .stat-label { font-size: 0.82rem; color: #6b7280; margin-top: 0.4rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+  .stat-num span { color: var(--orange); }
+  .stat-label { font-size: 0.82rem; color: var(--mist); margin-top: 0.4rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
 
   /* MODULES SECTION */
   .modules {
@@ -526,6 +549,7 @@
   /* RESPONSIVE */
   @media (max-width: 900px) {
     nav { padding: 1rem 1.25rem; flex-wrap: wrap; gap: 0.5rem; }
+    .nav-links { gap: 0.5rem; }
     .nav-links a:not(.nav-cta):not(.nav-link) { display: none; }
     .hero { padding: 6rem 1.25rem 3rem; }
     .hero-headline { font-size: clamp(2rem, 8vw, 3.5rem); }
@@ -563,7 +587,7 @@
 
   <div class="hero-badge">
     <div class="badge-dot"></div>
-    DVSA Compliant · UK-Built
+    Live Platform — UK HGV Operations
   </div>
 
   <h1 class="hero-headline">
