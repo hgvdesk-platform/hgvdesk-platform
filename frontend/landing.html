@@ -86,11 +86,12 @@
 
   .hero-left {
     display: flex; flex-direction: column; justify-content: center;
-    padding: 100px 56px 100px 80px;
+    height: calc(100vh - 64px);
+    padding: 0 56px 0 80px;
     background: #ffffff;
     position: relative;
     z-index: 1;
-    gap: 0;
+    border-right: 1px solid #f0f0f0;
   }
 
   .hero-right {
@@ -125,7 +126,7 @@
 
   .hero-headline {
     font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 52px;
+    font-weight: 700; font-size: 56px;
     line-height: 1.05; letter-spacing: -0.5px;
     color: #0a1929;
     max-width: 520px;
@@ -134,7 +135,7 @@
   .hero-headline .accent { color: #ff5500; }
 
   .hero-sub {
-    font-size: 16px; color: #666;
+    font-size: 17px; color: #666;
     max-width: 460px; line-height: 1.7;
     margin-bottom: 2rem;
     font-weight: 400;
@@ -177,11 +178,11 @@
     font-size: 0.82rem; color: #555; font-weight: 500;
   }
 
-  /* Floating dashboard card — inside right panel, overlapping left boundary by 40px */
+  /* Floating dashboard card — inside right panel, overlapping left boundary by 20px */
   .hero-card {
-    position: absolute; top: 50%; left: -40px;
+    position: absolute; top: 50%; left: -20px;
     transform: translateY(-50%);
-    width: 340px;
+    width: 380px;
     background: #0a1929; border-radius: 16px;
     padding: 22px; color: #fff;
     box-shadow: 0 24px 64px rgba(0,0,0,0.4);
@@ -192,9 +193,9 @@
   .hc-stat { background: rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 8px; text-align: center; }
   .hc-stat-num { font-family: 'Barlow Condensed',sans-serif; font-weight: 700; font-size: 20px; }
   .hc-stat-lbl { font-size: 9px; color: #8694a5; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-  .hc-tbl { font-size: 11px; width: 100%; border-collapse: collapse; }
-  .hc-tbl td { padding: 5px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-  .hc-tbl .reg { font-family: monospace; font-weight: 600; font-size: 11px; }
+  .hc-tbl { font-size: 13px; width: 100%; border-collapse: collapse; }
+  .hc-tbl td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .hc-tbl .reg { font-family: monospace; font-weight: 600; font-size: 13px; }
   .hc-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 600; }
   .hc-pass { background: rgba(59,109,17,0.15); color: #5de09a; }
   .hc-adv { background: rgba(133,79,11,0.15); color: #fbbf24; }
