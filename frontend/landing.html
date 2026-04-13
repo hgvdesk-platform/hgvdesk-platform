@@ -85,15 +85,18 @@
   }
 
   .hero-left {
-    grid-column: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: calc(100vh - 64px);
-    padding: 80px 56px 80px 80px;
+    position: relative;
+    height: calc(100vh - 64px);
+    overflow: hidden;
     background: #ffffff;
     border-right: 1px solid #f0f0f0;
+  }
+  .hero-left-inner {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    padding: 0 56px 0 80px;
   }
 
   .hero-right {
@@ -541,7 +544,8 @@
     nav { padding: 0 1.25rem; }
     .nav-centre { display: none; }
     .hero { grid-template-columns: 1fr; margin-top: 64px; }
-    .hero-left { padding: 56px 24px; }
+    .hero-left { height: auto; }
+    .hero-left-inner { position: relative; top: auto; transform: none; padding: 56px 24px; }
     .hero-headline { font-size: 38px; }
     .hero-right { min-height: 50vh; }
     .hero-card { display: none; }
@@ -578,6 +582,7 @@
 <!-- HERO — split panel -->
 <section class="hero">
   <div class="hero-left">
+    <div class="hero-left-inner">
     <div class="hero-badge">
       <div class="badge-dot"></div>
       DVSA Compliant · UK-Built
@@ -598,6 +603,7 @@
       <div class="hero-trust-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="rgba(255,85,0,0.1)"/><path d="M5 8l2 2 4-4" stroke="#ff5500" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> No contract</div>
       <div class="hero-trust-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="8" fill="rgba(255,85,0,0.1)"/><path d="M5 8l2 2 4-4" stroke="#ff5500" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> UK support</div>
     </div>
+    </div><!-- end hero-left-inner -->
   </div>
 
   <div class="hero-right">
