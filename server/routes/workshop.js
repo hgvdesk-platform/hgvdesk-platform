@@ -30,22 +30,26 @@ async function getJob(req, org, jobId) {
 
 async function createJob(body, org) {
   const orgId = org.id || org.org_id;
-  const { vehicleReg, inspectionType, technicianName, customerName, customerId, priority, notes, scheduledDate } = body;
+  const { vehicleReg, inspectionType, technicianName, customerName, customerId, priority, notes, scheduledDate, trailerId } = body;
   if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
   if (!customerName) throw { status: 400, message: 'customerName is required' };
 
   const reg = vehicleReg.toUpperCase().trim();
-  const { enforceVehicleLimit } = require('./stripe');
-  await enforceVehicleLimit(orgId, org.plan, reg);
+  // Skip vehicle limit enforcement for T60 trailers using generic IDs
+  if (inspectionType !== 'T60' || (reg !== 'TRAILER' && !reg.startsWith('TRL'))) {
+    const { enforceVehicleLimit } = require('./stripe');
+    await enforceVehicleLimit(orgId, org.plan, reg);
+  }
 
   const jobNumber = 'WS-' + Date.now().toString().slice(-6);
   const job = await queryOne(
-    `INSERT INTO jobs (org_id, job_number, vehicle_reg, inspection_type, customer_name, technician_name, priority, status, notes, scheduled_date, customer_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10) RETURNING *`,
+    `INSERT INTO jobs (org_id, job_number, vehicle_reg, inspection_type, customer_name, technician_name, priority, status, notes, scheduled_date, customer_id, trailer_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10,$11) RETURNING *`,
     [orgId, jobNumber, reg,
      inspectionType || 'T50', customerName,
      technicianName || null, priority || 'normal',
-     notes || null, scheduledDate || null, customerId || null]
+     notes || null, scheduledDate || null, customerId || null,
+     trailerId || null]
   );
   await logActivity(orgId, 'WORKSHOP', 'JOB_CREATED', reg + ' — ' + jobNumber, 'job', job.id);
   return { job };

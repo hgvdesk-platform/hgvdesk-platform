@@ -278,12 +278,12 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card" style="padding:24px;">
     <div class="fr">
       <div class="fg">
-        <label class="fl">Vehicle Registration *</label>
+        <label class="fl" id="f-reg-label">Vehicle Registration *</label>
         <input class="fi" id="f-reg" placeholder="e.g. LK23 XPT" style="text-transform:uppercase;font-family:monospace;font-weight:700;letter-spacing:0.08em;">
         <div id="f-reg-info"></div>
       </div>
       <div class="fg"><label class="fl">Inspection Type *</label>
-        <select class="fsel" id="f-type">
+        <select class="fsel" id="f-type" onchange="onTypeChange()">
           <option value="">Select type...</option>
           <option value="T50">T50 - Annual HGV</option>
           <option value="T60">T60 - Trailer</option>
@@ -292,6 +292,10 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
           <option value="Emergency">Emergency Inspection</option>
         </select>
       </div>
+    </div>
+    <div class="fg" id="f-trailer-wrap" style="display:none;">
+      <label class="fl">Trailer ID / Fleet Number</label>
+      <input class="fi" id="f-trailer-id" placeholder="e.g. TRL-001 or leave blank" style="text-transform:uppercase;font-family:monospace;font-weight:600;letter-spacing:0.06em;">
     </div>
     <div class="fr">
       <div class="fg"><label class="fl">Customer / Operator *</label><input class="fi" id="f-cust" placeholder="e.g. Stobart Fleet"></div>
@@ -511,7 +515,7 @@ function renderJobs() {
 
   function jobRow(j, cols) {
     var row = '<tr data-id="' + j.id + '"><td><input type="checkbox" class="row-cb" data-id="' + j.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>';
-    row += '<td><span class="reg">' + j.vehicle_reg + '</span></td>';
+    row += '<td><span class="reg">' + j.vehicle_reg + '</span>' + (j.trailer_id ? '<div style="font-size:10px;color:var(--t4);margin-top:1px;">Trailer: ' + j.trailer_id + '</div>' : '') + '</td>';
     row += '<td style="font-size:12px;">' + (j.inspection_type || '') + '</td>';
     row += '<td style="font-size:12px;">' + (j.customer_name || '') + '</td>';
     if (cols.indexOf('tech') >= 0) row += '<td style="font-size:12px;color:var(--t4);">' + (j.technician_name || '-') + '</td>';
@@ -582,13 +586,15 @@ function selectAll() {
 function openJobModal(job) {
   currentJob = job;
   document.getElementById('jm-title').textContent = job.vehicle_reg + ' - ' + (job.inspection_type || '');
-  document.getElementById('jm-detail').innerHTML =
+  var detailHtml =
     '<div class="jd-item"><label>Registration</label><div class="jd-val reg">' + job.vehicle_reg + '</div></div>' +
+    (job.trailer_id ? '<div class="jd-item"><label>Trailer ID</label><div class="jd-val reg">' + job.trailer_id + '</div></div>' : '') +
     '<div class="jd-item"><label>Type</label><div class="jd-val">' + (job.inspection_type || '-') + '</div></div>' +
     '<div class="jd-item"><label>Customer</label><div class="jd-val">' + (job.customer_name || '-') + '</div></div>' +
     '<div class="jd-item"><label>Technician</label><div class="jd-val">' + (job.technician_name || '-') + '</div></div>' +
     '<div class="jd-item"><label>Priority</label><div class="jd-val">' + priorityChip(job.priority) + '</div></div>' +
     '<div class="jd-item"><label>Status</label><div class="jd-val">' + statusChip(job.status) + '</div></div>';
+  document.getElementById('jm-detail').innerHTML = detailHtml;
   document.getElementById('jm-insp-st').textContent = job.inspect_sent ? 'Dispatched to Inspect' : 'Not sent yet';
   document.getElementById('jm-parts-st').textContent = job.parts_sent ? 'Dispatched to Parts' : 'Not sent yet';
   document.getElementById('jm-insp-badge').innerHTML = job.inspect_sent ? '<span class="sent-badge">Sent</span>' : '';
@@ -740,20 +746,29 @@ document.getElementById('jm-close').addEventListener('click', function() { docum
 document.getElementById('jm-close2').addEventListener('click', function() { document.getElementById('job-modal').classList.remove('on'); });
 document.getElementById('job-modal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('on'); });
 
+// ── T60 TOGGLE ──
+function onTypeChange() {
+  var isT60 = document.getElementById('f-type').value === 'T60';
+  document.getElementById('f-trailer-wrap').style.display = isT60 ? 'block' : 'none';
+  document.getElementById('f-reg-label').textContent = isT60 ? 'Vehicle Registration (optional)' : 'Vehicle Registration *';
+}
+
 // ── NEW JOB FORM ──
 document.getElementById('btn-create').addEventListener('click', function() {
   var reg = document.getElementById('f-reg').value.trim().toUpperCase();
   var type = document.getElementById('f-type').value;
   var cust = document.getElementById('f-cust').value.trim();
+  var trailerId = document.getElementById('f-trailer-id').value.trim().toUpperCase();
   if (!type || !cust) { toast('Warning', 'Type and customer are required'); return; }
   if (!reg && type !== 'T60') { toast('Warning', 'Vehicle registration is required'); return; }
-  if (!reg && type === 'T60') { reg = 'TRAILER'; }
+  if (!reg && type === 'T60') { reg = trailerId || 'TRAILER'; }
   var body = {
     vehicleReg: reg, inspectionType: type, customerName: cust,
     technicianName: document.getElementById('f-tech').value,
     priority: document.getElementById('f-priority').value,
     notes: document.getElementById('f-notes').value.trim(),
-    scheduledDate: document.getElementById('f-date').value || null
+    scheduledDate: document.getElementById('f-date').value || null,
+    trailerId: trailerId || null
   };
   toast('Creating', 'Creating job...');
   api('POST', '/jobs', body).then(function(res) {

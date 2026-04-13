@@ -136,13 +136,14 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
 
   function renderJob(job, insp, defects, parts, jobLines, dvla) {
     // Header bars
-    document.getElementById('vbar-reg').textContent = job.vehicle_reg;
+    var displayReg = job.vehicle_reg + (job.trailer_id ? ' / ' + job.trailer_id : '');
+    document.getElementById('vbar-reg').textContent = displayReg;
     document.getElementById('vbar-sub').textContent = [job.customer_name, job.inspection_type].filter(Boolean).join(' · ');
     document.getElementById('vbar-badge').innerHTML = statusBdg(job.status);
     document.getElementById('doc-meta').textContent = (job.job_number||'') + ' · ' + fmtDT(job.created_at);
     document.getElementById('ftr-num').textContent = job.job_number + ' · ' + job.customer_name;
     document.getElementById('ftr-gen').textContent = 'Generated ' + fmtDT(new Date());
-    document.title = 'Job Sheet — ' + job.vehicle_reg;
+    document.title = 'Job Sheet — ' + displayReg;
 
     var h = '';
 
@@ -153,6 +154,7 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
     h += '<div class="metric"><div class="metric-lbl">Technician</div><div class="metric-val">'+esc(job.technician_name||'Unassigned')+'</div></div>';
     h += '<div class="metric"><div class="metric-lbl">Priority</div><div class="metric-val" style="color:'+(job.priority==='urgent'?'var(--fail)':'var(--text)')+';">'+esc((job.priority||'normal').toUpperCase())+'</div></div>';
     h += '<div class="metric"><div class="metric-lbl">Status</div><div class="metric-val">'+esc((job.status||'pending').toUpperCase())+'</div></div>';
+    if (job.trailer_id) h += '<div class="metric"><div class="metric-lbl">Trailer ID</div><div class="metric-val">'+esc(job.trailer_id)+'</div></div>';
     h += '</div>';
 
     // Reported fault

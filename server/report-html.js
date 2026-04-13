@@ -468,7 +468,8 @@ function buildJobSheetHtml(job, opts={}) {
   h += docHeader('WORKSHOP JOB SHEET', job.job_number||'', fmtDateTime(job.created_at), {logoDark: opts.logoDark});
 
   const statusBadge = job.status==='complete'||job.status==='invoiced' ? badge(job.status.toUpperCase(),C.passBg,C.passGreen) : badge((job.status||'PENDING').toUpperCase(),C.advBg,C.advAmber);
-  h += vehicleBar(job.vehicle_reg||'', [job.customer_name, job.inspection_type].filter(Boolean).join(' · '), statusBadge);
+  const displayReg = (job.vehicle_reg||'') + (job.trailer_id ? ' / ' + job.trailer_id : '');
+  h += vehicleBar(displayReg, [job.customer_name, job.inspection_type].filter(Boolean).join(' · '), statusBadge);
 
   h += `<tr><td style="background:${C.card};padding:28px 32px;">`;
   h += `<table width="100%" cellpadding="0" cellspacing="0">`;
@@ -480,6 +481,12 @@ function buildJobSheetHtml(job, opts={}) {
   h += metricBox('Technician', job.technician_name||'Unassigned');
   h += metricBox('Priority', (job.priority||'normal').toUpperCase(), {color: job.priority==='urgent'?C.failRed:C.text});
   h += metricBox('Status', (job.status||'pending').toUpperCase());
+  h += '</tr>';
+  if (job.trailer_id) {
+    h += '<tr>';
+    h += metricBox('Trailer ID', job.trailer_id);
+    h += '<td colspan="3"></td>';
+  }
   h += '</tr>';
 
   // Reported fault
