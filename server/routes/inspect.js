@@ -44,8 +44,9 @@ function brakesFail(brakeTestData) {
   const axles = brakeTestData.axles ? Object.values(brakeTestData.axles) : [];
   if (axles.some(b => !b.pass)) return true;
   const sbe = parseFloat(brakeTestData.sbe);
+  const sbe2 = parseFloat(brakeTestData.sbe2);
   const pbe = parseFloat(brakeTestData.pbe);
-  return (!isNaN(sbe) && sbe < 50) || (!isNaN(pbe) && pbe < 16);
+  return (!isNaN(sbe) && sbe < 50) || (!isNaN(sbe2) && sbe2 < 50) || (!isNaN(pbe) && pbe < 16);
 }
 
 function countFailedTyres(tyreData) {

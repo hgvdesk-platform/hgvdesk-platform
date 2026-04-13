@@ -453,6 +453,11 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
             <div class="eff-row2"><input class="eff-in" id="sbe" type="number" min="0" max="100" placeholder="0"><span class="eff-unit">%</span></div>
             <div class="eff-status" id="sbe-st">DVSA minimum: 50%</div>
           </div>
+          <div class="eff-box" id="sbe2-wrap">
+            <div class="eff-lbl">Secondary Brake Efficiency</div>
+            <div class="eff-row2"><input class="eff-in" id="sbe2" type="number" min="0" max="100" placeholder="0"><span class="eff-unit">%</span></div>
+            <div class="eff-status" id="sbe2-st">DVSA minimum: 50%</div>
+          </div>
           <div class="eff-box">
             <div class="eff-lbl">Parking Brake Efficiency</div>
             <div class="eff-row2"><input class="eff-in" id="pbe" type="number" min="0" max="100" placeholder="0"><span class="eff-unit">%</span></div>
@@ -694,31 +699,55 @@ function loadData() {
   });
 }
 
-// CHECKLIST
-// DVSA HGV Inspection Manual — official check categories
-var CHECKS = [
+// CHECKLIST — vehicle-type specific (DVSA HGV Inspection Manual)
+var CHECKS_T50 = [
   {cat: 'Audible Warning', items: ['Horn operation and effectiveness']},
-  {cat: 'Bodywork and Load Security', items: ['Body panels secure no damage', 'Load securing equipment', 'Chassis condition no cracks or corrosion', 'Coupling devices and fifth wheel']},
-  {cat: 'Brakes', items: ['Service brake operation', 'Secondary brake operation', 'Parking brake operation and efficiency', 'Brake lines hoses and connections', 'ABS EBS warning lights and operation', 'Brake chamber and actuators', 'Brake pads discs and drums']},
-  {cat: 'Cab and Doors', items: ['Doors steps and handles', 'Cab mounts and tilt mechanism', 'Driver seat adjustment and condition', 'Seatbelts all positions']},
-  {cat: 'Driver Controls', items: ['Speedometer and tachograph', 'Dashboard warning lights', 'Windscreen washers and wipers', 'Heating and demist']},
-  {cat: 'Engine and Fluids', items: ['Engine oil level', 'Coolant level', 'Power steering fluid', 'Brake fluid level', 'No fluid leaks', 'Drive belts condition']},
-  {cat: 'Exhaust and Emissions', items: ['Exhaust system secure no leaks', 'DPF and emissions system', 'Smoke opacity within limits']},
+  {cat: 'Body Condition and Security', items: ['Body panels secure no damage', 'Chassis condition no cracks or corrosion', 'Load securing equipment']},
+  {cat: 'Brakes', items: ['Service brake operation', 'Secondary brake operation', 'Parking brake operation and efficiency', 'Brake lines hoses and connections', 'ABS EBS warning lights and operation', 'Brake chambers and actuators', 'Brake pads discs and drums']},
+  {cat: 'Cab Security', items: ['Doors steps and handles', 'Cab mounts and tilt mechanism']},
+  {cat: 'Coupling Devices', items: ['Fifth wheel condition and security', 'Kingpin and locking mechanism']},
+  {cat: 'Driver Controls and Instruments', items: ['Dashboard warning lights', 'Windscreen washers and wipers', 'Heating and demist system']},
+  {cat: 'Engine', items: ['Engine oil level', 'Coolant level', 'No fluid leaks', 'Drive belts condition']},
+  {cat: 'Exhaust System and Emissions', items: ['Exhaust system secure no leaks', 'DPF and emissions system', 'Smoke opacity within limits']},
   {cat: 'Fuel System', items: ['Fuel tank secure', 'Fuel lines no leaks', 'Fuel cap and seals']},
-  {cat: 'Lights and Electrics', items: ['Headlights main and dipped', 'Brake lights all positions', 'Indicators front and rear', 'Reverse lights and alarm', 'Side marker lights', 'Rear fog lights', 'Number plate lights', 'Hazard warning lights']},
-  {cat: 'Mirrors and Glass', items: ['Mirrors condition and adjustment', 'Windscreen condition no cracks', 'Side windows operation']},
-  {cat: 'Number Plates', items: ['Number plates legible and secure', 'Operator licence disc displayed']},
-  {cat: 'Steering', items: ['Steering play and operation', 'Track rod ends', 'Steering box and column']},
-  {cat: 'Suspension', items: ['Air suspension bags and valves', 'Leaf springs condition', 'Shock absorbers', 'Height control valves']},
-  {cat: 'Tyres and Wheels', items: ['Tread depth all positions min 1mm HGV', 'Tyre condition and sidewalls', 'Tyre pressures within spec', 'Wheel fixings and torque', 'Wheel bearings no play']},
-  {cat: 'Visibility', items: ['Windscreen clean and clear', 'All mirrors fitted and clean', 'Camera systems operational if fitted']}
+  {cat: 'Lights', items: ['Headlights main and dipped', 'Side lights', 'Brake lights all positions', 'Reverse lights and alarm', 'Hazard warning lights', 'Marker lights', 'Number plate lights']},
+  {cat: 'Mirrors', items: ['Mirrors condition and adjustment', 'All mirrors fitted and clean']},
+  {cat: 'Number Plates', items: ['Front plate legible and secure', 'Rear plate legible and secure']},
+  {cat: 'Seat and Seatbelt', items: ['Driver seat adjustment and condition', 'Seatbelts all positions']},
+  {cat: 'Speedometer', items: ['Speedometer operation and accuracy']},
+  {cat: 'Steering', items: ['Steering play and operation', 'Track rod ends', 'Steering box and column', 'Power steering operation']},
+  {cat: 'Suspension', items: ['Leaf springs condition', 'Air suspension bags and valves', 'Shock absorbers', 'Height control valves']},
+  {cat: 'Tachograph', items: ['Tachograph calibration in date', 'Tachograph seals intact']},
+  {cat: 'Tyres', items: ['Tread depth all positions min 1mm', 'Tyre condition and sidewalls', 'Tyre pressures within spec']},
+  {cat: 'Wheels and Hubs', items: ['Wheel nuts torqued correctly', 'Hub condition and bearings']},
+  {cat: 'Windscreen Wipers and Washers', items: ['Windscreen condition no cracks', 'Wipers condition and operation', 'Washer fluid and operation']},
+  {cat: 'Fire Extinguisher', items: ['Fire extinguisher present and in date']}
 ];
+var CHECKS_T60 = [
+  {cat: 'Body Condition', items: ['Body panels secure', 'Roof condition', 'Floor condition and integrity']},
+  {cat: 'Brakes', items: ['Service brake operation', 'Parking brake operation', 'Brake pads discs and drums', 'ABS EBS warning operation']},
+  {cat: 'Coupling', items: ['Kingpin condition', 'Turntable condition', 'Safety chains']},
+  {cat: 'Curtains and Doors', items: ['Curtain condition and security', 'Door hinges and locks', 'Seals condition']},
+  {cat: 'Landing Legs', items: ['Landing leg condition', 'Operation and winding mechanism']},
+  {cat: 'Lights', items: ['Brake lights', 'Marker lights', 'Rear lights', 'Side marker lights', 'Number plate light']},
+  {cat: 'Number Plate', items: ['Number plate legible and secure']},
+  {cat: 'Reflectors', items: ['Rear reflectors condition', 'Side reflectors condition']},
+  {cat: 'Suspension', items: ['Air suspension bags and valves', 'Leaf springs condition', 'Shock absorbers']},
+  {cat: 'Tyres', items: ['Tread depth all positions min 1mm', 'Tyre condition and sidewalls', 'Tyre pressures within spec']},
+  {cat: 'Wheels and Hubs', items: ['Wheel nuts torqued correctly', 'Hub condition and bearings']},
+  {cat: 'Brake Lines and Airlines', items: ['Brake lines condition', 'Airline connections secure']},
+  {cat: 'Electrical Connection', items: ['Suzi cable condition', 'Electrical connections secure']},
+  {cat: 'Load Security', items: ['Load rings and anchor points', 'Straps and hooks condition']},
+  {cat: 'Mudguards and Spray Suppression', items: ['Mudguards secure', 'Spray suppression fitted and effective']}
+];
+function getChecks() { return (document.getElementById('f-type').value === 'T60') ? CHECKS_T60 : CHECKS_T50; }
 
 function eid(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 
 function buildChecklist() {
+  checks = {};
   var wrap = document.getElementById('cl-wrap');
-  wrap.innerHTML = CHECKS.map(function(cat) {
+  wrap.innerHTML = getChecks().map(function(cat) {
     return '<div style="margin-bottom:18px;"><div class="cat-title">' + cat.cat + '</div><div class="cl-grid">' +
       cat.items.map(function(item) {
         var id = eid(item);
@@ -745,12 +774,13 @@ function buildChecklist() {
         btn.closest('.cl-item').className = 'cl-item ' + (state === 'fail' ? 'fail' : state === 'adv' ? 'adv' : 'pass');
       }
       updateBanner();
+      updateChecklistMeta();
     });
   });
 }
 
-// BRAKE TEST
-var AXLES = [
+// BRAKE TEST — vehicle-type specific axle layouts
+var AXLES_T50 = [
   {id: 'steer', label: 'Axle 1 - Steer'},
   {id: 'd1o', label: 'Axle 2 - Drive Outer'},
   {id: 'd1i', label: 'Axle 2 - Drive Inner'},
@@ -758,16 +788,36 @@ var AXLES = [
   {id: 'd2i', label: 'Axle 3 - Drive Inner'},
   {id: 'park', label: 'Parking Brake'}
 ];
+var AXLES_T60 = [
+  {id: 'ta1', label: 'Trailer Axle 1'},
+  {id: 'ta2', label: 'Trailer Axle 2'},
+  {id: 'ta3', label: 'Trailer Axle 3'},
+  {id: 'park', label: 'Parking Brake'}
+];
+function getAxles() { return (document.getElementById('f-type').value === 'T60') ? AXLES_T60 : AXLES_T50; }
 
 function buildBrakeTable() {
-  document.getElementById('brake-tb').innerHTML = AXLES.map(function(a) {
+  brakes = {};
+  var isT60 = document.getElementById('f-type').value === 'T60';
+  var axles = getAxles();
+  document.getElementById('brake-tb').innerHTML = axles.map(function(a) {
     return '<tr><td style="font-size:13px;font-weight:600;color:var(--t1);">' + a.label + '</td>' +
       '<td><input class="ni" type="number" min="0" step="0.1" placeholder="0" id="bns-' + a.id + '"></td>' +
       '<td><input class="ni" type="number" min="0" step="0.1" placeholder="0" id="bos-' + a.id + '"></td>' +
       '<td><span class="imb" id="bimb-' + a.id + '">-</span></td>' +
       '<td><span id="bres-' + a.id + '" style="font-size:12px;color:var(--t5);">-</span></td></tr>';
   }).join('');
-  AXLES.forEach(function(a) {
+  document.getElementById('sbe2-wrap').style.display = isT60 ? 'none' : '';
+  document.getElementById('sbe').value = '';
+  document.getElementById('sbe-st').textContent = 'DVSA minimum: 50%';
+  document.getElementById('sbe-st').className = 'eff-status';
+  document.getElementById('sbe2').value = '';
+  document.getElementById('sbe2-st').textContent = 'DVSA minimum: 50%';
+  document.getElementById('sbe2-st').className = 'eff-status';
+  document.getElementById('pbe').value = '';
+  document.getElementById('pbe-st').textContent = 'DVSA minimum: 16%';
+  document.getElementById('pbe-st').className = 'eff-status';
+  axles.forEach(function(a) {
     function calc() {
       var ns = parseFloat(document.getElementById('bns-' + a.id).value) || 0;
       var os = parseFloat(document.getElementById('bos-' + a.id).value) || 0;
@@ -796,6 +846,16 @@ function buildBrakeTable() {
       updateBanner();
     }
   });
+  document.getElementById('sbe2').addEventListener('input', function() {
+    var v = parseFloat(this.value);
+    if (!isNaN(v)) {
+      var p = v >= 50;
+      var el = document.getElementById('sbe2-st');
+      el.textContent = (p ? 'Pass - ' : 'FAIL - ') + 'DVSA min 50%, current: ' + v + '%';
+      el.className = 'eff-status ' + (p ? 'ok' : 'ng');
+      updateBanner();
+    }
+  });
   document.getElementById('pbe').addEventListener('input', function() {
     var v = parseFloat(this.value);
     if (!isNaN(v)) {
@@ -808,15 +868,23 @@ function buildBrakeTable() {
   });
 }
 
-// DIAGRAM — image-based zones
-// Switch between T50 and T60 based on inspection type
-function switchDiagram() {
+// Switch all type-specific sections when inspection type changes
+function switchType() {
   var type = (document.getElementById('f-type').value || '').toUpperCase();
   var isT60 = type === 'T60';
   document.getElementById('diag-t50').style.display = isT60 ? 'none' : 'block';
   document.getElementById('diag-t60').style.display = isT60 ? 'block' : 'none';
+  buildChecklist();
+  buildBrakeTable();
+  buildTyres();
+  updateChecklistMeta();
 }
-document.getElementById('f-type').addEventListener('change', switchDiagram);
+function updateChecklistMeta() {
+  var total = 0; getChecks().forEach(function(c) { total += c.items.length; });
+  var done = Object.keys(checks).length;
+  document.getElementById('m2').textContent = done + ' / ' + total + ' complete';
+}
+document.getElementById('f-type').addEventListener('change', switchType);
 
 // Zone click → open defect modal with zone pre-filled
 document.querySelectorAll('.zone').forEach(function(z) {
@@ -896,7 +964,7 @@ var DIAG_LEGACY = {
   ]
 };
 
-function buildDiagrams() { switchDiagram(); } // Images are static; just ensure correct one is shown
+function buildDiagrams() { switchType(); } // Images are static; just ensure correct one is shown
 function buildDiagramsLegacy() {
   Object.keys(DIAG).forEach(function(view) {
     var el = document.getElementById('dv-' + view);
@@ -1051,17 +1119,23 @@ function renderDefects() {
   });
 }
 
-// TYRES
-var TYRES = [
+// TYRES — vehicle-type specific positions
+var TYRES_T50 = [
   {label: 'Steer Axle', pos: ['Steer NS', 'Steer OS']},
   {label: 'Drive Axle 1', pos: ['Drive 1 NS Outer', 'Drive 1 NS Inner', 'Drive 1 OS Inner', 'Drive 1 OS Outer']},
-  {label: 'Drive Axle 2', pos: ['Drive 2 NS Outer', 'Drive 2 NS Inner', 'Drive 2 OS Inner', 'Drive 2 OS Outer']},
-  {label: 'Trailer / Rear', pos: ['Trailer NS Outer', 'Trailer NS Inner', 'Trailer OS Inner', 'Trailer OS Outer']}
+  {label: 'Drive Axle 2', pos: ['Drive 2 NS Outer', 'Drive 2 NS Inner', 'Drive 2 OS Inner', 'Drive 2 OS Outer']}
 ];
+var TYRES_T60 = [
+  {label: 'Trailer Axle 1', pos: ['Axle 1 NS', 'Axle 1 OS']},
+  {label: 'Trailer Axle 2', pos: ['Axle 2 NS', 'Axle 2 OS']},
+  {label: 'Trailer Axle 3', pos: ['Axle 3 NS', 'Axle 3 OS']}
+];
+function getTyres() { return (document.getElementById('f-type').value === 'T60') ? TYRES_T60 : TYRES_T50; }
 
 function buildTyres() {
+  tyres = {};
   var wrap = document.getElementById('tyre-wrap');
-  wrap.innerHTML = TYRES.map(function(ax, ai) {
+  wrap.innerHTML = getTyres().map(function(ax, ai) {
     return '<div><div class="tax-title">' + ax.label + '</div><div class="tpos-grid">' +
       ax.pos.map(function(pos, pi) {
         var tid = 't' + ai + '_' + pi;
@@ -1120,8 +1194,9 @@ function updateBanner() {
   var advD = openDefs.filter(function(d) { return d.severity === 'advisory'; }).length;
   var tyreDef = Object.values(tyres).filter(function(t) { return t.condition === 'def'; }).length;
   var sbe = parseFloat(document.getElementById('sbe').value);
+  var sbe2 = parseFloat(document.getElementById('sbe2').value);
   var pbe = parseFloat(document.getElementById('pbe').value);
-  var bf = (!isNaN(sbe) && sbe < 50) || (!isNaN(pbe) && pbe < 16);
+  var bf = (!isNaN(sbe) && sbe < 50) || (!isNaN(sbe2) && sbe2 < 50) || (!isNaN(pbe) && pbe < 16);
   var bi = Object.values(brakes).filter(function(b) { return !b.pass; }).length;
   var tf = fails + critD + tyreDef + (bf ? 1 : 0) + bi;
   var ta = advs + advD;
@@ -1372,8 +1447,9 @@ function calculateResultClient() {
   var critD = open.filter(function(d) { return d.severity === 'critical'; }).length;
   var tyreDef = Object.values(tyres).filter(function(t) { return t.condition === 'def'; }).length;
   var sbe = parseFloat(document.getElementById('sbe').value);
+  var sbe2 = parseFloat(document.getElementById('sbe2').value);
   var pbe = parseFloat(document.getElementById('pbe').value);
-  var bf = (!isNaN(sbe) && sbe < 50) || (!isNaN(pbe) && pbe < 16);
+  var bf = (!isNaN(sbe) && sbe < 50) || (!isNaN(sbe2) && sbe2 < 50) || (!isNaN(pbe) && pbe < 16);
   var bi = Object.values(brakes).filter(function(b) { return !b.pass; }).length;
   var tf = fails + critD + tyreDef + (bf ? 1 : 0) + bi;
   var advs = Object.values(checks).filter(function(s) { return s === 'adv'; }).length;
@@ -1394,7 +1470,7 @@ function submitInspection() {
     status: 'complete', result: result,
     jobId: window._currentJobId || null,
     checkItems: checks,
-    brakeTestData: {axles: brakes, sbe: sbe, pbe: pbe},
+    brakeTestData: {axles: brakes, sbe: parseFloat(document.getElementById('sbe').value), sbe2: parseFloat(document.getElementById('sbe2').value), pbe: parseFloat(document.getElementById('pbe').value)},
     tyreData: tyres, defects: defectsToSend, nilDefect: nilDef,
     notes: document.getElementById('f-notes').value,
     signature: document.getElementById('f-sig').value

@@ -96,7 +96,10 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
   document.getElementById('doc-meta').textContent = 'Job #' + jobId;
 
   function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  var TYRE_AXLES=[{label:'Steer Axle',pos:['Steer NS','Steer OS']},{label:'Drive Axle 1',pos:['Drive 1 NS Outer','Drive 1 NS Inner','Drive 1 OS Inner','Drive 1 OS Outer']},{label:'Drive Axle 2',pos:['Drive 2 NS Outer','Drive 2 NS Inner','Drive 2 OS Inner','Drive 2 OS Outer']},{label:'Trailer / Rear',pos:['Trailer NS Outer','Trailer NS Inner','Trailer OS Inner','Trailer OS Outer']}];
+  var TYRE_AXLES_T50=[{label:'Steer Axle',pos:['Steer NS','Steer OS']},{label:'Drive Axle 1',pos:['Drive 1 NS Outer','Drive 1 NS Inner','Drive 1 OS Inner','Drive 1 OS Outer']},{label:'Drive Axle 2',pos:['Drive 2 NS Outer','Drive 2 NS Inner','Drive 2 OS Inner','Drive 2 OS Outer']}];
+  var TYRE_AXLES_T60=[{label:'Trailer Axle 1',pos:['Axle 1 NS','Axle 1 OS']},{label:'Trailer Axle 2',pos:['Axle 2 NS','Axle 2 OS']},{label:'Trailer Axle 3',pos:['Axle 3 NS','Axle 3 OS']}];
+  var TYRE_AXLES=TYRE_AXLES_T50;
+  function setTyreAxles(type){TYRE_AXLES=(type==='T60')?TYRE_AXLES_T60:TYRE_AXLES_T50;}
   function tyreName(k){var m=k.match(/^t(\d+)_(\d+)$/);if(!m)return k;var a=TYRE_AXLES[+m[1]];return a&&a.pos[+m[2]]||k;}
   function hasTyreVal(d){if(!d||typeof d!=='object')return false;var dp=parseFloat(d.depth||d.tread||0);return(!isNaN(dp)&&dp>0)||!!(d.expiry&&d.expiry.trim())||(d.condition&&d.condition!=='ok');}
   function renderTyreCards(tyres) {
@@ -237,6 +240,7 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
         h += '<div style="margin-top:12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">Brake Test Results</div>';
         h += '<div class="metrics">';
         h += '<div class="metric"><div class="metric-lbl">Service</div><div class="metric-val" style="color:'+(brakes.sbe>=50?'var(--pass)':'var(--fail)')+';">'+(brakes.sbe!=null?brakes.sbe+'%':'—')+'</div></div>';
+        if (brakes.sbe2!=null && !isNaN(brakes.sbe2)) h += '<div class="metric"><div class="metric-lbl">Secondary</div><div class="metric-val" style="color:'+(brakes.sbe2>=50?'var(--pass)':'var(--fail)')+';">'+brakes.sbe2+'%</div></div>';
         h += '<div class="metric"><div class="metric-lbl">Park</div><div class="metric-val" style="color:'+(brakes.pbe>=16?'var(--pass)':'var(--fail)')+';">'+(brakes.pbe!=null?brakes.pbe+'%':'—')+'</div></div>';
         h += '</div>';
         var axles = brakes.axles||{};
@@ -246,11 +250,12 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
             h += '<tr><td style="font-weight:500;">'+esc(e[0])+'</td><td style="text-align:center;">'+(a.ns!=null?a.ns:'—')+'</td><td style="text-align:center;">'+(a.os!=null?a.os:'—')+'</td><td style="text-align:center;">'+(a.imb!=null?a.imb+'%':'—')+'</td><td style="text-align:center;">'+(a.pass?bdg('PASS','pass'):bdg('FAIL','fail'))+'</td></tr>';
           });
           h += '</tbody></table>';
-          h += '<div class="dvsa-note">DVSA minimums: Service ≥50% · Park ≥16% · Axle imbalance ≤30%</div>';
+          h += '<div class="dvsa-note">DVSA minimums: Service ≥50% · Secondary ≥50% · Park ≥16% · Axle imbalance ≤30%</div>';
         }
       }
 
       // Tyres
+      setTyreAxles(insp.inspection_type || job.inspection_type);
       var tyres = insp.tyre_data;
       if (typeof tyres === 'string') try { tyres = JSON.parse(tyres); } catch(e) { tyres = {}; }
       h += renderTyreCards(tyres);

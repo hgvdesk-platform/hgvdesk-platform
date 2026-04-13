@@ -44,16 +44,21 @@ const LOGO_SVG_SM = `<svg width="80" height="20" viewBox="0 0 120 28" fill="none
 function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // Map internal tyre key (t0_0) to human-readable position name
-const TYRE_AXLES = [
+const TYRE_AXLES_T50 = [
   { label: 'Steer', pos: ['Steer NS', 'Steer OS'] },
   { label: 'Drive 1', pos: ['Drive 1 NS Outer', 'Drive 1 NS Inner', 'Drive 1 OS Inner', 'Drive 1 OS Outer'] },
   { label: 'Drive 2', pos: ['Drive 2 NS Outer', 'Drive 2 NS Inner', 'Drive 2 OS Inner', 'Drive 2 OS Outer'] },
-  { label: 'Trailer', pos: ['Trailer NS Outer', 'Trailer NS Inner', 'Trailer OS Inner', 'Trailer OS Outer'] },
 ];
-function tyrePositionName(key) {
+const TYRE_AXLES_T60 = [
+  { label: 'Trailer Axle 1', pos: ['Axle 1 NS', 'Axle 1 OS'] },
+  { label: 'Trailer Axle 2', pos: ['Axle 2 NS', 'Axle 2 OS'] },
+  { label: 'Trailer Axle 3', pos: ['Axle 3 NS', 'Axle 3 OS'] },
+];
+function tyrePositionName(key, inspectionType) {
   const m = key.match(/^t(\d+)_(\d+)$/);
   if (!m) return key;
-  const axle = TYRE_AXLES[parseInt(m[1])];
+  const axles = inspectionType === 'T60' ? TYRE_AXLES_T60 : TYRE_AXLES_T50;
+  const axle = axles[parseInt(m[1])];
   if (!axle) return key;
   return axle.pos[parseInt(m[2])] || key;
 }
@@ -170,10 +175,12 @@ function tyreCard(posName, d) {
   </div></td>`;
 }
 
-function buildTyreSection(tyres) {
+function buildTyreSection(tyres, inspectionType) {
   if (!tyres || typeof tyres !== 'object' || !Object.keys(tyres).length) {
     return `<tr><td colspan="4" style="padding:10px 0;${BODY_S}color:${C.muted};font-style:italic;">No tyre data recorded.</td></tr>`;
   }
+
+  const tyreAxles = inspectionType === 'T60' ? TYRE_AXLES_T60 : TYRE_AXLES_T50;
 
   // Group tyres by axle index, filter to only filled positions
   const grouped = {};
@@ -194,7 +201,7 @@ function buildTyreSection(tyres) {
 
   let h = secTitle('Tyre Data');
   for (const ai of axleKeys) {
-    const axleDef = TYRE_AXLES[ai];
+    const axleDef = tyreAxles[ai];
     if (!axleDef) continue;
     const positions = grouped[ai].sort((a, b) => a.posIdx - b.posIdx);
 
@@ -245,11 +252,11 @@ function buildBrakeSection(brakes) {
 
   h += '<tr>';
   h += metricBox('Service Brake', (brakes.sbe!=null?brakes.sbe+'%':'—'), {big:true, color: brakes.sbe>=50?C.passGreen:C.failRed});
-  h += metricBox('Secondary', (brakes.secondary!=null?brakes.secondary+'%':'—'));
+  if (brakes.sbe2!=null && !isNaN(brakes.sbe2)) h += metricBox('Secondary', brakes.sbe2+'%', {color: brakes.sbe2>=50?C.passGreen:C.failRed});
   h += metricBox('Park Brake', (brakes.pbe!=null?brakes.pbe+'%':'—'), {color: brakes.pbe>=16?C.passGreen:C.failRed});
   h += metricBox('Max Imbalance', maxImb+'%', {color: maxImb<=30?C.passGreen:C.failRed});
   h += '</tr>';
-  h += `<tr><td colspan="4" style="padding:6px 0 10px;"><div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">DVSA minimums: Service ≥50% · Secondary ≥25% · Park ≥16% · Axle imbalance ≤30%</div></td></tr>`;
+  h += `<tr><td colspan="4" style="padding:6px 0 10px;"><div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">DVSA minimums: Service ≥50% · Secondary ≥50% · Park ≥16% · Axle imbalance ≤30%</div></td></tr>`;
 
   if (Object.keys(axles).length) {
     const th = `style="padding:8px 12px;${LBL}text-align:center;border-bottom:1px solid ${C.border};"`;
@@ -351,7 +358,7 @@ function buildInspectionReportHtml(insp, opts={}) {
 
   h += buildChecklistSection(checks);
   h += buildBrakeSection(brakes);
-  h += buildTyreSection(tyres);
+  h += buildTyreSection(tyres, insp.inspection_type);
   h += buildDefectsSection(defects);
 
   // Notes
