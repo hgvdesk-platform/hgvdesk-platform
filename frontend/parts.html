@@ -172,7 +172,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
       </div>
     </div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="pdash-sa" onclick="toggleAllParts()" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="pdash-sa" onclick="toggleAllParts('pdash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
       <tbody id="dash-tb"><tr><td colspan="8" style="text-align:center;padding:40px;color:var(--t5);">No parts yet</td></tr></tbody>
     </table>
   </div>
@@ -223,7 +223,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">All Parts</div><span class="badge bg-i" id="all-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="parts-sa" onclick="toggleAllParts()" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Cost</th><th>Date</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="parts-sa" onclick="toggleAllParts('parts-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Cost</th><th>Date</th><th></th></tr></thead>
       <tbody id="all-tb"></tbody>
     </table>
   </div>
@@ -619,8 +619,8 @@ function deleteInspection(id) {
   }).catch(function(e){ alert('Error: ' + e.message); });
 }
 
-function toggleAllParts() {
-  var sa = document.getElementById('parts-sa');
+function toggleAllParts(saId) {
+  var sa = document.getElementById(saId || 'parts-sa');
   document.querySelectorAll('.row-cb').forEach(function(c) { c.checked = sa.checked; });
   updatePartsDelCount();
 }
