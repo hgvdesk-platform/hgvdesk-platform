@@ -610,6 +610,47 @@ var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
 var checks = {}, brakes = {}, tyres = {}, defects = [], nilDef = false, curZone = null, curSev = 'advisory';
 var defectPhotos = {};
 
+// Auto-save inspection state to localStorage for crash recovery
+var _saveTimer = null;
+function saveInspState() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function() {
+    try {
+      var reg = (document.getElementById('f-reg') || {}).value || '';
+      var type = (document.getElementById('f-type') || {}).value || '';
+      if (!reg && !type) return;
+      localStorage.setItem('hgv_insp_state', JSON.stringify({
+        ts: Date.now(), reg: reg, type: type,
+        checks: checks, brakes: brakes, tyres: tyres,
+        sbe: (document.getElementById('sbe') || {}).value || '',
+        sbe2: (document.getElementById('sbe2') || {}).value || '',
+        pbe: (document.getElementById('pbe') || {}).value || ''
+      }));
+    } catch (e) {}
+  }, 500);
+}
+function restoreInspState() {
+  try {
+    var raw = localStorage.getItem('hgv_insp_state');
+    if (!raw) return false;
+    var s = JSON.parse(raw);
+    if (Date.now() - s.ts > 3600000) { localStorage.removeItem('hgv_insp_state'); return false; }
+    var reg = (document.getElementById('f-reg') || {}).value || '';
+    var type = (document.getElementById('f-type') || {}).value || '';
+    if (reg && reg !== s.reg) return false;
+    if (type && type !== s.type) return false;
+    if (s.checks && Object.keys(s.checks).length) checks = s.checks;
+    if (s.brakes && Object.keys(s.brakes).length) brakes = s.brakes;
+    if (s.tyres && Object.keys(s.tyres).length) tyres = s.tyres;
+    if (s.sbe) document.getElementById('sbe').value = s.sbe;
+    if (s.sbe2) document.getElementById('sbe2').value = s.sbe2;
+    if (s.pbe) document.getElementById('pbe').value = s.pbe;
+    console.log('[INSPECT] Restored state from localStorage — checks:', Object.keys(checks).length, 'brakes:', Object.keys(brakes).length, 'tyres:', Object.keys(tyres).length);
+    return true;
+  } catch (e) { return false; }
+}
+function clearInspState() { try { localStorage.removeItem('hgv_insp_state'); } catch(e) {} }
+
 // API
 function api(method, path, body) {
   var opts = {method: method, headers: {'Content-Type': 'application/json', 'X-API-Key': KEY}};
@@ -741,19 +782,21 @@ function getChecks() { return (document.getElementById('f-type').value === 'T60'
 
 function eid(s) { return s.replace(/[^a-zA-Z0-9]/g, '_'); }
 
-function buildChecklist() {
-  checks = {};
+function buildChecklist(clearData) {
+  if (clearData) checks = {};
   var wrap = document.getElementById('cl-wrap');
   wrap.innerHTML = getChecks().map(function(cat) {
     return '<div style="margin-bottom:18px;"><div class="cat-title">' + cat.cat + '</div><div class="cl-grid">' +
       cat.items.map(function(item) {
         var id = eid(item);
-        return '<div class="cl-item" id="cli-' + id + '">' +
+        var st = checks[id] || '';
+        var cls = st === 'fail' ? ' fail' : st === 'adv' ? ' adv' : st === 'pass' ? ' pass' : '';
+        return '<div class="cl-item' + cls + '" id="cli-' + id + '">' +
           '<span class="cl-lbl">' + item + '</span>' +
           '<div class="cl-btns">' +
-          '<button class="clb clb-p" data-id="' + id + '" data-state="pass">Pass</button>' +
-          '<button class="clb clb-a" data-id="' + id + '" data-state="adv">Adv</button>' +
-          '<button class="clb clb-f" data-id="' + id + '" data-state="fail">Fail</button>' +
+          '<button class="clb clb-p' + (st === 'pass' ? ' on' : '') + '" data-id="' + id + '" data-state="pass">Pass</button>' +
+          '<button class="clb clb-a' + (st === 'adv' ? ' on' : '') + '" data-id="' + id + '" data-state="adv">Adv</button>' +
+          '<button class="clb clb-f' + (st === 'fail' ? ' on' : '') + '" data-id="' + id + '" data-state="fail">Fail</button>' +
           '</div></div>';
       }).join('') + '</div></div>';
   }).join('');
@@ -772,6 +815,7 @@ function buildChecklist() {
       }
       updateBanner();
       updateChecklistMeta();
+      saveInspState();
     });
   });
 }
@@ -793,27 +837,30 @@ var AXLES_T60 = [
 ];
 function getAxles() { return (document.getElementById('f-type').value === 'T60') ? AXLES_T60 : AXLES_T50; }
 
-function buildBrakeTable() {
-  brakes = {};
+function buildBrakeTable(clearData) {
+  if (clearData) brakes = {};
   var isT60 = document.getElementById('f-type').value === 'T60';
   var axles = getAxles();
   document.getElementById('brake-tb').innerHTML = axles.map(function(a) {
+    var b = brakes[a.id] || {};
     return '<tr><td style="font-size:13px;font-weight:600;color:var(--t1);">' + a.label + '</td>' +
-      '<td><input class="ni" type="number" min="0" step="0.1" placeholder="0" id="bns-' + a.id + '"></td>' +
-      '<td><input class="ni" type="number" min="0" step="0.1" placeholder="0" id="bos-' + a.id + '"></td>' +
-      '<td><span class="imb" id="bimb-' + a.id + '">-</span></td>' +
-      '<td><span id="bres-' + a.id + '" style="font-size:12px;color:var(--t5);">-</span></td></tr>';
+      '<td><input class="ni" type="number" min="0" step="0.1" placeholder="0" id="bns-' + a.id + '"' + (b.ns ? ' value="' + b.ns + '"' : '') + '></td>' +
+      '<td><input class="ni" type="number" min="0" step="0.1" placeholder="0" id="bos-' + a.id + '"' + (b.os ? ' value="' + b.os + '"' : '') + '></td>' +
+      '<td><span class="imb" id="bimb-' + a.id + '">' + (b.imb != null ? b.imb + '%' : '-') + '</span></td>' +
+      '<td><span id="bres-' + a.id + '" style="font-size:12px;color:var(--t5);">' + (b.pass != null ? (b.pass ? '<span class="rc rc-p">Pass</span>' : '<span class="rc rc-f">FAIL</span>') : '-') + '</span></td></tr>';
   }).join('');
   document.getElementById('sbe2-wrap').style.display = isT60 ? 'none' : '';
-  document.getElementById('sbe').value = '';
-  document.getElementById('sbe-st').textContent = 'DVSA minimum: 50%';
-  document.getElementById('sbe-st').className = 'eff-status';
-  document.getElementById('sbe2').value = '';
-  document.getElementById('sbe2-st').textContent = 'DVSA minimum: 50%';
-  document.getElementById('sbe2-st').className = 'eff-status';
-  document.getElementById('pbe').value = '';
-  document.getElementById('pbe-st').textContent = 'DVSA minimum: 16%';
-  document.getElementById('pbe-st').className = 'eff-status';
+  if (clearData) {
+    document.getElementById('sbe').value = '';
+    document.getElementById('sbe-st').textContent = 'DVSA minimum: 50%';
+    document.getElementById('sbe-st').className = 'eff-status';
+    document.getElementById('sbe2').value = '';
+    document.getElementById('sbe2-st').textContent = 'DVSA minimum: 50%';
+    document.getElementById('sbe2-st').className = 'eff-status';
+    document.getElementById('pbe').value = '';
+    document.getElementById('pbe-st').textContent = 'DVSA minimum: 16%';
+    document.getElementById('pbe-st').className = 'eff-status';
+  }
   axles.forEach(function(a) {
     function calc() {
       var ns = parseFloat(document.getElementById('bns-' + a.id).value) || 0;
@@ -829,6 +876,7 @@ function buildBrakeTable() {
       re.innerHTML = '<span class="rc ' + (pass ? 'rc-p' : 'rc-f') + '">' + (pass ? 'Pass' : 'FAIL') + '</span>';
       brakes[a.id] = {ns: ns, os: os, imb: imb, pass: pass};
       updateBanner();
+      saveInspState();
     }
     document.getElementById('bns-' + a.id).addEventListener('input', calc);
     document.getElementById('bos-' + a.id).addEventListener('input', calc);
@@ -867,17 +915,20 @@ function buildBrakeTable() {
 
 // Switch all type-specific sections when inspection type changes
 var _lastType = '';
-function switchType(force) {
+function switchType(opts) {
+  if (typeof opts !== 'object') opts = opts ? { force: true } : {};
   var type = (document.getElementById('f-type').value || '').toUpperCase();
-  if (!force && type === _lastType) return;
+  if (!opts.force && type === _lastType) return;
+  var typeChanged = type !== _lastType;
   _lastType = type;
+  var clear = typeChanged && !opts.keepData;
   var isT60 = type === 'T60';
-  console.log('[INSPECT] switchType → type=' + type + ', rebuilding checklist/brakes/tyres');
+  console.log('[INSPECT] switchType → type=' + type + ', clear=' + clear);
   document.getElementById('diag-t50').style.display = isT60 ? 'none' : 'block';
   document.getElementById('diag-t60').style.display = isT60 ? 'block' : 'none';
-  buildChecklist();
-  buildBrakeTable();
-  buildTyres();
+  buildChecklist(clear);
+  buildBrakeTable(clear);
+  buildTyres(clear);
   updateChecklistMeta();
   if (type) {
     var s2 = document.getElementById('s2');
@@ -895,7 +946,7 @@ function updateChecklistMeta() {
   var label = type ? type + ' — ' + catsDone + ' / ' + cats.length + ' categories' : catsDone + ' / ' + cats.length + ' categories';
   document.getElementById('m2').textContent = label;
 }
-document.getElementById('f-type').addEventListener('change', switchType);
+document.getElementById('f-type').addEventListener('change', function() { switchType(); });
 
 // Zone click → open defect modal with zone pre-filled
 document.querySelectorAll('.zone').forEach(function(z) {
@@ -1174,23 +1225,25 @@ var TYRES_T60 = [
 ];
 function getTyres() { return (document.getElementById('f-type').value === 'T60') ? TYRES_T60 : TYRES_T50; }
 
-function buildTyres() {
-  tyres = {};
+function buildTyres(clearData) {
+  if (clearData) tyres = {};
   var wrap = document.getElementById('tyre-wrap');
   wrap.innerHTML = getTyres().map(function(ax, ai) {
     return '<div><div class="tax-title">' + ax.label + '</div><div class="tpos-grid">' +
       ax.pos.map(function(pos, pi) {
         var tid = 't' + ai + '_' + pi;
-        return '<div class="tp" id="tp-' + tid + '">' +
+        var t = tyres[tid] || {};
+        var cond = t.condition || '';
+        return '<div class="tp' + (cond ? ' ' + cond : '') + '" id="tp-' + tid + '">' +
           '<div class="tp-name">' + pos + '</div>' +
           '<div class="tp-flds">' +
-          '<div><div class="tf-lbl">Depth mm</div><input class="tf-in" type="number" step="0.1" placeholder="0" id="td-' + tid + '"></div>' +
-          '<div><div class="tf-lbl">Expiry (MM/YY)</div><input class="tf-in" placeholder="01/27" maxlength="5" id="tf-' + tid + '"></div>' +
+          '<div><div class="tf-lbl">Depth mm</div><input class="tf-in" type="number" step="0.1" placeholder="0" id="td-' + tid + '"' + (t.depth ? ' value="' + t.depth + '"' : '') + '></div>' +
+          '<div><div class="tf-lbl">Expiry (MM/YY)</div><input class="tf-in" placeholder="01/27" maxlength="5" id="tf-' + tid + '"' + (t.expiry ? ' value="' + t.expiry + '"' : '') + '></div>' +
           '</div>' +
           '<div class="tp-cond">' +
-          '<button class="tc tc-ok" data-tid="' + tid + '" data-cond="ok">OK</button>' +
-          '<button class="tc tc-adv" data-tid="' + tid + '" data-cond="adv">ADV</button>' +
-          '<button class="tc tc-def" data-tid="' + tid + '" data-cond="def">DEF</button>' +
+          '<button class="tc tc-ok' + (cond === 'ok' ? ' on' : '') + '" data-tid="' + tid + '" data-cond="ok">OK</button>' +
+          '<button class="tc tc-adv' + (cond === 'adv' ? ' on' : '') + '" data-tid="' + tid + '" data-cond="adv">ADV</button>' +
+          '<button class="tc tc-def' + (cond === 'def' ? ' on' : '') + '" data-tid="' + tid + '" data-cond="def">DEF</button>' +
           '</div></div>';
       }).join('') + '</div></div>';
   }).join('');
@@ -1204,9 +1257,9 @@ function buildTyres() {
       if (!tyres[tid]) tyres[tid] = {};
       tyres[tid].condition = cond;
       updateBanner();
+      saveInspState();
     });
   });
-  // Collect depth and expiry values on input
   wrap.querySelectorAll('.tf-in').forEach(function(inp) {
     inp.addEventListener('input', function() {
       var id = inp.id;
@@ -1214,6 +1267,7 @@ function buildTyres() {
       if (!tyres[tid]) tyres[tid] = {};
       if (id.startsWith('td-')) tyres[tid].depth = inp.value;
       if (id.startsWith('tf-')) tyres[tid].expiry = inp.value;
+      saveInspState();
     });
   });
 }
@@ -1537,6 +1591,7 @@ function submitInspection() {
         saveRectifications(inspName),
         saveUsedParts(insp.id)
       ]).then(function() {
+        clearInspState();
         toast(result === 'pass' ? 'Pass' : result === 'advisory' ? 'Advisory' : 'Fail', 'Inspection ' + result.toUpperCase() + ' saved');
         loadData();
         showPage('dash');
@@ -1558,7 +1613,8 @@ function init() {
   var now = new Date();
   document.getElementById('f-date').value = now.toISOString().split('T')[0];
   document.getElementById('f-time').value = now.toTimeString().slice(0, 5);
-  switchType(true);
+  var hadSaved = restoreInspState();
+  switchType({ force: true, keepData: hadSaved });
   buildDiagrams();
   loadData();
 }
@@ -1744,7 +1800,9 @@ window.openInspRow = function(id) {
     document.getElementById('f-reg').value = insp.vehicle_reg || '';
     document.getElementById('f-type').value = insp.inspection_type || '';
     _lastType = '';
-    switchType(true);
+    checks = {}; brakes = {}; tyres = {}; defects = []; nilDef = false;
+    clearInspState();
+    switchType({ force: true });
     document.getElementById('f-insp').value = insp.inspector_name || '';
     var custEl = document.getElementById('f-cust');
     if (custEl) {

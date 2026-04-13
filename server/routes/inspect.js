@@ -39,6 +39,10 @@ function countFailedChecks(checkItems) {
   return Object.values(checkItems || {}).filter(s => s === 'fail').length;
 }
 
+function countAdvisoryChecks(checkItems) {
+  return Object.values(checkItems || {}).filter(s => s === 'adv').length;
+}
+
 function brakesFail(brakeTestData) {
   if (!brakeTestData) return false;
   const axles = brakeTestData.axles ? Object.values(brakeTestData.axles) : [];
@@ -60,7 +64,7 @@ function calculateInspectionResult({ nilDefect, defects, checkItems, brakeTestDa
     || brakesFail(brakeTestData)
     || countFailedTyres(tyreData) > 0;
   if (failing) return 'fail';
-  if (hasAdvisoryDefect(defects)) return 'advisory';
+  if (hasAdvisoryDefect(defects) || countAdvisoryChecks(checkItems) > 0) return 'advisory';
   return 'pass';
 }
 
