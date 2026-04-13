@@ -144,6 +144,11 @@ async function createInspection(body, org) {
     }).catch(() => {});
   }
 
+  // Auto-calculate costs and push to linked job when complete
+  if (isComplete) {
+    try { await calculateInspectionCosts(org, inspection.id); } catch (e) { console.error('[INSPECT] cost calc error:', e.message); }
+  }
+
   return { inspection };
 }
 
@@ -328,7 +333,72 @@ async function raiseDefects(body, org) {
   return { raised: raised.length, parts: raised };
 }
 
+// ── Inspection Parts (parts used during inspection) ──
+
+async function getInspectionParts(org, inspectionId) {
+  const orgId = org.id || org.org_id;
+  return queryAll('SELECT * FROM inspection_parts WHERE org_id = $1 AND inspection_id = $2 ORDER BY id', [orgId, inspectionId]);
+}
+
+async function addInspectionPart(body, org) {
+  const orgId = org.id || org.org_id;
+  const { inspectionId, partId, partName, quantity, unitCost } = body;
+  if (!inspectionId || !partName) throw { status: 400, message: 'inspectionId and partName required' };
+  const qty = parseInt(quantity || 1);
+  const cost = parseFloat(unitCost || 0);
+  const lineTotal = Math.round(qty * cost * 100) / 100;
+
+  const row = await queryOne(
+    `INSERT INTO inspection_parts (org_id, inspection_id, part_id, part_name, quantity, unit_cost, line_total)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [orgId, inspectionId, partId || null, partName, qty, cost, lineTotal]
+  );
+
+  // Reduce stock if part_id set
+  if (partId) {
+    await query('UPDATE parts SET stock_quantity = GREATEST(stock_quantity - $1, 0) WHERE id = $2 AND org_id = $3', [qty, partId, orgId]);
+  }
+
+  return row;
+}
+
+async function removeInspectionPart(org, id) {
+  const orgId = org.id || org.org_id;
+  await query('DELETE FROM inspection_parts WHERE id = $1 AND org_id = $2', [id, orgId]);
+  return { deleted: true };
+}
+
+// Calculate costs and push to linked job
+async function calculateInspectionCosts(org, inspectionId) {
+  const orgId = org.id || org.org_id;
+  const insp = await queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspectionId, orgId]);
+  if (!insp) throw { status: 404, message: 'Inspection not found' };
+
+  const usedParts = await queryAll('SELECT * FROM inspection_parts WHERE inspection_id = $1 AND org_id = $2', [inspectionId, orgId]);
+  const partsCost = usedParts.reduce((sum, p) => sum + parseFloat(p.line_total || 0), 0);
+
+  // Labour: time from created_at to completed_at, or fallback to 1 hour
+  let labourHours = 1;
+  if (insp.completed_at && insp.created_at) {
+    labourHours = Math.max(0.25, Math.round((new Date(insp.completed_at) - new Date(insp.created_at)) / 3600000 * 4) / 4);
+  }
+  const labourRate = 65;
+  const labourCost = Math.round(labourHours * labourRate * 100) / 100;
+  const totalCost = Math.round((partsCost + labourCost) * 100) / 100;
+
+  // Update linked job if exists
+  if (insp.job_id) {
+    await query(
+      'UPDATE jobs SET parts_cost = $1, labour_cost = $2, total_cost = $3, sold_hours = $4, updated_at = NOW() WHERE id = $5 AND org_id = $6',
+      [partsCost, labourCost, totalCost, labourHours, insp.job_id, orgId]
+    );
+  }
+
+  return { inspectionId, partsCost, labourHours, labourRate, labourCost, totalCost, partsUsed: usedParts.length, jobId: insp.job_id };
+}
+
 module.exports = {
   getInspections, createInspection, updateInspection, deleteInspection, bulkDeleteInspections,
-  receiveAssignedJob, raiseDefects, updateDefect, getDefects
+  receiveAssignedJob, raiseDefects, updateDefect, getDefects,
+  getInspectionParts, addInspectionPart, removeInspectionPart, calculateInspectionCosts
 };

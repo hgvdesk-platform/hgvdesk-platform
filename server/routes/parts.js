@@ -24,15 +24,16 @@ async function getParts(org, queryParams) {
 
 async function createPart(body, org) {
   const orgId = org.id || org.org_id;
-  const { vehicleReg, name, category, priority, unitCost, notes, jobId } = body;
+  const { vehicleReg, name, category, priority, unitCost, notes, jobId, stockQuantity, minQuantity, cataloguePrice } = body;
   if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
   if (!name) throw { status: 400, message: 'name is required' };
   const partId = 'PRT-' + Date.now().toString().slice(-6);
   const part = await queryOne(
-    `INSERT INTO parts (org_id, part_id, job_id, vehicle_reg, name, category, priority, status, unit_cost, notes)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9) RETURNING *`,
+    `INSERT INTO parts (org_id, part_id, job_id, vehicle_reg, name, category, priority, status, unit_cost, notes, stock_quantity, min_quantity, catalogue_price)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,$9,$10,$11,$12) RETURNING *`,
     [orgId, partId, jobId || null, vehicleReg.toUpperCase().trim(),
-     name, category || 'General', priority || 'normal', unitCost || null, notes || null]
+     name, category || 'General', priority || 'normal', unitCost || null, notes || null,
+     stockQuantity || 0, minQuantity || 0, cataloguePrice || unitCost || null]
   );
   await logActivity(orgId, 'PARTS', 'PART_CREATED', name + ' for ' + vehicleReg, 'part', part.id);
   return { part };

@@ -443,6 +443,17 @@ async function handleInspections(ctx, res) {
 
   if (p === '/api/sync/assigned-job' && method === 'POST') { ok(res, await inspect.receiveAssignedJob(body, caller)); return true; }
 
+  // Inspection parts (parts used during inspection)
+  const inspPartsMatch = p.match(/^\/api\/inspections\/(\d+)\/parts$/);
+  if (inspPartsMatch && method === 'GET') { ok(res, await inspect.getInspectionParts(caller, parseInt(inspPartsMatch[1]))); return true; }
+  if (inspPartsMatch && method === 'POST') { created(res, await inspect.addInspectionPart({ ...body, inspectionId: parseInt(inspPartsMatch[1]) }, caller)); return true; }
+
+  const inspPartDelMatch = p.match(/^\/api\/inspection-parts\/(\d+)$/);
+  if (inspPartDelMatch && method === 'DELETE') { ok(res, await inspect.removeInspectionPart(caller, parseInt(inspPartDelMatch[1]))); return true; }
+
+  const inspCostMatch = p.match(/^\/api\/inspections\/(\d+)\/costs$/);
+  if (inspCostMatch && method === 'POST') { ok(res, await inspect.calculateInspectionCosts(caller, parseInt(inspCostMatch[1]))); return true; }
+
   return false;
 }
 
