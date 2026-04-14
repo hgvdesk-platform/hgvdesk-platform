@@ -194,7 +194,7 @@ function buildTyreSection(tyres, inspectionType) {
     grouped[ai].push({ key, posIdx: parseInt(m[2]), data: d });
   }
 
-  const axleKeys = Object.keys(grouped).map(Number).sort();
+  const axleKeys = Object.keys(grouped).map(Number).sort((a, b) => a - b);
   if (!axleKeys.length) {
     return `<tr><td colspan="4" style="padding:10px 0;${BODY_S}color:${C.muted};font-style:italic;">No tyre data recorded.</td></tr>`;
   }
@@ -243,18 +243,31 @@ function buildChecklistSection(checks) {
   return h;
 }
 
+function brakeEffColor(val, min) { return val >= min ? C.passGreen : C.failRed; }
+function brakeEffMetric(label, val, min, opts) {
+  return metricBox(label, val != null ? val + '%' : '—', { ...opts, color: brakeEffColor(val, min) });
+}
+
+function buildBrakeAxleRow(name, a, rowIdx) {
+  const bg = rowIdx % 2 ? C.surface : C.card;
+  const pr = a.pass ? badge('PASS', C.passBg, C.passGreen) : badge('FAIL', C.failBg, C.failRed);
+  const imbColor = (a.imb != null && a.imb > 30) ? C.failRed : C.text;
+  const td = (content, extra = '') => `<td style="padding:8px 12px;font-family:'Barlow',sans-serif;${extra}">${content}</td>`;
+  return `<tr style="background:${bg};">${td(esc(name), 'font-size:12px;font-weight:500;')}${td(a.ns != null ? a.ns : '—', 'text-align:center;font-size:13px;font-weight:600;')}${td(a.os != null ? a.os : '—', 'text-align:center;font-size:13px;font-weight:600;')}${td(a.imb != null ? a.imb + '%' : '—', 'text-align:center;font-size:12px;color:' + imbColor + ';')}${td(pr, 'text-align:center;')}</tr>`;
+}
+
 function buildBrakeSection(brakes) {
-  if (!brakes || (brakes.sbe==null && brakes.pbe==null && !brakes.axles)) return '';
+  if (!brakes || (brakes.sbe == null && brakes.pbe == null && !brakes.axles)) return '';
   let h = secTitle('Brake Test Results (Roller Brake Test)');
   const axles = brakes.axles || {};
   let maxImb = 0;
   for (const a of Object.values(axles)) if (a && a.imb != null) maxImb = Math.max(maxImb, a.imb);
 
   h += '<tr>';
-  h += metricBox('Service Brake', (brakes.sbe!=null?brakes.sbe+'%':'—'), {big:true, color: brakes.sbe>=50?C.passGreen:C.failRed});
-  if (brakes.sbe2!=null && !isNaN(brakes.sbe2)) h += metricBox('Secondary', brakes.sbe2+'%', {color: brakes.sbe2>=50?C.passGreen:C.failRed});
-  h += metricBox('Park Brake', (brakes.pbe!=null?brakes.pbe+'%':'—'), {color: brakes.pbe>=16?C.passGreen:C.failRed});
-  h += metricBox('Max Imbalance', maxImb+'%', {color: maxImb<=30?C.passGreen:C.failRed});
+  h += brakeEffMetric('Service Brake', brakes.sbe, 50, { big: true });
+  if (brakes.sbe2 != null && !isNaN(brakes.sbe2)) h += brakeEffMetric('Secondary', brakes.sbe2, 50);
+  h += brakeEffMetric('Park Brake', brakes.pbe, 16);
+  h += metricBox('Max Imbalance', maxImb + '%', { color: maxImb <= 30 ? C.passGreen : C.failRed });
   h += '</tr>';
   h += `<tr><td colspan="4" style="padding:6px 0 10px;"><div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">DVSA minimums: Service ≥50% · Secondary ≥50% · Park ≥16% · Axle imbalance ≤30%</div></td></tr>`;
 
@@ -263,13 +276,7 @@ function buildBrakeSection(brakes) {
     h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
     h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Axle</th><th ${th}>NS (kN)</th><th ${th}>OS (kN)</th><th ${th}>Imbalance</th><th ${th}>Result</th></tr>`;
     let ri = 0;
-    for (const [name, a] of Object.entries(axles)) {
-      const bg = ri%2 ? C.surface : C.card;
-      const pr = a.pass ? badge('PASS',C.passBg,C.passGreen) : badge('FAIL',C.failBg,C.failRed);
-      const imbColor = (a.imb!=null && a.imb>30) ? C.failRed : C.text;
-      h += `<tr style="background:${bg};"><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;">${esc(name)}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;">${a.ns!=null?a.ns:'—'}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;">${a.os!=null?a.os:'—'}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:12px;color:${imbColor};">${a.imb!=null?a.imb+'%':'—'}</td><td style="padding:8px 12px;text-align:center;">${pr}</td></tr>`;
-      ri++;
-    }
+    for (const [name, a] of Object.entries(axles)) { h += buildBrakeAxleRow(name, a, ri++); }
     h += '</table></td></tr>';
   }
   return h;
@@ -468,6 +475,41 @@ function buildInvoiceHtml(invoice, lines, opts={}) {
 // JOB SHEET
 // ══════════════════════════════════════════════
 
+function buildPartsTable(parts) {
+  const th = `style="padding:8px 12px;${LBL}border-bottom:1px solid ${C.border};"`;
+  let h = secTitle('Parts Used (' + parts.length + ')');
+  h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
+  h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Part</th><th ${th} style="${LBL}text-align:left;">Category</th><th ${th} style="${LBL}text-align:center;">Status</th><th ${th} style="${LBL}text-align:right;">Cost</th></tr>`;
+  let partTotal = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i]; const bg = i % 2 ? C.surface : C.card;
+    const cost = Number(p.unit_cost || 0) * Number(p.qty || 1);
+    partTotal += cost;
+    const sBadge = badge((p.status || 'pending').toUpperCase(), p.status === 'ready' ? C.passBg : C.advBg, p.status === 'ready' ? C.passGreen : C.advAmber);
+    h += `<tr style="background:${bg};"><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;">${esc(p.name)}</td><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;color:${C.muted};">${esc(p.category || '')}</td><td style="padding:8px 12px;text-align:center;">${sBadge}</td><td style="padding:8px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;">${cost > 0 ? fmtMoney(cost) : '—'}</td></tr>`;
+  }
+  h += `<tr style="background:${C.surface};border-top:2px solid ${C.dark};"><td colspan="3" style="padding:10px 12px;${HEAD_S}font-size:13px;">Parts Total</td><td style="padding:10px 12px;text-align:right;${HEAD_S}font-size:14px;">${partTotal > 0 ? fmtMoney(partTotal) : '—'}</td></tr>`;
+  h += '</table></td></tr>';
+  return h;
+}
+
+function buildLabourTable(jobLines) {
+  const th = `style="padding:8px 12px;${LBL}border-bottom:1px solid ${C.border};"`;
+  let h = secTitle('Labour / Sold Hours');
+  h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
+  h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Description</th><th ${th} style="${LBL}text-align:center;">Qty</th><th ${th} style="${LBL}text-align:right;">Hours</th><th ${th} style="${LBL}text-align:right;">Total Hrs</th></tr>`;
+  let totalHrs = 0;
+  for (let i = 0; i < jobLines.length; i++) {
+    const l = jobLines[i]; const bg = i % 2 ? C.surface : C.card;
+    const lineHrs = Number(l.sold_hours || 0) * Number(l.quantity || 1);
+    totalHrs += lineHrs;
+    h += `<tr style="background:${bg};"><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;">${esc(l.name || l.description)}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:12px;">${Number(l.quantity || 1).toFixed(1)}</td><td style="padding:8px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:12px;">${Number(l.sold_hours || 0).toFixed(2)}</td><td style="padding:8px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;">${lineHrs.toFixed(2)}</td></tr>`;
+  }
+  h += `<tr style="background:${C.surface};border-top:2px solid ${C.dark};"><td colspan="3" style="padding:10px 12px;${HEAD_S}font-size:13px;">Total Labour</td><td style="padding:10px 12px;text-align:right;${HEAD_S}font-size:14px;">${totalHrs.toFixed(2)} hrs</td></tr>`;
+  h += '</table></td></tr>';
+  return h;
+}
+
 function buildJobSheetHtml(job, opts={}) {
   const { inspection, parts, jobLines, orgName } = opts;
   let h = '';
@@ -481,7 +523,6 @@ function buildJobSheetHtml(job, opts={}) {
   h += `<tr><td style="background:${C.card};padding:28px 32px;">`;
   h += `<table width="100%" cellpadding="0" cellspacing="0">`;
 
-  // Job details
   h += secTitle('Job Details');
   h += '<tr>';
   h += metricBox('Job Number', job.job_number||'—');
@@ -496,54 +537,21 @@ function buildJobSheetHtml(job, opts={}) {
   }
   h += '</tr>';
 
-  // Reported fault
   if (job.notes) {
     h += secTitle('Reported Fault');
     h += `<tr><td colspan="4" style="padding:10px 0;${BODY_S}">${esc(job.notes)}</td></tr>`;
   }
 
-  // Parts table
-  if (parts && parts.length) {
-    h += secTitle('Parts Used (' + parts.length + ')');
-    const th = `style="padding:8px 12px;${LBL}border-bottom:1px solid ${C.border};"`;
-    h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
-    h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Part</th><th ${th} style="${LBL}text-align:left;">Category</th><th ${th} style="${LBL}text-align:center;">Status</th><th ${th} style="${LBL}text-align:right;">Cost</th></tr>`;
-    let partTotal = 0;
-    for (let i=0; i<parts.length; i++) {
-      const p=parts[i]; const bg=i%2?C.surface:C.card; const cost=Number(p.unit_cost||0)*Number(p.qty||1);
-      partTotal += cost;
-      h += `<tr style="background:${bg};"><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;">${esc(p.name)}</td><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;color:${C.muted};">${esc(p.category||'')}</td><td style="padding:8px 12px;text-align:center;">${badge((p.status||'pending').toUpperCase(), p.status==='ready'?C.passBg:C.advBg, p.status==='ready'?C.passGreen:C.advAmber)}</td><td style="padding:8px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;">${cost>0?fmtMoney(cost):'—'}</td></tr>`;
-    }
-    h += `<tr style="background:${C.surface};border-top:2px solid ${C.dark};"><td colspan="3" style="padding:10px 12px;${HEAD_S}font-size:13px;">Parts Total</td><td style="padding:10px 12px;text-align:right;${HEAD_S}font-size:14px;">${partTotal>0?fmtMoney(partTotal):'—'}</td></tr>`;
-    h += '</table></td></tr>';
-  }
+  if (parts && parts.length) h += buildPartsTable(parts);
+  if (jobLines && jobLines.length) h += buildLabourTable(jobLines);
 
-  // Sold hours / labour
-  if (jobLines && jobLines.length) {
-    h += secTitle('Labour / Sold Hours');
-    const th = `style="padding:8px 12px;${LBL}border-bottom:1px solid ${C.border};"`;
-    h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">`;
-    h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:8px 12px;">Description</th><th ${th} style="${LBL}text-align:center;">Qty</th><th ${th} style="${LBL}text-align:right;">Hours</th><th ${th} style="${LBL}text-align:right;">Total Hrs</th></tr>`;
-    let totalHrs=0;
-    for (let i=0; i<jobLines.length; i++) {
-      const l=jobLines[i]; const bg=i%2?C.surface:C.card; const lineHrs=Number(l.sold_hours||0)*Number(l.quantity||1);
-      totalHrs += lineHrs;
-      h += `<tr style="background:${bg};"><td style="padding:8px 12px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;">${esc(l.name||l.description)}</td><td style="padding:8px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:12px;">${Number(l.quantity||1).toFixed(1)}</td><td style="padding:8px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:12px;">${Number(l.sold_hours||0).toFixed(2)}</td><td style="padding:8px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;">${lineHrs.toFixed(2)}</td></tr>`;
-    }
-    h += `<tr style="background:${C.surface};border-top:2px solid ${C.dark};"><td colspan="3" style="padding:10px 12px;${HEAD_S}font-size:13px;">Total Labour</td><td style="padding:10px 12px;text-align:right;${HEAD_S}font-size:14px;">${totalHrs.toFixed(2)} hrs</td></tr>`;
-    h += '</table></td></tr>';
-  }
-
-  // Linked inspection
   if (inspection) {
     h += secTitle('Linked Inspection — ' + (inspection.inspection_id||''));
     h += `<tr><td colspan="4" style="padding:8px 0;">`;
-    // Embed a simplified version of the inspection data
     h += buildInspectionReportHtml(inspection, { orgName }).replace(/<!DOCTYPE[\s\S]*?<body[^>]*>/,'').replace(/<\/body[\s\S]*$/,'');
     h += `</td></tr>`;
   }
 
-  // Technician sign-off
   h += secTitle('Technician Sign-Off');
   h += '<tr>';
   h += metricBox('Technician', job.technician_name||'—');

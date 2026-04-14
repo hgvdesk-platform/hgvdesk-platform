@@ -557,31 +557,33 @@ const ARTHUR_SYSTEM_PROMPT = [
   '- If the user gives vehicle context, reference it specifically',
 ].join('\n');
 
+function buildHistoryMessages(history) {
+  if (!history || !Array.isArray(history)) return [];
+  return history.slice(-10).map(h => ({
+    role: h.role === 'assistant' ? 'assistant' : 'user',
+    content: h.content
+  }));
+}
+
+function buildContextPrefix(context) {
+  if (!context) return '';
+  const ctx = [];
+  if (context.vehicleReg) ctx.push('Vehicle: ' + context.vehicleReg);
+  if (context.inspectionType) ctx.push('Inspection type: ' + context.inspectionType);
+  if (context.defects && context.defects.length) {
+    ctx.push('Active defects: ' + context.defects.map(d => d.zone + ' — ' + d.description + ' (' + d.severity + ')').join('; '));
+  }
+  return ctx.length ? '[Context: ' + ctx.join(', ') + ']\n\n' : '';
+}
+
 async function technicalAssistant(body) {
   if (!client) throw { status: 503, message: 'AI assistant not configured' };
   const { message, history, context } = body || {};
   if (!message) throw { status: 400, message: 'message is required' };
 
-  const messages = [];
-
-  if (history && Array.isArray(history)) {
-    for (const h of history.slice(-10)) {
-      messages.push({ role: h.role === 'assistant' ? 'assistant' : 'user', content: h.content });
-    }
-  }
-
-  let userMsg = message;
-  if (context) {
-    const ctx = [];
-    if (context.vehicleReg) ctx.push('Vehicle: ' + context.vehicleReg);
-    if (context.inspectionType) ctx.push('Inspection type: ' + context.inspectionType);
-    if (context.defects && context.defects.length) {
-      ctx.push('Active defects: ' + context.defects.map(d => d.zone + ' — ' + d.description + ' (' + d.severity + ')').join('; '));
-    }
-    if (ctx.length && messages.length === 0) {
-      userMsg = '[Context: ' + ctx.join(', ') + ']\n\n' + message;
-    }
-  }
+  const messages = buildHistoryMessages(history);
+  const prefix = messages.length === 0 ? buildContextPrefix(context) : '';
+  const userMsg = prefix + message;
 
   messages.push({ role: 'user', content: userMsg });
 

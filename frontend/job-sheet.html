@@ -137,8 +137,103 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
   function condBdg(c) { var v=(c||'ok').toLowerCase(); return v==='ok'?bdg('OK','pass'):v==='adv'?bdg('ADV','adv'):bdg('DEF','fail'); }
   function sevBdg(s) { return (s||'advisory').toLowerCase()==='critical'?bdg('CRITICAL','fail'):bdg('ADVISORY','adv'); }
 
+  function renderPartsSection(parts) {
+    var h = '<div class="sec-t">Parts Used ('+parts.length+')</div>';
+    h += '<table class="tbl"><thead><tr><th>Part</th><th>Category</th><th style="text-align:center;">Status</th><th style="text-align:right;">Cost</th></tr></thead><tbody>';
+    var partTotal = 0;
+    parts.forEach(function(p) {
+      var cost = Number(p.unit_cost||0)*Number(p.qty||1); partTotal += cost;
+      var sBdg = p.status==='ready'?bdg('READY','pass'):p.status==='ordered'?bdg('ORDERED','adv'):bdg('PENDING','pending');
+      h += '<tr><td style="font-weight:500;">'+esc(p.name)+'</td><td style="color:var(--muted);">'+esc(p.category||'')+'</td><td style="text-align:center;">'+sBdg+'</td><td style="text-align:right;font-weight:600;">'+(cost>0?'£'+cost.toFixed(2):'—')+'</td></tr>';
+    });
+    h += '<tr class="total-row"><td colspan="3">Parts Total</td><td style="text-align:right;">'+(partTotal>0?'£'+partTotal.toFixed(2):'—')+'</td></tr>';
+    h += '</tbody></table>';
+    return h;
+  }
+
+  function renderLabourSection(jobLines) {
+    var h = '<div class="sec-t">Labour / Sold Hours</div>';
+    h += '<table class="tbl"><thead><tr><th>Description</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Hours</th><th style="text-align:right;">Total Hrs</th></tr></thead><tbody>';
+    var totalHrs = 0;
+    jobLines.forEach(function(l) {
+      var hrs = Number(l.sold_hours||0)*Number(l.quantity||1); totalHrs += hrs;
+      h += '<tr><td style="font-weight:500;">'+esc(l.name||l.description)+'</td><td style="text-align:center;">'+Number(l.quantity||1).toFixed(1)+'</td><td style="text-align:right;">'+Number(l.sold_hours||0).toFixed(2)+'</td><td style="text-align:right;font-weight:600;">'+hrs.toFixed(2)+'</td></tr>';
+    });
+    h += '<tr class="total-row"><td colspan="3">Total Labour</td><td style="text-align:right;">'+totalHrs.toFixed(2)+' hrs</td></tr>';
+    h += '</tbody></table>';
+    return h;
+  }
+
+  function renderInspSection(insp, defects, inspType) {
+    var h = '<div class="sec-t">Linked Inspection — '+esc(insp.inspection_id)+' '+resultBdg(insp.result)+'</div>';
+    var checks = insp.check_items;
+    if (typeof checks === 'string') try { checks = JSON.parse(checks); } catch(e) { checks = {}; }
+    if (!checks || typeof checks !== 'object') checks = {};
+    var ckEntries = Object.entries(checks);
+    if (ckEntries.length) {
+      h += '<div style="margin-top:8px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">DVSA Checklist ('+ckEntries.length+')</div>';
+      h += '<div class="checks">';
+      ckEntries.forEach(function(e) {
+        var st = (e[1]||'').toLowerCase();
+        var b = st==='pass'?bdg('PASS','pass'):st==='fail'?bdg('FAIL','fail'):bdg(st.toUpperCase()||'—','adv');
+        h += '<div class="chk"><span>'+esc(e[0].replace(/_/g,' '))+'</span>'+b+'</div>';
+      });
+      h += '</div>';
+    }
+    h += renderBrakeSection(insp.brake_test_data);
+    setTyreAxles(insp.inspection_type || inspType);
+    var tyres = insp.tyre_data;
+    if (typeof tyres === 'string') try { tyres = JSON.parse(tyres); } catch(e) { tyres = {}; }
+    h += renderTyreCards(tyres);
+    if (defects && defects.length) h += renderDefectsSection(defects);
+    if (insp.notes) {
+      h += '<div style="margin-top:12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">Inspector Notes</div>';
+      h += '<p style="padding:8px 0;">'+esc(insp.notes)+'</p>';
+    }
+    return h;
+  }
+
+  function renderBrakeSection(brakeData) {
+    var brakes = brakeData;
+    if (typeof brakes === 'string') try { brakes = JSON.parse(brakes); } catch(e) { brakes = {}; }
+    if (!brakes || (brakes.sbe==null && !brakes.axles)) return '';
+    var h = '<div style="margin-top:12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">Brake Test Results</div>';
+    h += '<div class="metrics">';
+    h += '<div class="metric"><div class="metric-lbl">Service</div><div class="metric-val" style="color:'+(brakes.sbe>=50?'var(--pass)':'var(--fail)')+';">'+(brakes.sbe!=null?brakes.sbe+'%':'—')+'</div></div>';
+    if (brakes.sbe2!=null && !isNaN(brakes.sbe2)) h += '<div class="metric"><div class="metric-lbl">Secondary</div><div class="metric-val" style="color:'+(brakes.sbe2>=50?'var(--pass)':'var(--fail)')+';">'+brakes.sbe2+'%</div></div>';
+    h += '<div class="metric"><div class="metric-lbl">Park</div><div class="metric-val" style="color:'+(brakes.pbe>=16?'var(--pass)':'var(--fail)')+';">'+(brakes.pbe!=null?brakes.pbe+'%':'—')+'</div></div>';
+    h += '</div>';
+    var axles = brakes.axles||{};
+    if (Object.keys(axles).length) {
+      h += '<table class="tbl"><thead><tr><th>Axle</th><th style="text-align:center;">NS (kN)</th><th style="text-align:center;">OS (kN)</th><th style="text-align:center;">Imbalance</th><th style="text-align:center;">Result</th></tr></thead><tbody>';
+      Object.entries(axles).forEach(function(e) { var a=e[1];
+        h += '<tr><td style="font-weight:500;">'+esc(e[0])+'</td><td style="text-align:center;">'+(a.ns!=null?a.ns:'—')+'</td><td style="text-align:center;">'+(a.os!=null?a.os:'—')+'</td><td style="text-align:center;">'+(a.imb!=null?a.imb+'%':'—')+'</td><td style="text-align:center;">'+(a.pass?bdg('PASS','pass'):bdg('FAIL','fail'))+'</td></tr>';
+      });
+      h += '</tbody></table>';
+      h += '<div class="dvsa-note">DVSA minimums: Service ≥50% · Secondary ≥50% · Park ≥16% · Axle imbalance ≤30%</div>';
+    }
+    return h;
+  }
+
+  function renderDefectsSection(defects) {
+    var h = '<div style="margin-top:12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">Defects ('+defects.length+')</div>';
+    defects.forEach(function(d) {
+      h += '<div class="def-card '+(d.resolved?'resolved':'open')+'">';
+      h += '<div class="def-hd"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="def-title">'+esc(d.title||d.description||'Defect')+'</div>'+sevBdg(d.severity)+'</div>';
+      if (d.description && d.description!==d.title) h += '<div class="def-desc">'+esc(d.description)+'</div>';
+      h += '</div>';
+      if (d.resolved) {
+        h += '<div class="def-repair"><div class="def-repair-lbl">Repaired</div>';
+        if (d.resolved_by) h += '<div style="font-size:12px;">By: <strong>'+esc(d.resolved_by)+'</strong></div>';
+        if (d.resolution_notes) h += '<div style="font-size:12px;margin-top:2px;">'+esc(d.resolution_notes)+'</div>';
+        h += '</div>';
+      }
+      h += '</div>';
+    });
+    return h;
+  }
+
   function renderJob(job, insp, defects, parts, jobLines, dvla) {
-    // Header bars
     var displayReg = job.vehicle_reg + (job.trailer_id ? ' / ' + job.trailer_id : '');
     document.getElementById('vbar-reg').textContent = displayReg;
     document.getElementById('vbar-sub').textContent = [job.customer_name, job.inspection_type].filter(Boolean).join(' · ');
@@ -149,8 +244,6 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
     document.title = 'Job Sheet — ' + displayReg;
 
     var h = '';
-
-    // Job details metrics
     h += '<div class="sec-t">Job Details</div>';
     h += '<div class="metrics">';
     h += '<div class="metric"><div class="metric-lbl">Job Number</div><div class="metric-val">'+esc(job.job_number)+'</div></div>';
@@ -159,151 +252,34 @@ body{font-family:'Barlow',sans-serif;background:var(--surface);color:var(--text)
     h += '<div class="metric"><div class="metric-lbl">Status</div><div class="metric-val">'+esc((job.status||'pending').toUpperCase())+'</div></div>';
     if (job.trailer_id) h += '<div class="metric"><div class="metric-lbl">Trailer ID</div><div class="metric-val">'+esc(job.trailer_id)+'</div></div>';
     h += '</div>';
-
-    // Reported fault
-    if (job.notes) {
-      h += '<div class="sec-t">Reported Fault</div>';
-      h += '<p style="padding:10px 0;">'+esc(job.notes)+'</p>';
-    }
-
-    // DVLA data
+    if (job.notes) { h += '<div class="sec-t">Reported Fault</div><p style="padding:10px 0;">'+esc(job.notes)+'</p>'; }
     if (dvla && dvla.make) {
-      h += '<div class="sec-t">Vehicle (DVSA Data)</div>';
-      h += '<div class="metrics">';
+      h += '<div class="sec-t">Vehicle (DVSA Data)</div><div class="metrics">';
       h += '<div class="metric"><div class="metric-lbl">Make/Model</div><div class="metric-val">'+esc(dvla.make)+' '+esc(dvla.model||'')+'</div></div>';
       h += '<div class="metric"><div class="metric-lbl">Colour</div><div class="metric-val">'+esc(dvla.colour||'—')+'</div></div>';
       h += '<div class="metric"><div class="metric-lbl">Fuel</div><div class="metric-val">'+esc(dvla.fuelType||'—')+'</div></div>';
       h += '<div class="metric"><div class="metric-lbl">MOT</div><div class="metric-val" style="color:'+(dvla.motStatus==='Valid'?'var(--pass)':'var(--fail)')+';">'+esc(dvla.motStatus||'—')+'</div></div>';
       h += '</div>';
     }
-
-    // Parts table
-    if (parts && parts.length) {
-      h += '<div class="sec-t">Parts Used ('+parts.length+')</div>';
-      h += '<table class="tbl"><thead><tr><th>Part</th><th>Category</th><th style="text-align:center;">Status</th><th style="text-align:right;">Cost</th></tr></thead><tbody>';
-      var partTotal = 0;
-      parts.forEach(function(p) {
-        var cost = Number(p.unit_cost||0)*Number(p.qty||1); partTotal += cost;
-        var sBdg = p.status==='ready'?bdg('READY','pass'):p.status==='ordered'?bdg('ORDERED','adv'):bdg('PENDING','pending');
-        h += '<tr><td style="font-weight:500;">'+esc(p.name)+'</td><td style="color:var(--muted);">'+esc(p.category||'')+'</td><td style="text-align:center;">'+sBdg+'</td><td style="text-align:right;font-weight:600;">'+(cost>0?'£'+cost.toFixed(2):'—')+'</td></tr>';
-      });
-      h += '<tr class="total-row"><td colspan="3">Parts Total</td><td style="text-align:right;">'+(partTotal>0?'£'+partTotal.toFixed(2):'—')+'</td></tr>';
-      h += '</tbody></table>';
-    }
-
-    // Labour / sold hours
-    if (jobLines && jobLines.length) {
-      h += '<div class="sec-t">Labour / Sold Hours</div>';
-      h += '<table class="tbl"><thead><tr><th>Description</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Hours</th><th style="text-align:right;">Total Hrs</th></tr></thead><tbody>';
-      var totalHrs = 0;
-      jobLines.forEach(function(l) {
-        var hrs = Number(l.sold_hours||0)*Number(l.quantity||1); totalHrs += hrs;
-        h += '<tr><td style="font-weight:500;">'+esc(l.name||l.description)+'</td><td style="text-align:center;">'+Number(l.quantity||1).toFixed(1)+'</td><td style="text-align:right;">'+Number(l.sold_hours||0).toFixed(2)+'</td><td style="text-align:right;font-weight:600;">'+hrs.toFixed(2)+'</td></tr>';
-      });
-      h += '<tr class="total-row"><td colspan="3">Total Labour</td><td style="text-align:right;">'+totalHrs.toFixed(2)+' hrs</td></tr>';
-      h += '</tbody></table>';
-    }
-
-    // Dispatch
-    h += '<div class="sec-t">Dispatch Status</div>';
-    h += '<div class="metrics">';
+    if (parts && parts.length) h += renderPartsSection(parts);
+    if (jobLines && jobLines.length) h += renderLabourSection(jobLines);
+    h += '<div class="sec-t">Dispatch Status</div><div class="metrics">';
     h += '<div class="metric"><div class="metric-lbl">Inspect</div><div class="metric-val">'+(job.inspect_sent?'Dispatched':'Not sent')+'</div></div>';
     h += '<div class="metric"><div class="metric-lbl">Parts</div><div class="metric-val">'+(job.parts_sent?'Dispatched':'Not sent')+'</div></div>';
     h += '<div class="metric"><div class="metric-lbl">Date Received</div><div class="metric-val">'+fmtDate(job.created_at)+'</div></div>';
     h += '<div class="metric"><div class="metric-lbl">Completed</div><div class="metric-val">'+fmtDT(job.completed_at)+'</div></div>';
     h += '</div>';
-
-    // Linked inspection
-    if (insp) {
-      h += '<div class="sec-t">Linked Inspection — '+esc(insp.inspection_id)+' '+resultBdg(insp.result)+'</div>';
-
-      // Check items
-      var checks = insp.check_items;
-      if (typeof checks === 'string') try { checks = JSON.parse(checks); } catch(e) { checks = {}; }
-      if (checks && typeof checks === 'object') checks = checks; else checks = {};
-      var ckEntries = Object.entries(checks||{});
-      if (ckEntries.length) {
-        h += '<div style="margin-top:8px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">DVSA Checklist ('+ckEntries.length+')</div>';
-        h += '<div class="checks">';
-        ckEntries.forEach(function(e) {
-          var st = (e[1]||'').toLowerCase();
-          var b = st==='pass'?bdg('PASS','pass'):st==='fail'?bdg('FAIL','fail'):bdg(st.toUpperCase()||'—','adv');
-          h += '<div class="chk"><span>'+esc(e[0].replace(/_/g,' '))+'</span>'+b+'</div>';
-        });
-        h += '</div>';
-      }
-
-      // Brake data
-      var brakes = insp.brake_test_data;
-      if (typeof brakes === 'string') try { brakes = JSON.parse(brakes); } catch(e) { brakes = {}; }
-      if (brakes && (brakes.sbe!=null || brakes.axles)) {
-        h += '<div style="margin-top:12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">Brake Test Results</div>';
-        h += '<div class="metrics">';
-        h += '<div class="metric"><div class="metric-lbl">Service</div><div class="metric-val" style="color:'+(brakes.sbe>=50?'var(--pass)':'var(--fail)')+';">'+(brakes.sbe!=null?brakes.sbe+'%':'—')+'</div></div>';
-        if (brakes.sbe2!=null && !isNaN(brakes.sbe2)) h += '<div class="metric"><div class="metric-lbl">Secondary</div><div class="metric-val" style="color:'+(brakes.sbe2>=50?'var(--pass)':'var(--fail)')+';">'+brakes.sbe2+'%</div></div>';
-        h += '<div class="metric"><div class="metric-lbl">Park</div><div class="metric-val" style="color:'+(brakes.pbe>=16?'var(--pass)':'var(--fail)')+';">'+(brakes.pbe!=null?brakes.pbe+'%':'—')+'</div></div>';
-        h += '</div>';
-        var axles = brakes.axles||{};
-        if (Object.keys(axles).length) {
-          h += '<table class="tbl"><thead><tr><th>Axle</th><th style="text-align:center;">NS (kN)</th><th style="text-align:center;">OS (kN)</th><th style="text-align:center;">Imbalance</th><th style="text-align:center;">Result</th></tr></thead><tbody>';
-          Object.entries(axles).forEach(function(e) { var a=e[1];
-            h += '<tr><td style="font-weight:500;">'+esc(e[0])+'</td><td style="text-align:center;">'+(a.ns!=null?a.ns:'—')+'</td><td style="text-align:center;">'+(a.os!=null?a.os:'—')+'</td><td style="text-align:center;">'+(a.imb!=null?a.imb+'%':'—')+'</td><td style="text-align:center;">'+(a.pass?bdg('PASS','pass'):bdg('FAIL','fail'))+'</td></tr>';
-          });
-          h += '</tbody></table>';
-          h += '<div class="dvsa-note">DVSA minimums: Service ≥50% · Secondary ≥50% · Park ≥16% · Axle imbalance ≤30%</div>';
-        }
-      }
-
-      // Tyres
-      setTyreAxles(insp.inspection_type || job.inspection_type);
-      var tyres = insp.tyre_data;
-      if (typeof tyres === 'string') try { tyres = JSON.parse(tyres); } catch(e) { tyres = {}; }
-      h += renderTyreCards(tyres);
-
-      // Defects
-      if (defects && defects.length) {
-        h += '<div style="margin-top:12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">Defects ('+defects.length+')</div>';
-        defects.forEach(function(d) {
-          h += '<div class="def-card '+(d.resolved?'resolved':'open')+'">';
-          h += '<div class="def-hd"><div style="display:flex;justify-content:space-between;align-items:center;"><div class="def-title">'+esc(d.title||d.description||'Defect')+'</div>'+sevBdg(d.severity)+'</div>';
-          if (d.description && d.description!==d.title) h += '<div class="def-desc">'+esc(d.description)+'</div>';
-          h += '</div>';
-          if (d.resolved) {
-            h += '<div class="def-repair"><div class="def-repair-lbl">Repaired</div>';
-            if (d.resolved_by) h += '<div style="font-size:12px;">By: <strong>'+esc(d.resolved_by)+'</strong></div>';
-            if (d.resolution_notes) h += '<div style="font-size:12px;margin-top:2px;">'+esc(d.resolution_notes)+'</div>';
-            h += '</div>';
-          }
-          h += '</div>';
-        });
-      }
-
-      // Notes
-      if (insp.notes) {
-        h += '<div style="margin-top:12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--label);">Inspector Notes</div>';
-        h += '<p style="padding:8px 0;">'+esc(insp.notes)+'</p>';
-      }
-    }
-
-    // Sign-off
-    h += '<div class="sec-t">Technician Sign-Off</div>';
-    h += '<div class="metrics">';
+    if (insp) h += renderInspSection(insp, defects, job.inspection_type);
+    h += '<div class="sec-t">Technician Sign-Off</div><div class="metrics">';
     h += '<div class="metric"><div class="metric-lbl">Technician</div><div class="metric-val">'+esc(job.technician_name||'—')+'</div></div>';
     h += '<div class="metric"><div class="metric-lbl">Date Received</div><div class="metric-val">'+fmtDate(job.created_at)+'</div></div>';
     h += '<div class="metric"><div class="metric-lbl">Completed</div><div class="metric-val">'+fmtDT(job.completed_at)+'</div></div>';
     h += '<div class="metric"><div class="metric-lbl">Hours</div><div class="metric-val">'+(job.hours_worked||job.sold_hours||'—')+' hrs</div></div>';
     h += '</div>';
-
-    // DVSA note
     h += '<div class="brake-note">This job sheet has been prepared in accordance with DVSA roadworthiness standards. All inspection data, brake test results and tyre readings are recorded as completed by the assigned technician. This document is a legal record of work carried out on the vehicle.</div>';
-
     document.getElementById('main-content').innerHTML = h;
-
-    // Show PDF button
     document.getElementById('dl-btn').style.display = 'block';
-    document.getElementById('dl-btn').onclick = function() {
-      window.open('/api/jobs/'+jobId+'/pdf?key='+KEY, '_blank');
-    };
+    document.getElementById('dl-btn').onclick = function() { window.open('/api/jobs/'+jobId+'/pdf?key='+KEY, '_blank'); };
   }
 
   // Fetch chain

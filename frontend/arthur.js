@@ -1,14 +1,14 @@
 (function() {
-  var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
-  var history = [];
-  var isOpen = false;
-  var isLoading = false;
+  const KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
+  const history = [];
+  let isOpen = false;
+  let isLoading = false;
 
   function getContext() {
-    var ctx = {};
-    var reg = document.getElementById('f-reg');
+    const ctx = {};
+    const reg = document.getElementById('f-reg');
     if (reg && reg.value) ctx.vehicleReg = reg.value.trim().toUpperCase();
-    var type = document.getElementById('f-type');
+    const type = document.getElementById('f-type');
     if (type && type.value) ctx.inspectionType = type.value;
     if (window.defects && window.defects.length) {
       ctx.defects = window.defects.map(function(d) {
@@ -21,7 +21,7 @@
   function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function formatMsg(text) {
-    var s = esc(text);
+    let s = esc(text);
     s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/^(\d+)\.\s/gm, '<br><strong>$1.</strong> ');
     s = s.replace(/⚠️/g, '<span style="font-size:15px;">⚠️</span>');
@@ -31,7 +31,7 @@
   }
 
   function inject() {
-    var style = document.createElement('style');
+    const style = document.createElement('style');
     style.textContent = [
       '#arthur-fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:#FF6B00;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(255,107,0,0.35);z-index:9990;display:flex;align-items:center;justify-content:center;transition:transform 0.2s;}',
       '#arthur-fab:hover{transform:scale(1.08);}',
@@ -66,13 +66,13 @@
     ].join('\n');
     document.head.appendChild(style);
 
-    var fab = document.createElement('button');
+    const fab = document.createElement('button');
     fab.id = 'arthur-fab';
     fab.title = 'Ask Arthur — HGV Technical Assistant';
     fab.innerHTML = '<svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>';
     document.body.appendChild(fab);
 
-    var panel = document.createElement('div');
+    const panel = document.createElement('div');
     panel.id = 'arthur-panel';
     panel.innerHTML = [
       '<div class="ap-hd">',
@@ -107,7 +107,7 @@
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
     });
     document.getElementById('arthur-chips').addEventListener('click', function(e) {
-      var chip = e.target.closest('.ap-chip');
+      const chip = e.target.closest('.ap-chip');
       if (chip && chip.dataset.q) {
         document.getElementById('arthur-in').value = chip.dataset.q;
         send();
@@ -122,10 +122,10 @@
   }
 
   function addMsg(role, text) {
-    var msgs = document.getElementById('arthur-msgs');
-    var welcome = msgs.querySelector('.ap-welcome');
+    const msgs = document.getElementById('arthur-msgs');
+    const welcome = msgs.querySelector('.ap-welcome');
     if (welcome) welcome.remove();
-    var div = document.createElement('div');
+    const div = document.createElement('div');
     div.className = 'ap-msg ' + (role === 'user' ? 'user' : 'bot');
     div.innerHTML = role === 'user' ? esc(text) : formatMsg(text);
     msgs.appendChild(div);
@@ -134,8 +134,8 @@
   }
 
   function showTyping() {
-    var msgs = document.getElementById('arthur-msgs');
-    var div = document.createElement('div');
+    const msgs = document.getElementById('arthur-msgs');
+    const div = document.createElement('div');
     div.className = 'ap-typing';
     div.id = 'arthur-typing';
     div.textContent = 'Arthur is thinking...';
@@ -144,14 +144,14 @@
   }
 
   function hideTyping() {
-    var t = document.getElementById('arthur-typing');
+    const t = document.getElementById('arthur-typing');
     if (t) t.remove();
   }
 
   function send() {
     if (isLoading) return;
-    var input = document.getElementById('arthur-in');
-    var text = input.value.trim();
+    const input = document.getElementById('arthur-in');
+    const text = input.value.trim();
     if (!text) return;
     input.value = '';
     addMsg('user', text);
@@ -160,7 +160,7 @@
     document.getElementById('arthur-send').disabled = true;
     showTyping();
 
-    var payload = { message: text, history: history.slice(0, -1), context: getContext() };
+    const payload = { message: text, history: history.slice(0, -1), context: getContext() };
     fetch('/api/ai/technical-assistant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': KEY },
@@ -169,8 +169,8 @@
     .then(function(r) { return r.json(); })
     .then(function(d) {
       hideTyping();
-      var data = d && (d.data || d);
-      var reply = (data && data.reply) || 'Sorry, I couldn\'t process that. Try again.';
+      const data = d && (d.data || d);
+      const reply = (data && data.reply) || 'Sorry, I couldn\'t process that. Try again.';
       addMsg('bot', reply);
       history.push({ role: 'assistant', content: reply });
     })

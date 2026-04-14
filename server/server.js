@@ -236,48 +236,62 @@ async function handlePublicBilling(ctx, res) {
   return false;
 }
 
+async function handleForgotPassword(req, res) {
+  const body = await readBody(req);
+  const email = (body.email || '').toLowerCase().trim();
+  if (!email) { json(res, 400, { error: 'email required' }); return; }
+  const db = require('./db');
+  const crypto = require('crypto');
+  const user = await db.queryOne('SELECT id FROM users WHERE email = $1 AND active = true', [email]);
+  if (user) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 3600000).toISOString();
+    await db.query('UPDATE users SET reset_token = $1, reset_expires = $2 WHERE id = $3', [token, expires, user.id]);
+    const { resendSend } = require('./mailer');
+    const origin = process.env.PUBLIC_BASE_URL || 'https://hgvdesk.co.uk';
+    await resendSend({
+      from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk',
+      to: [email],
+      subject: 'HGVDesk — Password Reset',
+      html: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;"><h2 style="color:#0a1929;">Reset your password</h2><p>Click the link below to set a new password. This link expires in 1 hour.</p><a href="' + origin + '/reset-password?token=' + token + '" style="display:inline-block;padding:12px 24px;background:#ff5500;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Reset password</a><p style="margin-top:16px;font-size:12px;color:#999;">If you didn\'t request this, ignore this email.</p></div>'
+    }).catch(() => {});
+  }
+  ok(res, { sent: true });
+}
+
+async function handleResetPassword(req, res) {
+  const body = await readBody(req);
+  const { token, password } = body;
+  if (!token || !password || password.length < 8) { json(res, 400, { error: 'Token and password (min 8 chars) required' }); return; }
+  const db = require('./db');
+  const bcrypt = require('bcryptjs');
+  const user = await db.queryOne('SELECT id FROM users WHERE reset_token = $1 AND reset_expires > NOW()', [token]);
+  if (!user) { json(res, 400, { success: false, error: 'Invalid or expired reset link. Request a new one.' }); return; }
+  const hash = await bcrypt.hash(password, 10);
+  await db.query('UPDATE users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE id = $2', [hash, user.id]);
+  ok(res, { reset: true });
+}
+
+async function handleContactForm(req, res) {
+  const body = await readBody(req);
+  const { name, company, email, phone, fleet, message } = body || {};
+  if (!name || !email) { json(res, 400, { error: 'name and email required' }); return; }
+  const { resendSend } = require('./mailer');
+  const rows = [['Name',name],['Company',company],['Email',email],['Phone',phone],['Fleet',fleet],['Message',(message||'').replace(/\n/g,'<br>')]];
+  const tableRows = rows.map(([lbl,val]) => '<tr><td style="padding:8px;font-weight:700;color:#666;' + (lbl==='Message'?'vertical-align:top;':'') + '">' + lbl + '</td><td style="padding:8px;">' + (val||'') + '</td></tr>').join('');
+  await resendSend({
+    from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk',
+    to: [process.env.ALERT_EMAIL || 'james@hgvdesk.co.uk'],
+    subject: 'HGVDesk Contact: ' + (company || name),
+    html: '<div style="font-family:sans-serif;padding:20px;"><h2 style="color:#0a1929;">New Contact Form Submission</h2><table style="border-collapse:collapse;width:100%;">' + tableRows + '</table></div>'
+  });
+  ok(res, { sent: true });
+}
+
 async function handlePublicAuth(ctx, res) {
   const { p, method } = ctx;
-  const req = ctx.req;
-  if (p === '/api/auth/forgot-password' && method === 'POST') {
-    const body = await readBody(req);
-    const email = (body.email || '').toLowerCase().trim();
-    if (!email) { json(res, 400, { error: 'email required' }); return true; }
-    const db = require('./db');
-    const crypto = require('crypto');
-    const user = await db.queryOne('SELECT id FROM users WHERE email = $1 AND active = true', [email]);
-    if (user) {
-      const token = crypto.randomBytes(32).toString('hex');
-      const expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
-      await db.query('UPDATE users SET reset_token = $1, reset_expires = $2 WHERE id = $3', [token, expires, user.id]);
-      const { resendSend } = require('./mailer');
-      const origin = process.env.PUBLIC_BASE_URL || 'https://hgvdesk.co.uk';
-      await resendSend({
-        from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk',
-        to: [email],
-        subject: 'HGVDesk — Password Reset',
-        html: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;"><h2 style="color:#0a1929;">Reset your password</h2><p>Click the link below to set a new password. This link expires in 1 hour.</p><a href="' + origin + '/reset-password?token=' + token + '" style="display:inline-block;padding:12px 24px;background:#ff5500;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Reset password</a><p style="margin-top:16px;font-size:12px;color:#999;">If you didn\'t request this, ignore this email.</p></div>'
-      }).catch(() => {});
-    }
-    // Always return success to prevent email enumeration
-    ok(res, { sent: true });
-    return true;
-  }
-
-  if (p === '/api/auth/reset-password' && method === 'POST') {
-    const body = await readBody(req);
-    const { token, password } = body;
-    if (!token || !password || password.length < 8) { json(res, 400, { error: 'Token and password (min 8 chars) required' }); return true; }
-    const db = require('./db');
-    const bcrypt = require('bcryptjs');
-    const user = await db.queryOne('SELECT id FROM users WHERE reset_token = $1 AND reset_expires > NOW()', [token]);
-    if (!user) { json(res, 400, { success: false, error: 'Invalid or expired reset link. Request a new one.' }); return true; }
-    const hash = await bcrypt.hash(password, 10);
-    await db.query('UPDATE users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE id = $2', [hash, user.id]);
-    ok(res, { reset: true });
-    return true;
-  }
-
+  if (p === '/api/auth/forgot-password' && method === 'POST') { await handleForgotPassword(ctx.req, res); return true; }
+  if (p === '/api/auth/reset-password' && method === 'POST') { await handleResetPassword(ctx.req, res); return true; }
   if (p === '/api/auth/verify-email' && method === 'GET') {
     const token = new URL(ctx.req.url, 'http://localhost').searchParams.get('token');
     if (!token) { json(res, 400, { error: 'token required' }); return true; }
@@ -285,34 +299,11 @@ async function handlePublicAuth(ctx, res) {
     const user = await db.queryOne('SELECT id FROM users WHERE verify_token = $1', [token]);
     if (!user) { json(res, 400, { success: false, error: 'Invalid verification link.' }); return true; }
     await db.query('UPDATE users SET email_verified = true, verify_token = NULL WHERE id = $1', [user.id]);
-    // Redirect to login with success message
     res.writeHead(302, { Location: '/login?verified=1' });
     res.end();
     return true;
   }
-
-  if (p === '/api/contact' && method === 'POST') {
-    const body = await readBody(req);
-    const { name, company, email, phone, fleet, message } = body || {};
-    if (!name || !email) { json(res, 400, { error: 'name and email required' }); return true; }
-    const { resendSend } = require('./mailer');
-    await resendSend({
-      from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk',
-      to: [process.env.ALERT_EMAIL || 'james@hgvdesk.co.uk'],
-      subject: 'HGVDesk Contact: ' + (company || name),
-      html: '<div style="font-family:sans-serif;padding:20px;"><h2 style="color:#0a1929;">New Contact Form Submission</h2><table style="border-collapse:collapse;width:100%;">' +
-        '<tr><td style="padding:8px;font-weight:700;color:#666;">Name</td><td style="padding:8px;">' + (name||'') + '</td></tr>' +
-        '<tr><td style="padding:8px;font-weight:700;color:#666;">Company</td><td style="padding:8px;">' + (company||'') + '</td></tr>' +
-        '<tr><td style="padding:8px;font-weight:700;color:#666;">Email</td><td style="padding:8px;">' + (email||'') + '</td></tr>' +
-        '<tr><td style="padding:8px;font-weight:700;color:#666;">Phone</td><td style="padding:8px;">' + (phone||'') + '</td></tr>' +
-        '<tr><td style="padding:8px;font-weight:700;color:#666;">Fleet</td><td style="padding:8px;">' + (fleet||'') + '</td></tr>' +
-        '<tr><td style="padding:8px;font-weight:700;color:#666;vertical-align:top;">Message</td><td style="padding:8px;">' + (message||'').replace(/\n/g,'<br>') + '</td></tr>' +
-        '</table></div>'
-    });
-    ok(res, { sent: true });
-    return true;
-  }
-
+  if (p === '/api/contact' && method === 'POST') { await handleContactForm(ctx.req, res); return true; }
   return false;
 }
 
