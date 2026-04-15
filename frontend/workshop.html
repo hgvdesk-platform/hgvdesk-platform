@@ -609,15 +609,19 @@ function openJobModal(job) {
   // Cost summary
   var costsEl = document.getElementById('jm-costs');
   var invBtn = document.getElementById('jm-gen-inv');
-  if (parseFloat(job.total_cost || 0) > 0) {
+  var hasCosts = parseFloat(job.total_cost || 0) > 0;
+  var hasSoldHours = parseFloat(job.sold_hours || 0) > 0;
+  if (hasCosts || hasSoldHours) {
     costsEl.style.display = 'block';
     document.getElementById('jm-cost-parts').textContent = '£' + Number(job.parts_cost || 0).toFixed(2);
-    document.getElementById('jm-cost-labour').textContent = '£' + Number(job.labour_cost || 0).toFixed(2);
-    document.getElementById('jm-cost-total').textContent = '£' + Number(job.total_cost || 0).toFixed(2);
-    invBtn.style.display = 'inline-flex';
+    var labourCost = hasCosts ? Number(job.labour_cost || 0) : parseFloat(job.sold_hours || 0) * 65;
+    document.getElementById('jm-cost-labour').textContent = '£' + labourCost.toFixed(2);
+    var totalCost = hasCosts ? Number(job.total_cost || 0) : (labourCost + Number(job.parts_cost || 0));
+    document.getElementById('jm-cost-total').textContent = '£' + totalCost.toFixed(2);
+    invBtn.style.display = (job.status !== 'invoiced') ? 'inline-flex' : 'none';
   } else {
     costsEl.style.display = 'none';
-    invBtn.style.display = 'none';
+    invBtn.style.display = (job.status === 'complete' || job.status === 'on_floor' || job.status === 'in_progress') ? 'inline-flex' : 'none';
   }
   // Load job library and existing lines
   loadJobLibrary();
@@ -668,7 +672,15 @@ function renderJobLines() {
     html += '<button onclick="removeJobLine(' + i + ')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0 4px;">&#x2715;</button>';
     html += '</div>';
   });
-  if (!currentJobLines.length) html = '<div style="font-size:12px;color:var(--t4);text-align:center;padding:8px;">No jobs added yet</div>';
+  if (!currentJobLines.length) {
+    var jobHrs = currentJob ? parseFloat(currentJob.sold_hours || 0) : 0;
+    if (jobHrs > 0) {
+      html = '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;"><div style="flex:1;font-size:12px;font-weight:500;">Workshop labour (from inspection)</div><div style="font-size:11px;color:var(--t4);">' + jobHrs.toFixed(2) + ' hrs</div></div>';
+      document.getElementById('jm-sh-total').textContent = jobHrs.toFixed(2);
+    } else {
+      html = '<div style="font-size:12px;color:var(--t4);text-align:center;padding:8px;">No labour added yet — use the library below</div>';
+    }
+  }
   document.getElementById('jm-sh-lines').innerHTML = html;
 }
 

@@ -228,6 +228,26 @@ async function initSchema() {
     )
   `);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS org_settings (
+      id              SERIAL PRIMARY KEY,
+      org_id          INTEGER NOT NULL UNIQUE REFERENCES organisations(id) ON DELETE CASCADE,
+      company_name    VARCHAR(255),
+      company_address TEXT,
+      vat_number      VARCHAR(50),
+      company_email   VARCHAR(255),
+      phone           VARCHAR(50),
+      bank_name       VARCHAR(100),
+      sort_code       VARCHAR(20),
+      account_number  VARCHAR(30),
+      logo_url        TEXT,
+      payment_terms   INTEGER NOT NULL DEFAULT 30,
+      invoice_footer  TEXT DEFAULT 'Under the Late Payment of Commercial Debts (Interest) Act 1998, we reserve the right to charge interest on any overdue invoices at 8% above the Bank of England base rate, plus a fixed sum compensation charge.',
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
   // Indexes for performance
   await query(`CREATE INDEX IF NOT EXISTS idx_jobs_org ON jobs(org_id)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_jobs_reg ON jobs(vehicle_reg)`);
