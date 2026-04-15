@@ -49,6 +49,7 @@ const stripeRoutes = require('./routes/stripe');
 const pdf = require('./routes/pdf');
 const settings = require('./routes/settings');
 const vehicles = require('./routes/vehicles');
+const alerts = require('./alerts');
 
 const PORT = process.env.PORT || 3000;
 const FRONTEND = path.join(__dirname, '..', 'frontend');
@@ -507,6 +508,9 @@ async function handleAdmin(ctx, res) {
   const userIdMatch = p.match(/^\/api\/admin\/users\/(\d+)$/);
   if (userIdMatch && method === 'PUT') { ok(res, await admin.updateUser(body, caller, parseInt(userIdMatch[1]))); return true; }
 
+  if (p === '/api/admin/alerts' && method === 'GET') { ok(res, await alerts.getActiveAlerts(caller)); return true; }
+  if (p === '/api/admin/run-alerts' && method === 'POST') { ok(res, await alerts.runAllChecks()); return true; }
+
   if (p === '/api/admin/errors' && method === 'GET') {
     try {
       const log = fs.readFileSync(ERROR_LOG, 'utf8');
@@ -901,6 +905,16 @@ async function handleInvoices(ctx, res) {
 // ROUTER
 // ══════════════════════════════════════════════
 
+async function handleNotifications(ctx, res) {
+  const { p, method, body, caller } = ctx;
+  if (p === '/api/notifications' && method === 'GET') { ok(res, await alerts.getNotifications(caller)); return true; }
+  if (p === '/api/notifications/unread' && method === 'GET') { ok(res, await alerts.getUnreadCount(caller)); return true; }
+  if (p === '/api/notifications/read-all' && method === 'POST') { ok(res, await alerts.markAllRead(caller)); return true; }
+  const nIdMatch = p.match(/^\/api\/notifications\/(\d+)\/read$/);
+  if (nIdMatch && method === 'POST') { ok(res, await alerts.markRead(caller, parseInt(nIdMatch[1]))); return true; }
+  return false;
+}
+
 async function handleVehicles(ctx, res) {
   const { p, method, body, caller, qs } = ctx;
   if (p === '/api/vehicles' && method === 'GET') { ok(res, await vehicles.getVehicles(caller, qs)); return true; }
@@ -926,7 +940,7 @@ async function handleSettings(ctx, res) {
 const AUTHED_HANDLERS = [
   handleAdmin, handleWorkshop, handleInspect, handleAi, handlePdf, handleBranding, handleBilling,
   handleParts, handleCommand, handleInspectionReports, handleTechnicians,
-  handleJobLibrary, handleCustomers, handleInvoices, handleSettings, handleVehicles,
+  handleJobLibrary, handleCustomers, handleInvoices, handleSettings, handleVehicles, handleNotifications,
 ];
 
 async function router(req, res) {

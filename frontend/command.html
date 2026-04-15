@@ -175,6 +175,17 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="pill pill-b">Inspect</div>
   <div class="pill pill-g">Parts</div>
   <span id="last-refresh" style="font-size:11px;color:var(--t5);"></span>
+  <div id="notif-bell" style="position:relative;cursor:pointer;margin-left:8px;" onclick="toggleNotifPanel()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#636366" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    <span id="notif-count" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff3b30;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;text-align:center;line-height:16px;padding:0 4px;">0</span>
+  </div>
+  <div id="notif-panel" style="display:none;position:absolute;top:52px;right:20px;width:340px;background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);z-index:200;max-height:400px;overflow-y:auto;">
+    <div style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;font-weight:700;">Notifications</div>
+      <button onclick="markAllNotifRead()" style="font-size:11px;color:#FF6B00;background:none;border:none;cursor:pointer;font-weight:600;">Mark all read</button>
+    </div>
+    <div id="notif-list" style="padding:4px 0;"></div>
+  </div>
 </header>
 
 <div class="content">
@@ -231,6 +242,14 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
           <div class="sys-arrow">→</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Alerts Panel -->
+  <div id="alerts-panel" style="display:none;margin-bottom:18px;">
+    <div class="card" style="border-left:4px solid #ff3b30;">
+      <div class="card-hd"><div class="card-title" style="color:#ff3b30;">Active Alerts</div><span class="badge bg-r" id="alerts-badge">0</span></div>
+      <div id="alerts-body" style="padding:12px 18px;"></div>
     </div>
   </div>
 
@@ -511,6 +530,108 @@ function deletePart(id) {
     else { alert('Delete failed'); }
   }).catch(function(e){ alert('Error: ' + e.message); });
 }
+
+// ── NOTIFICATIONS & ALERTS ──
+function loadAlerts() {
+  api('GET', '/admin/alerts').then(function(d) {
+    var data = d && d.data;
+    if (!data) return;
+    var total = (data.counts && (data.counts.mot + data.counts.defects + data.counts.offRoad)) || 0;
+    var panel = document.getElementById('alerts-panel');
+    var badge = document.getElementById('alerts-badge');
+    if (total === 0) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    badge.textContent = total;
+    var h = '';
+    if (data.motExpiring && data.motExpiring.length) {
+      h += '<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#ff9500;margin-bottom:4px;">MOT Expiring (' + data.motExpiring.length + ')</div>';
+      data.motExpiring.forEach(function(v) {
+        var d = new Date(v.mot_expiry); var days = Math.floor((d - new Date()) / 86400000);
+        var col = days < 0 ? '#ff3b30' : days < 7 ? '#ff3b30' : '#ff9500';
+        h += '<div style="font-size:12px;padding:2px 0;"><span style="font-family:monospace;font-weight:700;">' + v.registration + '</span> <span style="color:' + col + ';">' + (days < 0 ? 'EXPIRED' : days + 'd') + '</span></div>';
+      });
+      h += '</div>';
+    }
+    if (data.criticalDefects && data.criticalDefects.length) {
+      h += '<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#ff3b30;margin-bottom:4px;">Critical Defects (' + data.criticalDefects.length + ')</div>';
+      data.criticalDefects.forEach(function(d) {
+        h += '<div style="font-size:12px;padding:2px 0;"><span style="font-family:monospace;font-weight:700;">' + (d.vehicle_reg||'') + '</span> ' + (d.title||d.description||'') + '</div>';
+      });
+      h += '</div>';
+    }
+    if (data.offRoad && data.offRoad.length) {
+      h += '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#636366;margin-bottom:4px;">Off Road (' + data.offRoad.length + ')</div>';
+      data.offRoad.forEach(function(v) {
+        h += '<div style="font-size:12px;padding:2px 0;font-family:monospace;font-weight:700;">' + v.registration + '</div>';
+      });
+      h += '</div>';
+    }
+    document.getElementById('alerts-body').innerHTML = h;
+  });
+}
+
+function loadNotifCount() {
+  api('GET', '/notifications/unread').then(function(d) {
+    var data = d && d.data;
+    var count = data && data.unread || 0;
+    var el = document.getElementById('notif-count');
+    if (count > 0) { el.textContent = count; el.style.display = 'block'; }
+    else { el.style.display = 'none'; }
+  });
+}
+
+function toggleNotifPanel() {
+  var panel = document.getElementById('notif-panel');
+  var isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) loadNotifList();
+}
+
+function loadNotifList() {
+  api('GET', '/notifications').then(function(d) {
+    var notifs = (d && d.data && d.data.notifications) || [];
+    var el = document.getElementById('notif-list');
+    if (!notifs.length) { el.innerHTML = '<div style="padding:16px;text-align:center;font-size:12px;color:#86868b;">No notifications</div>'; return; }
+    el.innerHTML = notifs.slice(0, 10).map(function(n) {
+      var bg = n.read ? '#fff' : '#fffbf5';
+      var sevColor = n.severity === 'critical' ? '#ff3b30' : n.severity === 'urgent' ? '#ff9500' : '#636366';
+      var ago = Math.floor((Date.now() - new Date(n.created_at)) / 60000);
+      var agoStr = ago < 60 ? ago + 'm' : Math.floor(ago/60) + 'h';
+      return '<div style="padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);background:' + bg + ';cursor:pointer;" onclick="markNotifRead(' + n.id + ',this)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<div style="font-size:12px;font-weight:' + (n.read ? '400' : '600') + ';color:#1d1d1f;">' + (n.title||'') + '</div>' +
+        '<div style="font-size:10px;color:#86868b;">' + agoStr + '</div></div>' +
+        (n.detail ? '<div style="font-size:11px;color:#86868b;margin-top:2px;">' + (n.detail||'') + '</div>' : '') +
+        '</div>';
+    }).join('');
+  });
+}
+
+function markNotifRead(id, el) {
+  api('POST', '/notifications/' + id + '/read').then(function() {
+    if (el) el.style.background = '#fff';
+    loadNotifCount();
+  });
+}
+
+function markAllNotifRead() {
+  api('POST', '/notifications/read-all').then(function() {
+    loadNotifCount();
+    loadNotifList();
+  });
+}
+
+// Close notif panel on outside click
+document.addEventListener('click', function(e) {
+  var panel = document.getElementById('notif-panel');
+  var bell = document.getElementById('notif-bell');
+  if (panel && panel.style.display !== 'none' && !panel.contains(e.target) && !bell.contains(e.target)) {
+    panel.style.display = 'none';
+  }
+});
+
+loadAlerts();
+loadNotifCount();
 </script>
 </body>
 </html>
