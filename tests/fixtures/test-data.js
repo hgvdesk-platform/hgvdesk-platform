@@ -3,7 +3,7 @@ const BASE = 'http://localhost:3000';
 
 const TEST_ORG = {
   email: 'admin@hgvmanager.co.uk',
-  password: 'ChangeMe123!',
+  password: 'ChangeMe123!', // NOSONAR — test fixture, not a real credential
   company: 'HGV Manager',
   apiKey: API_KEY,
 };
