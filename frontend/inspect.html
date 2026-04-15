@@ -1835,47 +1835,43 @@ function parseJsonField(val) {
   try { return JSON.parse(val); } catch(e) { return null; }
 }
 
-function restoreInspFromDb(insp) {
-  var ci = parseJsonField(insp.check_items);
-  checks = (ci && typeof ci === 'object') ? ci : {};
-
-  var bd = parseJsonField(insp.brake_test_data);
+function restoreBrakeData(bd) {
   if (bd && bd.axles) brakes = bd.axles;
   else brakes = {};
-  if (bd) {
-    if (bd.sbe != null) document.getElementById('sbe').value = bd.sbe;
-    if (bd.sbe2 != null) document.getElementById('sbe2').value = bd.sbe2;
-    if (bd.pbe != null) document.getElementById('pbe').value = bd.pbe;
-  }
+  if (!bd) return;
+  var fields = [['sbe',bd.sbe],['sbe2',bd.sbe2],['pbe',bd.pbe]];
+  fields.forEach(function(f) { if (f[1] != null) document.getElementById(f[0]).value = f[1]; });
+}
 
-  var td = parseJsonField(insp.tyre_data);
-  tyres = (td && typeof td === 'object') ? td : {};
-
-  nilDef = !!insp.nil_defect;
-  document.getElementById('nil-box').classList.toggle('on', nilDef);
-  document.getElementById('nil-chk').textContent = nilDef ? 'check' : '';
-
-  var dd = insp.defects_data;
+function restoreDefectsData(dd) {
   if (typeof dd === 'string') try { dd = JSON.parse(dd); } catch(e) { dd = null; }
   defects = [];
   defectPhotos = {};
   rectPhotos = {};
-  if (Array.isArray(dd)) {
-    defects = dd.map(function(d) {
-      return {
-        id: d.id, zoneId: (d.category || '').replace(/\s/g,'_').toLowerCase(),
-        zoneLabel: d.category || d.title || 'Defect',
-        severity: d.severity || 'advisory',
-        description: d.description || d.title || '',
-        part: d.part_name || '',
-        resolved: !!d.resolved,
-        resolvedBy: d.resolved_by || '',
-        resolutionNotes: d.resolution_notes || '',
-        resolvedAt: d.resolved_at || ''
-      };
-    });
-  }
+  if (!Array.isArray(dd)) return;
+  defects = dd.map(function(d) {
+    return {
+      id: d.id, zoneId: (d.category || '').replace(/\s/g,'_').toLowerCase(),
+      zoneLabel: d.category || d.title || 'Defect',
+      severity: d.severity || 'advisory',
+      description: d.description || d.title || '',
+      part: d.part_name || '',
+      resolved: !!d.resolved, resolvedBy: d.resolved_by || '',
+      resolutionNotes: d.resolution_notes || '', resolvedAt: d.resolved_at || ''
+    };
+  });
+}
 
+function restoreInspFromDb(insp) {
+  var ci = parseJsonField(insp.check_items);
+  checks = (ci && typeof ci === 'object') ? ci : {};
+  restoreBrakeData(parseJsonField(insp.brake_test_data));
+  var td = parseJsonField(insp.tyre_data);
+  tyres = (td && typeof td === 'object') ? td : {};
+  nilDef = !!insp.nil_defect;
+  document.getElementById('nil-box').classList.toggle('on', nilDef);
+  document.getElementById('nil-chk').textContent = nilDef ? 'check' : '';
+  restoreDefectsData(insp.defects_data);
   if (insp.notes) {
     var notesEl = document.getElementById('f-notes');
     if (notesEl) notesEl.value = insp.notes;

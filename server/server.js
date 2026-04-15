@@ -383,42 +383,44 @@ async function handleContactForm(req, res) {
   ok(res, { sent: true });
 }
 
+async function handleVerifyEmail(req, res) {
+  const token = new URL(req.url, 'http://localhost').searchParams.get('token');
+  if (!token) { json(res, 400, { error: 'token required' }); return; }
+  const db = require('./db');
+  const user = await db.queryOne('SELECT id FROM users WHERE verify_token = $1', [token]);
+  if (!user) { json(res, 400, { success: false, error: 'Invalid verification link.' }); return; }
+  await db.query('UPDATE users SET email_verified = true, verify_token = NULL WHERE id = $1', [user.id]);
+  res.writeHead(302, { Location: '/login?verified=1' });
+  res.end();
+}
+
+async function handleResendVerification(req, res) {
+  const body = await readBody(req);
+  const email = (body.email || '').toLowerCase().trim();
+  if (!email) { json(res, 400, { error: 'email required' }); return; }
+  const db = require('./db');
+  const crypto = require('crypto');
+  const user = await db.queryOne('SELECT id, email_verified FROM users WHERE email = $1 AND active = true', [email]);
+  if (user && !user.email_verified) {
+    const token = crypto.randomBytes(32).toString('hex');
+    await db.query('UPDATE users SET verify_token = $1 WHERE id = $2', [token, user.id]);
+    const { resendSend } = require('./mailer');
+    const origin = process.env.PUBLIC_BASE_URL || 'https://hgvdesk.co.uk';
+    await resendSend({
+      from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk', to: [email],
+      subject: 'HGVDesk — Verify Your Email',
+      html: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;"><h2 style="color:#0a1929;">Verify your email</h2><p>Click below to verify your account.</p><a href="' + origin + '/api/auth/verify-email?token=' + token + '" style="display:inline-block;padding:12px 24px;background:#ff5500;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Verify email</a></div>'
+    }).catch(() => {});
+  }
+  ok(res, { sent: true });
+}
+
 async function handlePublicAuth(ctx, res) {
   const { p, method } = ctx;
-  if (p === '/api/auth/forgot-password' && method === 'POST') { await handleForgotPassword(ctx.req, res); return true; }
-  if (p === '/api/auth/reset-password' && method === 'POST') { await handleResetPassword(ctx.req, res); return true; }
-  if (p === '/api/auth/verify-email' && method === 'GET') {
-    const token = new URL(ctx.req.url, 'http://localhost').searchParams.get('token');
-    if (!token) { json(res, 400, { error: 'token required' }); return true; }
-    const db = require('./db');
-    const user = await db.queryOne('SELECT id FROM users WHERE verify_token = $1', [token]);
-    if (!user) { json(res, 400, { success: false, error: 'Invalid verification link.' }); return true; }
-    await db.query('UPDATE users SET email_verified = true, verify_token = NULL WHERE id = $1', [user.id]);
-    res.writeHead(302, { Location: '/login?verified=1' });
-    res.end();
-    return true;
-  }
-  if (p === '/api/auth/resend-verification' && method === 'POST') {
-    const body = await readBody(ctx.req);
-    const email = (body.email || '').toLowerCase().trim();
-    if (!email) { json(res, 400, { error: 'email required' }); return true; }
-    const db = require('./db');
-    const crypto = require('crypto');
-    const user = await db.queryOne('SELECT id, email_verified, verify_token FROM users WHERE email = $1 AND active = true', [email]);
-    if (user && !user.email_verified) {
-      const token = crypto.randomBytes(32).toString('hex');
-      await db.query('UPDATE users SET verify_token = $1 WHERE id = $2', [token, user.id]);
-      const { resendSend } = require('./mailer');
-      const origin = process.env.PUBLIC_BASE_URL || 'https://hgvdesk.co.uk';
-      await resendSend({
-        from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk', to: [email],
-        subject: 'HGVDesk — Verify Your Email',
-        html: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;"><h2 style="color:#0a1929;">Verify your email</h2><p>Click below to verify your account.</p><a href="' + origin + '/api/auth/verify-email?token=' + token + '" style="display:inline-block;padding:12px 24px;background:#ff5500;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Verify email</a></div>'
-      }).catch(() => {});
-    }
-    ok(res, { sent: true });
-    return true;
-  }
+  if (p === '/api/auth/forgot-password' && method === 'POST') { await handleForgotPassword(ctx.req, res); return true; } // NOSONAR — URL path, not a credential
+  if (p === '/api/auth/reset-password' && method === 'POST') { await handleResetPassword(ctx.req, res); return true; } // NOSONAR — URL path, not a credential
+  if (p === '/api/auth/verify-email' && method === 'GET') { await handleVerifyEmail(ctx.req, res); return true; }
+  if (p === '/api/auth/resend-verification' && method === 'POST') { await handleResendVerification(ctx.req, res); return true; }
   if (p === '/api/contact' && method === 'POST') { await handleContactForm(ctx.req, res); return true; }
   return false;
 }
@@ -493,35 +495,29 @@ async function handleTechnicianJobs(req, res) {
   return true;
 }
 
+function getErrorLogEntries() {
+  try {
+    const log = fs.readFileSync(ERROR_LOG, 'utf8');
+    const entries = log.split('---\n').filter(Boolean).slice(-50).reverse();
+    return { entries, count: entries.length };
+  } catch (e) {
+    return { entries: [], count: 0 };
+  }
+}
+
 async function handleAdmin(ctx, res) {
   const { p, method, body, caller } = ctx;
-
   if (p === '/api/admin/organisations' && method === 'GET') { ok(res, await admin.getOrganisations(caller)); return true; }
   if (p === '/api/admin/organisations' && method === 'POST') { ok(res, await admin.createOrganisation(body, caller)); return true; }
-
-  const orgIdMatch = p.match(/^\/api\/admin\/organisations\/(\d+)$/);
-  if (orgIdMatch && method === 'PUT') { ok(res, await admin.updateOrganisation(body, caller, parseInt(orgIdMatch[1]))); return true; }
-
   if (p === '/api/admin/users' && method === 'GET') { ok(res, await admin.getUsers(caller)); return true; }
   if (p === '/api/admin/users' && method === 'POST') { ok(res, await admin.createUser(body, caller)); return true; }
-
-  const userIdMatch = p.match(/^\/api\/admin\/users\/(\d+)$/);
-  if (userIdMatch && method === 'PUT') { ok(res, await admin.updateUser(body, caller, parseInt(userIdMatch[1]))); return true; }
-
   if (p === '/api/admin/alerts' && method === 'GET') { ok(res, await alerts.getActiveAlerts(caller)); return true; }
   if (p === '/api/admin/run-alerts' && method === 'POST') { ok(res, await alerts.runAllChecks()); return true; }
-
-  if (p === '/api/admin/errors' && method === 'GET') {
-    try {
-      const log = fs.readFileSync(ERROR_LOG, 'utf8');
-      const entries = log.split('---\n').filter(Boolean).slice(-50).reverse();
-      ok(res, { entries, count: entries.length });
-    } catch (e) {
-      ok(res, { entries: [], count: 0 });
-    }
-    return true;
-  }
-
+  if (p === '/api/admin/errors' && method === 'GET') { ok(res, getErrorLogEntries()); return true; }
+  const orgIdMatch = p.match(/^\/api\/admin\/organisations\/(\d+)$/);
+  if (orgIdMatch && method === 'PUT') { ok(res, await admin.updateOrganisation(body, caller, parseInt(orgIdMatch[1]))); return true; }
+  const userIdMatch = p.match(/^\/api\/admin\/users\/(\d+)$/);
+  if (userIdMatch && method === 'PUT') { ok(res, await admin.updateUser(body, caller, parseInt(userIdMatch[1]))); return true; }
   return false;
 }
 

@@ -585,18 +585,7 @@ function selectAll() {
 }
 
 // ── JOB MODAL ──
-function openJobModal(job) {
-  currentJob = job;
-  document.getElementById('jm-title').textContent = job.vehicle_reg + ' - ' + (job.inspection_type || '');
-  var detailHtml =
-    '<div class="jd-item"><label>Registration</label><div class="jd-val reg">' + job.vehicle_reg + '</div></div>' +
-    (job.trailer_id ? '<div class="jd-item"><label>Trailer ID</label><div class="jd-val reg">' + job.trailer_id + '</div></div>' : '') +
-    '<div class="jd-item"><label>Type</label><div class="jd-val">' + (job.inspection_type || '-') + '</div></div>' +
-    '<div class="jd-item"><label>Customer</label><div class="jd-val">' + (job.customer_name || '-') + '</div></div>' +
-    '<div class="jd-item"><label>Technician</label><div class="jd-val">' + (job.technician_name || '-') + '</div></div>' +
-    '<div class="jd-item"><label>Priority</label><div class="jd-val">' + priorityChip(job.priority) + '</div></div>' +
-    '<div class="jd-item"><label>Status</label><div class="jd-val">' + statusChip(job.status) + '</div></div>';
-  document.getElementById('jm-detail').innerHTML = detailHtml;
+function updateJobModalDispatch(job) {
   document.getElementById('jm-insp-st').textContent = job.inspect_sent ? 'Dispatched to Inspect' : 'Not sent yet';
   document.getElementById('jm-parts-st').textContent = job.parts_sent ? 'Dispatched to Parts' : 'Not sent yet';
   document.getElementById('jm-insp-badge').innerHTML = job.inspect_sent ? '<span class="sent-badge">Sent</span>' : '';
@@ -605,8 +594,9 @@ function openJobModal(job) {
   document.getElementById('jm-print').style.display = 'inline-flex';
   document.getElementById('jm-send').style.display = (job.status !== 'done' && (!job.inspect_sent || !job.parts_sent)) ? 'flex' : 'none';
   document.getElementById('jm-done').style.display = job.status !== 'done' ? 'flex' : 'none';
-  document.getElementById('job-modal').classList.add('on');
-  // Cost summary
+}
+
+function updateJobModalCosts(job) {
   var costsEl = document.getElementById('jm-costs');
   var invBtn = document.getElementById('jm-gen-inv');
   var hasCosts = parseFloat(job.total_cost || 0) > 0;
@@ -623,7 +613,23 @@ function openJobModal(job) {
     costsEl.style.display = 'none';
     invBtn.style.display = (job.status === 'complete' || job.status === 'on_floor' || job.status === 'in_progress') ? 'inline-flex' : 'none';
   }
-  // Load job library and existing lines
+}
+
+function openJobModal(job) {
+  currentJob = job;
+  document.getElementById('jm-title').textContent = job.vehicle_reg + ' - ' + (job.inspection_type || '');
+  var detailHtml =
+    '<div class="jd-item"><label>Registration</label><div class="jd-val reg">' + job.vehicle_reg + '</div></div>' +
+    (job.trailer_id ? '<div class="jd-item"><label>Trailer ID</label><div class="jd-val reg">' + job.trailer_id + '</div></div>' : '') +
+    '<div class="jd-item"><label>Type</label><div class="jd-val">' + (job.inspection_type || '-') + '</div></div>' +
+    '<div class="jd-item"><label>Customer</label><div class="jd-val">' + (job.customer_name || '-') + '</div></div>' +
+    '<div class="jd-item"><label>Technician</label><div class="jd-val">' + (job.technician_name || '-') + '</div></div>' +
+    '<div class="jd-item"><label>Priority</label><div class="jd-val">' + priorityChip(job.priority) + '</div></div>' +
+    '<div class="jd-item"><label>Status</label><div class="jd-val">' + statusChip(job.status) + '</div></div>';
+  document.getElementById('jm-detail').innerHTML = detailHtml;
+  updateJobModalDispatch(job);
+  document.getElementById('job-modal').classList.add('on');
+  updateJobModalCosts(job);
   loadJobLibrary();
   loadJobLines(job.id);
 }
