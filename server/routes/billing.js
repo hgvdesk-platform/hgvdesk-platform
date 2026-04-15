@@ -163,10 +163,12 @@ async function updateInvoiceStatus(body, org, invoiceId) {
   if (status === 'paid') updates.paid_at = new Date().toISOString();
   if (status === 'sent') updates.sent_at = new Date().toISOString();
   const invoice = await queryOne(
-    `UPDATE invoices SET status = $1, paid_at = CASE WHEN $1 = 'paid' THEN NOW() ELSE paid_at END,
-      sent_at = CASE WHEN $1 = 'sent' THEN NOW() ELSE sent_at END, updated_at = NOW()
-     WHERE id = $2 AND org_id = $3 RETURNING *`,
-    [status, invoiceId, orgId]
+    `UPDATE invoices SET status = $1,
+      paid_at = CASE WHEN $2 THEN NOW() ELSE paid_at END,
+      sent_at = CASE WHEN $3 THEN NOW() ELSE sent_at END,
+      updated_at = NOW()
+     WHERE id = $4 AND org_id = $5 RETURNING *`,
+    [status, status === 'paid', status === 'sent', invoiceId, orgId]
   );
   if (!invoice) throw { status: 404, message: 'Invoice not found' };
   await logActivity(orgId, 'INVOICES', 'INVOICE_STATUS_CHANGED', invoice.invoice_number + ' → ' + status, 'invoice', invoiceId);
