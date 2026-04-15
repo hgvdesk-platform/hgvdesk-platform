@@ -168,7 +168,7 @@ async function getActiveAlerts(org) {
 async function getUnreadCount(org) {
   const orgId = org.id || org.org_id;
   const row = await queryOne('SELECT COUNT(*) as c FROM notifications WHERE org_id=$1 AND read=false', [orgId]);
-  return { unread: parseInt(row.c) };
+  return { unread: Number.parseInt(row.c) };
 }
 
 async function getNotifications(org) {

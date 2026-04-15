@@ -25,8 +25,8 @@ async function getParts(org, queryParams) {
 async function createPart(body, org) {
   const orgId = org.id || org.org_id;
   const { vehicleReg, name, category, priority, unitCost, notes, jobId, stockQuantity, minQuantity, cataloguePrice } = body;
-  if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
-  if (!name) throw { status: 400, message: 'name is required' };
+  if (!vehicleReg) throw new AppError(400, 'vehicleReg is required');
+  if (!name) throw new AppError(400, 'name is required');
   const partId = 'PRT-' + Date.now().toString().slice(-6);
   const part = await queryOne(
     `INSERT INTO parts (org_id, part_id, job_id, vehicle_reg, name, category, priority, status, unit_cost, notes, stock_quantity, min_quantity, catalogue_price)
@@ -42,7 +42,7 @@ async function createPart(body, org) {
 async function updatePart(body, org, partId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT * FROM parts WHERE id = $1 AND org_id = $2', [partId, orgId]);
-  if (!existing) throw { status: 404, message: 'Part not found' };
+  if (!existing) throw new AppError(404, 'Part not found');
   const { status, priority, unitCost, notes, name, category } = body;
   const part = await queryOne(
     `UPDATE parts SET
@@ -64,7 +64,7 @@ async function updatePart(body, org, partId) {
 async function deletePart(org, partId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT id FROM parts WHERE id = $1 AND org_id = $2', [partId, orgId]);
-  if (!existing) throw { status: 404, message: 'Part not found' };
+  if (!existing) throw new AppError(404, 'Part not found');
   await query('DELETE FROM parts WHERE id = $1 AND org_id = $2', [partId, orgId]);
   await logActivity(orgId, 'PARTS', 'PART_DELETED', 'Part #' + partId + ' deleted');
   return { deleted: true };
@@ -72,7 +72,7 @@ async function deletePart(org, partId) {
 
 async function bulkDeleteParts(org, ids) {
   const orgId = org.id || org.org_id;
-  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  if (!Array.isArray(ids) || !ids.length) throw new AppError(400, 'ids array required');
   const result = await query('DELETE FROM parts WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
   await logActivity(orgId, 'PARTS', 'PARTS_BULK_DELETED', `${result.rowCount} parts deleted`);
   return { deleted: result.rowCount };
@@ -81,7 +81,7 @@ async function bulkDeleteParts(org, ids) {
 async function receiveInboundJob(body, org) {
   const orgId = org.id || org.org_id;
   const { vehicleReg, workshopJobId, jobId } = body;
-  if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
+  if (!vehicleReg) throw new AppError(400, 'vehicleReg is required');
   const ref = workshopJobId || jobId;
   await logActivity(orgId, 'WORKSHOP→PARTS', 'INBOUND_JOB_RECEIVED', vehicleReg + (ref ? ' job #' + ref : ''));
   return { received: true };

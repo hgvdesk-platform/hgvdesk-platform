@@ -1,4 +1,4 @@
-const https = require('https');
+const https = require('node:https');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk';

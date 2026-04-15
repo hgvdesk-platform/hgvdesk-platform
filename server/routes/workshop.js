@@ -24,15 +24,15 @@ async function getJobs(req, org, queryParams) {
 async function getJob(req, org, jobId) {
   const orgId = org.id || org.org_id;
   const job = await queryOne('SELECT * FROM jobs WHERE id = $1 AND org_id = $2', [jobId, orgId]);
-  if (!job) throw { status: 404, message: 'Job not found' };
+  if (!job) throw new AppError(404, 'Job not found');
   return { job };
 }
 
 async function createJob(body, org) {
   const orgId = org.id || org.org_id;
   const { vehicleReg, inspectionType, technicianName, customerName, customerId, priority, notes, scheduledDate, trailerId } = body;
-  if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
-  if (!customerName) throw { status: 400, message: 'customerName is required' };
+  if (!vehicleReg) throw new AppError(400, 'vehicleReg is required');
+  if (!customerName) throw new AppError(400, 'customerName is required');
 
   const reg = vehicleReg.toUpperCase().trim();
   // Skip vehicle limit enforcement for T60 trailers using generic IDs
@@ -58,7 +58,7 @@ async function createJob(body, org) {
 async function updateJob(body, org, jobId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT * FROM jobs WHERE id = $1 AND org_id = $2', [jobId, orgId]);
-  if (!existing) throw { status: 404, message: 'Job not found' };
+  if (!existing) throw new AppError(404, 'Job not found');
   const { status, technicianName, priority, notes, inspectionType } = body;
   const job = await queryOne(
     `UPDATE jobs SET
@@ -80,7 +80,7 @@ async function updateJob(body, org, jobId) {
 async function deleteJob(org, jobId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT id FROM jobs WHERE id = $1 AND org_id = $2', [jobId, orgId]);
-  if (!existing) throw { status: 404, message: 'Job not found' };
+  if (!existing) throw new AppError(404, 'Job not found');
   await query('DELETE FROM jobs WHERE id = $1 AND org_id = $2', [jobId, orgId]);
   await logActivity(orgId, 'WORKSHOP', 'JOB_DELETED', `Job #${jobId} deleted`);
   return { deleted: true };
@@ -88,7 +88,7 @@ async function deleteJob(org, jobId) {
 
 async function bulkDeleteJobs(org, ids) {
   const orgId = org.id || org.org_id;
-  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  if (!Array.isArray(ids) || !ids.length) throw new AppError(400, 'ids array required');
   const result = await query('DELETE FROM jobs WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
   await logActivity(orgId, 'WORKSHOP', 'JOBS_BULK_DELETED', `${result.rowCount} jobs deleted`);
   return { deleted: result.rowCount };
@@ -97,7 +97,7 @@ async function bulkDeleteJobs(org, ids) {
 async function sendToFloor(body, org, jobId) {
   const orgId = org.id || org.org_id;
   const job = await queryOne('SELECT * FROM jobs WHERE id = $1 AND org_id = $2', [jobId, orgId]);
-  if (!job) throw { status: 404, message: 'Job not found' };
+  if (!job) throw new AppError(404, 'Job not found');
   const targets = body.targets || ['inspect'];
 
   const results = {};
@@ -145,9 +145,9 @@ async function receivePartsUpdate(body, org) {
   const orgId = org.id || org.org_id;
   const { workshopJobId, jobId, status, notes } = body;
   const ref = workshopJobId || jobId;
-  if (!ref) throw { status: 400, message: 'workshopJobId required' };
+  if (!ref) throw new AppError(400, 'workshopJobId required');
   const job = await queryOne('SELECT * FROM jobs WHERE id = $1 AND org_id = $2', [ref, orgId]);
-  if (!job) throw { status: 404, message: 'Job not found' };
+  if (!job) throw new AppError(404, 'Job not found');
   await logActivity(orgId, 'PARTS→WORKSHOP', 'PARTS_UPDATE_RECEIVED', `Job #${ref}: ${notes || status || 'update'}`, 'job', ref);
   return { received: true };
 }
@@ -170,7 +170,7 @@ async function getJobLines(caller, jobId) {
     'SELECT * FROM job_lines WHERE job_id = $1 AND org_id = $2 ORDER BY created_at ASC',
     [jobId, orgId]
   );
-  const totalSoldHours = lines.reduce((sum, l) => sum + parseFloat(l.sold_hours) * parseFloat(l.quantity), 0);
+  const totalSoldHours = lines.reduce((sum, l) => sum + Number.parseFloat(l.sold_hours) * Number.parseFloat(l.quantity), 0);
   return { lines, totalSoldHours };
 }
 
@@ -188,7 +188,7 @@ async function saveJobLines(body, caller, jobId) {
     );
   }
   // Update sold_hours total on the job
-  const totalSoldHours = (lines || []).reduce((sum, l) => sum + parseFloat(l.sold_hours) * parseFloat(l.quantity || 1), 0);
+  const totalSoldHours = (lines || []).reduce((sum, l) => sum + Number.parseFloat(l.sold_hours) * Number.parseFloat(l.quantity || 1), 0);
   await query('UPDATE jobs SET sold_hours = $1, updated_at = NOW() WHERE id = $2 AND org_id = $3', [totalSoldHours, jobId, orgId]);
   return { saved: true, totalSoldHours };
 }

@@ -20,7 +20,7 @@ async function getCustomers(org) {
 async function createCustomer(body, org) {
   const orgId = org.id || org.org_id;
   const { name, contactName, email, phone, address, labourRate, paymentTerms, notes } = body;
-  if (!name) throw { status: 400, message: 'name is required' };
+  if (!name) throw new AppError(400, 'name is required');
   const customer = await queryOne(
     `INSERT INTO customers (org_id, name, contact_name, email, phone, address, labour_rate, payment_terms, notes)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
@@ -34,7 +34,7 @@ async function createCustomer(body, org) {
 async function updateCustomer(body, org, customerId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT * FROM customers WHERE id = $1 AND org_id = $2', [customerId, orgId]);
-  if (!existing) throw { status: 404, message: 'Customer not found' };
+  if (!existing) throw new AppError(404, 'Customer not found');
   const { name, contactName, email, phone, address, labourRate, paymentTerms, notes, active } = body;
   const customer = await queryOne(
     `UPDATE customers SET
@@ -59,7 +59,7 @@ async function updateCustomer(body, org, customerId) {
 async function deleteCustomer(org, customerId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT id FROM customers WHERE id = $1 AND org_id = $2', [customerId, orgId]);
-  if (!existing) throw { status: 404, message: 'Customer not found' };
+  if (!existing) throw new AppError(404, 'Customer not found');
   await query('DELETE FROM customers WHERE id = $1 AND org_id = $2', [customerId, orgId]);
   return { deleted: true };
 }
@@ -87,7 +87,7 @@ async function getInvoice(org, invoiceId) {
      WHERE i.id = $1 AND i.org_id = $2`,
     [invoiceId, orgId]
   );
-  if (!invoice) throw { status: 404, message: 'Invoice not found' };
+  if (!invoice) throw new AppError(404, 'Invoice not found');
   const lines = await queryAll('SELECT * FROM invoice_lines WHERE invoice_id = $1 ORDER BY id ASC', [invoiceId]);
   return { invoice, lines };
 }
@@ -104,7 +104,7 @@ async function createInvoice(body, org) {
 
   // Generate invoice number
   const count = await queryOne('SELECT COUNT(*) as c FROM invoices WHERE org_id = $1', [orgId]);
-  const invoiceNum = 'INV-' + String(parseInt(count.c) + 1).padStart(4, '0');
+  const invoiceNum = 'INV-' + String(Number.parseInt(count.c) + 1).padStart(4, '0');
 
   // Pull org settings for defaults
   const orgSettings = await queryOne('SELECT * FROM org_settings WHERE org_id = $1', [orgId]);
@@ -115,7 +115,7 @@ async function createInvoice(body, org) {
 
   // Calculate totals
   let subtotal = 0;
-  lines.forEach(function(l) { subtotal += parseFloat(l.lineTotal || (l.quantity * l.unitPrice) || 0); });
+  lines.forEach(function(l) { subtotal += Number.parseFloat(l.lineTotal || (l.quantity * l.unitPrice) || 0); });
   const vatAmount = Math.round(subtotal * 0.20 * 100) / 100;
   const total = Math.round((subtotal + vatAmount) * 100) / 100;
 
@@ -134,8 +134,8 @@ async function createInvoice(body, org) {
 
   // Insert lines
   for (const line of lines) {
-    const qty = parseFloat(line.quantity || 1);
-    const unitPrice = parseFloat(line.unitPrice || 0);
+    const qty = Number.parseFloat(line.quantity || 1);
+    const unitPrice = Number.parseFloat(line.unitPrice || 0);
     const lineTotal = Math.round(qty * unitPrice * 100) / 100;
     await query(
       `INSERT INTO invoice_lines (org_id, invoice_id, type, description, quantity, unit_price, line_total)
@@ -158,7 +158,7 @@ async function updateInvoiceStatus(body, org, invoiceId) {
   const orgId = org.id || org.org_id;
   const { status } = body;
   const validStatuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
-  if (!validStatuses.includes(status)) throw { status: 400, message: 'Invalid status' };
+  if (!validStatuses.includes(status)) throw new AppError(400, 'Invalid status');
   const updates = { status };
   if (status === 'paid') updates.paid_at = new Date().toISOString();
   if (status === 'sent') updates.sent_at = new Date().toISOString();
@@ -170,7 +170,7 @@ async function updateInvoiceStatus(body, org, invoiceId) {
      WHERE id = $4 AND org_id = $5 RETURNING *`,
     [status, status === 'paid', status === 'sent', invoiceId, orgId]
   );
-  if (!invoice) throw { status: 404, message: 'Invoice not found' };
+  if (!invoice) throw new AppError(404, 'Invoice not found');
   await logActivity(orgId, 'INVOICES', 'INVOICE_STATUS_CHANGED', invoice.invoice_number + ' → ' + status, 'invoice', invoiceId);
   return { invoice };
 }
@@ -178,7 +178,7 @@ async function updateInvoiceStatus(body, org, invoiceId) {
 async function deleteInvoice(org, invoiceId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT id, invoice_number FROM invoices WHERE id = $1 AND org_id = $2', [invoiceId, orgId]);
-  if (!existing) throw { status: 404, message: 'Invoice not found' };
+  if (!existing) throw new AppError(404, 'Invoice not found');
   await query('DELETE FROM invoices WHERE id = $1 AND org_id = $2', [invoiceId, orgId]);
   await logActivity(orgId, 'INVOICES', 'INVOICE_DELETED', existing.invoice_number + ' deleted');
   return { deleted: true };
@@ -188,10 +188,10 @@ async function deleteInvoice(org, invoiceId) {
 async function generateFromJob(body, org) {
   const orgId = org.id || org.org_id;
   const { jobId } = body;
-  if (!jobId) throw { status: 400, message: 'jobId required' };
+  if (!jobId) throw new AppError(400, 'jobId required');
 
   const job = await queryOne('SELECT * FROM jobs WHERE id = $1 AND org_id = $2', [jobId, orgId]);
-  if (!job) throw { status: 404, message: 'Job not found' };
+  if (!job) throw new AppError(404, 'Job not found');
 
   // Get customer by name match or customer_id
   let customer = null;
@@ -202,7 +202,7 @@ async function generateFromJob(body, org) {
       [orgId, '%' + job.customer_name.toLowerCase() + '%']);
   }
 
-  const labourRate = customer ? parseFloat(customer.labour_rate || 65) : 65.00;
+  const labourRate = customer ? Number.parseFloat(customer.labour_rate || 65) : 65.00;
 
   const jobLines = await queryAll(
     'SELECT * FROM job_lines WHERE job_id = $1 AND org_id = $2 ORDER BY created_at ASC', [jobId, orgId]
@@ -216,7 +216,7 @@ async function generateFromJob(body, org) {
   // Labour from job_lines (sold hours library items)
   if (jobLines.length > 0) {
     jobLines.forEach(function(jl) {
-      const hrs = parseFloat(jl.sold_hours || 0) * parseFloat(jl.quantity || 1);
+      const hrs = Number.parseFloat(jl.sold_hours || 0) * Number.parseFloat(jl.quantity || 1);
       lines.push({
         type: 'labour',
         description: 'Workshop Labour — ' + (jl.name || jl.description || 'Service') + ' (' + hrs.toFixed(1) + ' hrs @ £' + labourRate.toFixed(2) + '/hr)',
@@ -225,9 +225,9 @@ async function generateFromJob(body, org) {
         lineTotal: hrs * labourRate
       });
     });
-  } else if (parseFloat(job.sold_hours || 0) > 0) {
+  } else if (Number.parseFloat(job.sold_hours || 0) > 0) {
     // Fallback: use job-level sold_hours
-    const hrs = parseFloat(job.sold_hours);
+    const hrs = Number.parseFloat(job.sold_hours);
     lines.push({
       type: 'labour',
       description: 'Workshop Labour — ' + (job.inspection_type || 'Service') + ' ' + job.vehicle_reg + ' (' + hrs.toFixed(1) + ' hrs @ £' + labourRate.toFixed(2) + '/hr)',
@@ -248,8 +248,8 @@ async function generateFromJob(body, org) {
 
   // Parts as individual line items
   parts.forEach(function(p) {
-    const qty = parseInt(p.qty || 1);
-    const cost = parseFloat(p.unit_cost || 0);
+    const qty = Number.parseInt(p.qty || 1);
+    const cost = Number.parseFloat(p.unit_cost || 0);
     lines.push({
       type: 'parts',
       description: p.name + (p.part_number ? ' — ' + p.part_number : '') + (p.part_id ? ' (' + p.part_id + ')' : ''),
@@ -272,7 +272,7 @@ async function generateFromJob(body, org) {
 
 async function bulkDeleteInvoices(org, ids) {
   const orgId = org.id || org.org_id;
-  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  if (!Array.isArray(ids) || !ids.length) throw new AppError(400, 'ids array required');
   const result = await query('DELETE FROM invoices WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
   await logActivity(orgId, 'BILLING', 'INVOICES_BULK_DELETED', result.rowCount + ' invoices deleted');
   return { deleted: result.rowCount };
@@ -280,7 +280,7 @@ async function bulkDeleteInvoices(org, ids) {
 
 async function bulkDeleteCustomers(org, ids) {
   const orgId = org.id || org.org_id;
-  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  if (!Array.isArray(ids) || !ids.length) throw new AppError(400, 'ids array required');
   const result = await query('DELETE FROM customers WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
   await logActivity(orgId, 'BILLING', 'CUSTOMERS_BULK_DELETED', result.rowCount + ' customers deleted');
   return { deleted: result.rowCount };

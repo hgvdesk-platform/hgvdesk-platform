@@ -11,7 +11,7 @@
  */
 const Stripe = require('stripe');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { queryOne, query } = require('../db');
 const { signToken } = require('../auth');
 
@@ -62,7 +62,7 @@ function getPlan(key) {
 }
 
 function ensureStripe() {
-  if (!stripe) throw { status: 503, message: 'Billing not configured (STRIPE_SECRET_KEY missing)' };
+  if (!stripe) throw new AppError(503, 'Billing not configured (STRIPE_SECRET_KEY missing)');
 }
 
 // Used in handleStripeWebhook below — handlers receive the raw body for signature verification.
@@ -71,15 +71,15 @@ async function signup(body) {
   ensureStripe();
   const { orgName, fullName, email, password, plan: planKey } = body || {};
   if (!orgName || !email || !password || !fullName) {
-    throw { status: 400, message: 'orgName, fullName, email, password are required' };
+    throw new AppError(400, 'orgName, fullName, email, password are required');
   }
   const plan = getPlan(planKey || 'starter');
-  if (!plan) throw { status: 400, message: 'Invalid plan' };
-  if (!plan.priceId) throw { status: 503, message: `Plan "${plan.key}" has no Stripe price configured` };
+  if (!plan) throw new AppError(400, 'Invalid plan');
+  if (!plan.priceId) throw new AppError(503, `Plan "${plan.key}" has no Stripe price configured`);
 
   const normEmail = email.toLowerCase().trim();
   const existingUser = await queryOne('SELECT id FROM users WHERE email = $1', [normEmail]);
-  if (existingUser) throw { status: 409, message: 'A user with that email already exists' };
+  if (existingUser) throw new AppError(409, 'A user with that email already exists');
 
   // Generate a stable slug from the org name; append a short random suffix on collision.
   const baseSlug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'org';
@@ -155,7 +155,7 @@ async function getMyBilling(caller) {
      FROM organisations WHERE id = $1`,
     [orgId]
   );
-  if (!org) throw { status: 404, message: 'Organisation not found' };
+  if (!org) throw new AppError(404, 'Organisation not found');
   const plan = getPlan(org.plan) || null;
   return {
     organisation: org,
@@ -166,15 +166,15 @@ async function getMyBilling(caller) {
 // ── Webhook handling ─────────────────────────────────────────────
 
 function constructEvent(rawBody, signatureHeader) {
-  if (!stripe) throw { status: 503, message: 'Billing not configured' };
+  if (!stripe) throw new AppError(503, 'Billing not configured');
   if (!WEBHOOK_SECRET) {
     // Refuse to accept unsigned webhooks. Better to fail loudly than silently trust input.
-    throw { status: 503, message: 'STRIPE_WEBHOOK_SECRET not configured' };
+    throw new AppError(503, 'STRIPE_WEBHOOK_SECRET not configured');
   }
   try {
     return stripe.webhooks.constructEvent(rawBody, signatureHeader, WEBHOOK_SECRET);
   } catch (err) {
-    throw { status: 400, message: `Webhook signature verification failed: ${err.message}` };
+    throw new AppError(400, `Webhook signature verification failed: ${err.message}`);
   }
 }
 
@@ -241,7 +241,7 @@ async function countDistinctVehicles(orgId) {
     `SELECT COUNT(DISTINCT vehicle_reg) AS n FROM jobs WHERE org_id = $1`,
     [orgId]
   );
-  return parseInt(row && row.n, 10) || 0;
+  return Number.parseInt(row && row.n, 10) || 0;
 }
 
 async function enforceVehicleLimit(orgId, planKey, candidateReg) {
@@ -257,10 +257,7 @@ async function enforceVehicleLimit(orgId, planKey, candidateReg) {
   }
   const current = await countDistinctVehicles(orgId);
   if (current >= plan.vehicleLimit) {
-    throw {
-      status: 402, // Payment Required — the conventional code for "upgrade your plan"
-      message: `Vehicle limit reached for ${plan.name} plan (${plan.vehicleLimit}). Upgrade to add more.`,
-    };
+    throw new AppError(402, `Vehicle limit reached for ${plan.name} plan (${plan.vehicleLimit}). Upgrade to add more.`);
   }
 }
 

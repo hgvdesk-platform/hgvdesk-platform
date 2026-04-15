@@ -31,7 +31,7 @@ function verifyToken(token) {
 async function requireAuth(req) {
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw { status: 401, message: 'Missing or invalid Authorization header' };
+    throw new AppError(401, 'Missing or invalid Authorization header');
   }
 
   const token = authHeader.slice(7);
@@ -39,7 +39,7 @@ async function requireAuth(req) {
   try {
     decoded = verifyToken(token);
   } catch (e) {
-    throw { status: 401, message: 'Token invalid or expired' };
+    throw new AppError(401, 'Token invalid or expired');
   }
 
   const user = await queryOne(
@@ -51,7 +51,7 @@ async function requireAuth(req) {
     [decoded.userId]
   );
 
-  if (!user) throw { status: 401, message: 'User not found or inactive' };
+  if (!user) throw new AppError(401, 'User not found or inactive');
 
   user.is_platform_admin = !!(user.user_platform_admin && user.org_platform_admin);
   return user;
@@ -63,14 +63,14 @@ async function requireAuth(req) {
 
 async function requireApiKey(req) {
   const apiKey = req.headers['x-api-key'];
-  if (!apiKey) throw { status: 401, message: 'Missing X-API-Key header' };
+  if (!apiKey) throw new AppError(401, 'Missing X-API-Key header');
 
   const org = await queryOne(
     `SELECT id, name, plan, active, is_platform_admin, logo_light, logo_dark FROM organisations WHERE api_key = $1`,
     [apiKey]
   );
 
-  if (!org || !org.active) throw { status: 401, message: 'Invalid or inactive API key' };
+  if (!org || !org.active) throw new AppError(401, 'Invalid or inactive API key');
 
   return org;
 }
@@ -78,7 +78,7 @@ async function requireApiKey(req) {
 // Caller must be a platform admin (HGVDesk staff). Works for both auth modes.
 function requirePlatformAdmin(caller) {
   if (!caller || !caller.is_platform_admin) {
-    throw { status: 403, message: 'Platform admin access required' };
+    throw new AppError(403, 'Platform admin access required');
   }
 }
 
@@ -87,7 +87,7 @@ function requirePlatformAdmin(caller) {
 // ═══════════════════════════════════════════════
 
 async function login(email, password) {
-  if (!email || !password) throw { status: 400, message: 'Email and password required' };
+  if (!email || !password) throw new AppError(400, 'Email and password required');
 
   const user = await queryOne(
     `SELECT u.*, o.name as org_name, o.plan, o.api_key, o.logo_light, o.logo_dark
@@ -96,13 +96,13 @@ async function login(email, password) {
     [email.toLowerCase().trim()]
   );
 
-  if (!user) throw { status: 401, message: 'Invalid email or password' };
+  if (!user) throw new AppError(401, 'Invalid email or password');
 
   const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) throw { status: 401, message: 'Invalid email or password' };
+  if (!valid) throw new AppError(401, 'Invalid email or password');
 
   if (user.email_verified === false && user.verify_token) {
-    throw { status: 403, message: 'Please verify your email before logging in. Check your inbox or request a new verification link.' };
+    throw new AppError(403, 'Please verify your email before logging in. Check your inbox or request a new verification link.');
   }
 
   // Update last login

@@ -7,7 +7,7 @@
 const { queryAll, queryOne, query } = require('../db');
 const { requirePlatformAdmin } = require('../auth');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 async function getOrganisations(caller) {
   requirePlatformAdmin(caller);
@@ -18,7 +18,7 @@ async function getOrganisations(caller) {
 async function createOrganisation(body, caller) {
   requirePlatformAdmin(caller);
   const { name, plan } = body;
-  if (!name) throw { status: 400, message: 'name is required' };
+  if (!name) throw new AppError(400, 'name is required');
   const apiKey = crypto.randomBytes(16).toString('hex');
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 100);
   const org = await queryOne(
@@ -35,7 +35,7 @@ async function updateOrganisation(body, caller, orgId) {
     'UPDATE organisations SET name=COALESCE($1,name), plan=COALESCE($2,plan), active=COALESCE($3,active), updated_at=NOW() WHERE id=$4 RETURNING *',
     [name || null, plan || null, active !== undefined ? active : null, orgId]
   );
-  if (!org) throw { status: 404, message: 'Organisation not found' };
+  if (!org) throw new AppError(404, 'Organisation not found');
   return { organisation: org };
 }
 
@@ -51,8 +51,8 @@ async function getUsers(caller) {
 async function createUser(body, caller) {
   requirePlatformAdmin(caller);
   const { email, password, fullName, orgId, role } = body;
-  if (!email || !password) throw { status: 400, message: 'email and password required' };
-  if (!orgId) throw { status: 400, message: 'orgId is required' };
+  if (!email || !password) throw new AppError(400, 'email and password required');
+  if (!orgId) throw new AppError(400, 'orgId is required');
   const hash = await bcrypt.hash(password, 10);
   const newUser = await queryOne(
     'INSERT INTO users (org_id, email, password_hash, full_name, role, active) VALUES ($1,$2,$3,$4,$5,true) RETURNING id, email, full_name, role, active',
@@ -79,7 +79,7 @@ async function updateUser(body, caller, userId) {
     [fullName || null, email ? email.toLowerCase().trim() : null, role || null,
      active !== undefined ? active : null, orgId || null, hash, userId]
   );
-  if (!updated) throw { status: 404, message: 'User not found' };
+  if (!updated) throw new AppError(404, 'User not found');
   return { user: updated };
 }
 

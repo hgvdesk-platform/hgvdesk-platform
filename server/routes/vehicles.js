@@ -14,7 +14,7 @@ async function getVehicles(org, qs) {
 async function getVehicle(org, id) {
   const orgId = org.id || org.org_id;
   const vehicle = await queryOne('SELECT * FROM vehicles WHERE id = $1 AND org_id = $2', [id, orgId]);
-  if (!vehicle) throw { status: 404, message: 'Vehicle not found' };
+  if (!vehicle) throw new AppError(404, 'Vehicle not found');
   const jobs = await queryAll('SELECT id, job_number, inspection_type, status, created_at FROM jobs WHERE vehicle_reg = $1 AND org_id = $2 ORDER BY created_at DESC LIMIT 20', [vehicle.registration, orgId]);
   const inspections = await queryAll('SELECT id, inspection_id, inspection_type, result, status, created_at FROM inspections WHERE vehicle_reg = $1 AND org_id = $2 ORDER BY created_at DESC LIMIT 20', [vehicle.registration, orgId]);
   return { vehicle, jobs, inspections };
@@ -23,7 +23,7 @@ async function getVehicle(org, id) {
 async function createVehicle(body, org) {
   const orgId = org.id || org.org_id;
   const { registration, make, model, year, vin, fuelType, grossWeight, customerId, motExpiry, serviceDue, fleetNumber } = body;
-  if (!registration) throw { status: 400, message: 'registration is required' };
+  if (!registration) throw new AppError(400, 'registration is required');
   const vehicle = await queryOne(
     `INSERT INTO vehicles (org_id, registration, make, model, year, vin, fuel_type, gross_weight, customer_id, mot_expiry, service_due, fleet_number)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
@@ -37,7 +37,7 @@ async function createVehicle(body, org) {
 async function updateVehicle(body, org, id) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT id FROM vehicles WHERE id = $1 AND org_id = $2', [id, orgId]);
-  if (!existing) throw { status: 404, message: 'Vehicle not found' };
+  if (!existing) throw new AppError(404, 'Vehicle not found');
   const { make, model, year, vin, fuelType, grossWeight, customerId, motExpiry, serviceDue, status, fleetNumber, mileage } = body;
   const vehicle = await queryOne(
     `UPDATE vehicles SET make=COALESCE($1,make), model=COALESCE($2,model), year=COALESCE($3,year),

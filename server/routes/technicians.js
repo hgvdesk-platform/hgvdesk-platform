@@ -9,7 +9,7 @@ async function listTechnicians(org) {
 async function createTechnician(body, org) {
   const orgId = org.id || org.org_id;
   const { name, phone } = body;
-  if (!name) throw { status: 400, message: 'Name is required' };
+  if (!name) throw new AppError(400, 'Name is required');
   const username = name.toLowerCase().replace(/\s+/g, '.') + '.' + Date.now().toString().slice(-4);
   const tempPassword = 'Tech' + Math.random().toString(36).slice(-6).toUpperCase();
   const hash = await bcrypt.hash(tempPassword, 10);
@@ -27,7 +27,7 @@ async function updateTechnician(org, techId, body) {
     'UPDATE technicians SET name=COALESCE($1,name), phone=COALESCE($2,phone), active=COALESCE($3,active), updated_at=NOW() WHERE id=$4 AND org_id=$5 RETURNING id, name, phone, username, active',
     [name||null, phone||null, active!==undefined?active:null, techId, orgId]
   );
-  if (!tech) throw { status: 404, message: 'Technician not found' };
+  if (!tech) throw new AppError(404, 'Technician not found');
   return { technician: tech };
 }
 

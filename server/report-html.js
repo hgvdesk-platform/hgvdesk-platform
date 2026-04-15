@@ -58,9 +58,9 @@ function tyrePositionName(key, inspectionType) {
   const m = key.match(/^t(\d+)_(\d+)$/);
   if (!m) return key;
   const axles = inspectionType === 'T60' ? TYRE_AXLES_T60 : TYRE_AXLES_T50;
-  const axle = axles[parseInt(m[1])];
+  const axle = axles[Number.parseInt(m[1])];
   if (!axle) return key;
-  return axle.pos[parseInt(m[2])] || key;
+  return axle.pos[Number.parseInt(m[2])] || key;
 }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}) : '—'; }
 function fmtShort(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
@@ -156,8 +156,8 @@ function docFooter(docNum, orgName, opts={}) {
 
 function hasTyreData(d) {
   if (!d || typeof d !== 'object') return false;
-  const depth = parseFloat(d.depth || d.tread || 0);
-  const hasDepth = !isNaN(depth) && depth > 0;
+  const depth = Number.parseFloat(d.depth || d.tread || 0);
+  const hasDepth = !Number.isNaN(depth) && depth > 0;
   const hasExpiry = !!(d.expiry && d.expiry.trim());
   const hasCond = d.condition && d.condition !== 'ok';
   return hasDepth || hasExpiry || hasCond;
@@ -165,8 +165,8 @@ function hasTyreData(d) {
 
 function tyreCard(posName, d) {
   const depth = d.depth || d.tread || '—';
-  const depthNum = parseFloat(depth);
-  const depthColor = !isNaN(depthNum) && depthNum < 1 ? C.failRed : (!isNaN(depthNum) && depthNum < 3 ? C.advAmber : C.text);
+  const depthNum = Number.parseFloat(depth);
+  const depthColor = !Number.isNaN(depthNum) && depthNum < 1 ? C.failRed : (!Number.isNaN(depthNum) && depthNum < 3 ? C.advAmber : C.text);
   return `<td style="padding:4px;"><div style="background:${C.surface};border:1px solid ${C.border};border-radius:6px;padding:10px 12px;text-align:center;">
     <div style="${LBL}color:${C.orange};margin-bottom:6px;font-size:9px;">${esc(posName)}</div>
     <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;color:${depthColor};">${esc(String(depth))}<span style="font-size:11px;font-weight:400;color:${C.muted};"> mm</span></div>
@@ -184,9 +184,9 @@ function groupTyresByAxle(tyres) {
     if (!hasTyreData(d)) continue;
     const m = key.match(/^t(\d+)_(\d+)$/);
     if (!m) continue;
-    const ai = parseInt(m[1]);
+    const ai = Number.parseInt(m[1]);
     if (!grouped[ai]) grouped[ai] = [];
-    grouped[ai].push({ key, posIdx: parseInt(m[2]), data: d });
+    grouped[ai].push({ key, posIdx: Number.parseInt(m[2]), data: d });
   }
   return grouped;
 }
@@ -257,7 +257,7 @@ function buildBrakeSection(brakes) {
 
   h += '<tr>';
   h += brakeEffMetric('Service Brake', brakes.sbe, 50, { big: true });
-  if (brakes.sbe2 != null && !isNaN(brakes.sbe2)) h += brakeEffMetric('Secondary', brakes.sbe2, 50);
+  if (brakes.sbe2 != null && !Number.isNaN(brakes.sbe2)) h += brakeEffMetric('Secondary', brakes.sbe2, 50);
   h += brakeEffMetric('Park Brake', brakes.pbe, 16);
   h += metricBox('Max Imbalance', maxImb + '%', { color: maxImb <= 30 ? C.passGreen : C.failRed });
   h += '</tr>';

@@ -8,11 +8,19 @@
  * DVLA      → /api/dvla/lookup
  */
 
-const http = require('http');
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
-const { URL } = require('url');
+const http = require('node:http');
+const https = require('node:https');
+const fs = require('node:fs');
+const path = require('node:path');
+const { URL } = require('node:url');
+
+class AppError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+global.AppError = AppError;
 
 // ══════════════════════════════════════════════
 // ERROR MONITORING
@@ -336,7 +344,7 @@ async function handleForgotPassword(req, res) {
   const email = (body.email || '').toLowerCase().trim();
   if (!email) { json(res, 400, { error: 'email required' }); return; }
   const db = require('./db');
-  const crypto = require('crypto');
+  const crypto = require('node:crypto');
   const user = await db.queryOne('SELECT id FROM users WHERE email = $1 AND active = true', [email]);
   if (user) {
     const token = crypto.randomBytes(32).toString('hex');
@@ -399,7 +407,7 @@ async function handleResendVerification(req, res) {
   const email = (body.email || '').toLowerCase().trim();
   if (!email) { json(res, 400, { error: 'email required' }); return; }
   const db = require('./db');
-  const crypto = require('crypto');
+  const crypto = require('node:crypto');
   const user = await db.queryOne('SELECT id, email_verified FROM users WHERE email = $1 AND active = true', [email]);
   if (user && !user.email_verified) {
     const token = crypto.randomBytes(32).toString('hex');
@@ -512,9 +520,9 @@ async function handleAdminOrgsUsers(ctx, res) {
   if (p === '/api/admin/users' && method === 'GET') { ok(res, await admin.getUsers(caller)); return true; }
   if (p === '/api/admin/users' && method === 'POST') { ok(res, await admin.createUser(body, caller)); return true; }
   const orgIdMatch = p.match(/^\/api\/admin\/organisations\/(\d+)$/);
-  if (orgIdMatch && method === 'PUT') { ok(res, await admin.updateOrganisation(body, caller, parseInt(orgIdMatch[1]))); return true; }
+  if (orgIdMatch && method === 'PUT') { ok(res, await admin.updateOrganisation(body, caller, Number.parseInt(orgIdMatch[1]))); return true; }
   const userIdMatch = p.match(/^\/api\/admin\/users\/(\d+)$/);
-  if (userIdMatch && method === 'PUT') { ok(res, await admin.updateUser(body, caller, parseInt(userIdMatch[1]))); return true; }
+  if (userIdMatch && method === 'PUT') { ok(res, await admin.updateUser(body, caller, Number.parseInt(userIdMatch[1]))); return true; }
   return false;
 }
 
@@ -541,9 +549,9 @@ async function handleWorkshop(ctx, res) {
   if (p === '/api/jobs/bulk' && method === 'DELETE') { ok(res, await workshop.bulkDeleteJobs(caller, body.ids)); return true; }
   if (p === '/api/sync/parts-update' && method === 'POST') { ok(res, await workshop.receivePartsUpdate(body, caller)); return true; }
   const jobIdMatch = p.match(/^\/api\/jobs\/(\d+)$/);
-  if (jobIdMatch) return routeJobById(method, parseInt(jobIdMatch[1]), ctx, res);
+  if (jobIdMatch) return routeJobById(method, Number.parseInt(jobIdMatch[1]), ctx, res);
   const sendMatch = p.match(/^\/api\/jobs\/(\d+)\/send$/);
-  if (sendMatch && method === 'POST') { ok(res, await workshop.sendToFloor(body, caller, parseInt(sendMatch[1]))); return true; }
+  if (sendMatch && method === 'POST') { ok(res, await workshop.sendToFloor(body, caller, Number.parseInt(sendMatch[1]))); return true; }
   return false;
 }
 
@@ -566,13 +574,13 @@ async function handleInspections(ctx, res) {
   if (p === '/api/inspections/bulk' && method === 'DELETE') { ok(res, await inspect.bulkDeleteInspections(caller, body.ids)); return true; }
   if (p === '/api/sync/assigned-job' && method === 'POST') { ok(res, await inspect.receiveAssignedJob(body, caller)); return true; }
   const inspIdMatch = p.match(/^\/api\/inspections\/(\d+)$/);
-  if (inspIdMatch) return routeInspById(method, parseInt(inspIdMatch[1]), body, caller, res);
+  if (inspIdMatch) return routeInspById(method, Number.parseInt(inspIdMatch[1]), body, caller, res);
   const inspPartsMatch = p.match(/^\/api\/inspections\/(\d+)\/parts$/);
-  if (inspPartsMatch) return routeInspParts(method, parseInt(inspPartsMatch[1]), body, caller, res);
+  if (inspPartsMatch) return routeInspParts(method, Number.parseInt(inspPartsMatch[1]), body, caller, res);
   const inspPartDelMatch = p.match(/^\/api\/inspection-parts\/(\d+)$/);
-  if (inspPartDelMatch && method === 'DELETE') { ok(res, await inspect.removeInspectionPart(caller, parseInt(inspPartDelMatch[1]))); return true; }
+  if (inspPartDelMatch && method === 'DELETE') { ok(res, await inspect.removeInspectionPart(caller, Number.parseInt(inspPartDelMatch[1]))); return true; }
   const inspCostMatch = p.match(/^\/api\/inspections\/(\d+)\/costs$/);
-  if (inspCostMatch && method === 'POST') { ok(res, await inspect.calculateInspectionCosts(caller, parseInt(inspCostMatch[1]))); return true; }
+  if (inspCostMatch && method === 'POST') { ok(res, await inspect.calculateInspectionCosts(caller, Number.parseInt(inspCostMatch[1]))); return true; }
   return false;
 }
 
@@ -581,7 +589,7 @@ async function handleDefects(ctx, res) {
 
   if (p === '/api/defects' && method === 'GET') { ok(res, await inspect.getDefects(caller, qs)); return true; }
   const defectIdMatch = p.match(/^\/api\/defects\/(\d+)$/);
-  if (defectIdMatch && method === 'PUT') { ok(res, await inspect.updateDefect(body, caller, parseInt(defectIdMatch[1]))); return true; }
+  if (defectIdMatch && method === 'PUT') { ok(res, await inspect.updateDefect(body, caller, Number.parseInt(defectIdMatch[1]))); return true; }
   if (p === '/api/inspection-defects' && method === 'POST') { ok(res, await inspect.raiseDefects(body, caller)); return true; }
 
   return false;
@@ -601,7 +609,7 @@ async function handleParts(ctx, res) {
 
   const partIdMatch = p.match(/^\/api\/parts\/(\d+)$/);
   if (partIdMatch) {
-    const id = parseInt(partIdMatch[1]);
+    const id = Number.parseInt(partIdMatch[1]);
     if (method === 'PUT') { ok(res, await parts.updatePart(body, caller, id)); return true; }
     if (method === 'DELETE') { ok(res, await parts.deletePart(caller, id)); return true; }
   }
@@ -654,7 +662,7 @@ async function handlePdf(ctx, res) {
 
   const inspPdf = p.match(/^\/api\/inspections\/(\d+)\/pdf$/);
   if (inspPdf) {
-    const { pdf: buf, filename } = await pdf.inspectionPdf(parseInt(inspPdf[1]), orgId);
+    const { pdf: buf, filename } = await pdf.inspectionPdf(Number.parseInt(inspPdf[1]), orgId);
     res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Content-Length': buf.length });
     res.end(buf);
     return true;
@@ -662,7 +670,7 @@ async function handlePdf(ctx, res) {
 
   const invPdf = p.match(/^\/api\/invoices\/(\d+)\/pdf$/);
   if (invPdf) {
-    const { pdf: buf, filename } = await pdf.invoicePdf(parseInt(invPdf[1]), orgId);
+    const { pdf: buf, filename } = await pdf.invoicePdf(Number.parseInt(invPdf[1]), orgId);
     res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Content-Length': buf.length });
     res.end(buf);
     return true;
@@ -670,7 +678,7 @@ async function handlePdf(ctx, res) {
 
   const jobPdf = p.match(/^\/api\/jobs\/(\d+)\/pdf$/);
   if (jobPdf) {
-    const { pdf: buf, filename } = await pdf.jobPdf(parseInt(jobPdf[1]), orgId);
+    const { pdf: buf, filename } = await pdf.jobPdf(Number.parseInt(jobPdf[1]), orgId);
     res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"`, 'Content-Length': buf.length });
     res.end(buf);
     return true;
@@ -713,12 +721,12 @@ async function handleInspectionReports(ctx, res) {
 
   const reportSendMatch = p.match(/^\/api\/inspections\/(\d+)\/report$/);
   if (reportSendMatch && method === 'POST') {
-    return sendInspectionReportRoute(parseInt(reportSendMatch[1]), body, caller, res);
+    return sendInspectionReportRoute(Number.parseInt(reportSendMatch[1]), body, caller, res);
   }
 
   const previewMatch = p.match(/^\/api\/inspections\/(\d+)\/report\/preview$/);
   if (previewMatch && method === 'GET') {
-    await renderInspectionPreview(parseInt(previewMatch[1]), caller.id || caller.org_id, res);
+    await renderInspectionPreview(Number.parseInt(previewMatch[1]), caller.id || caller.org_id, res);
     return true;
   }
 
@@ -834,13 +842,13 @@ async function handleTechnicians(ctx, res) {
 
   const techMatch = p.match(/^\/api\/technicians\/(\d+)$/);
   if (techMatch) {
-    const id = parseInt(techMatch[1]);
+    const id = Number.parseInt(techMatch[1]);
     if (method === 'PUT') { json(res, 200, await technicians.updateTechnician(caller, id, body)); return true; }
     if (method === 'DELETE') { json(res, 200, await technicians.deleteTechnician(caller, id)); return true; }
   }
 
   const techReset = p.match(/^\/api\/technicians\/(\d+)\/reset-password$/);
-  if (techReset && method === 'POST') { json(res, 200, await technicians.resetPassword(caller, parseInt(techReset[1]))); return true; }
+  if (techReset && method === 'POST') { json(res, 200, await technicians.resetPassword(caller, Number.parseInt(techReset[1]))); return true; }
 
   return false;
 }
@@ -852,7 +860,7 @@ async function handleJobLibrary(ctx, res) {
 
   const jobLinesMatch = p.match(/^\/api\/jobs\/(\d+)\/lines$/);
   if (jobLinesMatch) {
-    const id = parseInt(jobLinesMatch[1]);
+    const id = Number.parseInt(jobLinesMatch[1]);
     if (method === 'GET') { ok(res, await workshop.getJobLines(caller, id)); return true; }
     if (method === 'POST') { ok(res, await workshop.saveJobLines(body, caller, id)); return true; }
   }
@@ -869,7 +877,7 @@ async function handleCustomers(ctx, res) {
 
   const custMatch = p.match(/^\/api\/customers\/(\d+)$/);
   if (custMatch) {
-    const id = parseInt(custMatch[1]);
+    const id = Number.parseInt(custMatch[1]);
     if (method === 'PUT') { ok(res, await billing.updateCustomer(body, caller, id)); return true; }
     if (method === 'DELETE') { ok(res, await billing.deleteCustomer(caller, id)); return true; }
   }
@@ -887,13 +895,13 @@ async function handleInvoices(ctx, res) {
 
   const invMatch = p.match(/^\/api\/invoices\/(\d+)$/);
   if (invMatch) {
-    const id = parseInt(invMatch[1]);
+    const id = Number.parseInt(invMatch[1]);
     if (method === 'GET') { ok(res, await billing.getInvoice(caller, id)); return true; }
     if (method === 'DELETE') { ok(res, await billing.deleteInvoice(caller, id)); return true; }
   }
 
   const invStatusMatch = p.match(/^\/api\/invoices\/(\d+)\/status$/);
-  if (invStatusMatch && method === 'PUT') { ok(res, await billing.updateInvoiceStatus(body, caller, parseInt(invStatusMatch[1]))); return true; }
+  if (invStatusMatch && method === 'PUT') { ok(res, await billing.updateInvoiceStatus(body, caller, Number.parseInt(invStatusMatch[1]))); return true; }
 
   return false;
 }
@@ -908,7 +916,7 @@ async function handleNotifications(ctx, res) {
   if (p === '/api/notifications/unread' && method === 'GET') { ok(res, await alerts.getUnreadCount(caller)); return true; }
   if (p === '/api/notifications/read-all' && method === 'POST') { ok(res, await alerts.markAllRead(caller)); return true; }
   const nIdMatch = p.match(/^\/api\/notifications\/(\d+)\/read$/);
-  if (nIdMatch && method === 'POST') { ok(res, await alerts.markRead(caller, parseInt(nIdMatch[1]))); return true; }
+  if (nIdMatch && method === 'POST') { ok(res, await alerts.markRead(caller, Number.parseInt(nIdMatch[1]))); return true; }
   return false;
 }
 
@@ -919,7 +927,7 @@ async function handleVehicles(ctx, res) {
   if (p === '/api/vehicles/mot-alerts' && method === 'GET') { ok(res, await vehicles.getMotAlerts(caller)); return true; }
   const vIdMatch = p.match(/^\/api\/vehicles\/(\d+)$/);
   if (vIdMatch) {
-    const id = parseInt(vIdMatch[1]);
+    const id = Number.parseInt(vIdMatch[1]);
     if (method === 'GET') { ok(res, await vehicles.getVehicle(caller, id)); return true; }
     if (method === 'PUT') { ok(res, await vehicles.updateVehicle(body, caller, id)); return true; }
     if (method === 'DELETE') { ok(res, await vehicles.deleteVehicle(caller, id)); return true; }

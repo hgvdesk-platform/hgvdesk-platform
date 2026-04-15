@@ -44,7 +44,7 @@ async function getOrgBranding(orgId) {
 async function inspectionPdf(inspId, orgId) {
   const db = require('../db');
   const insp = await db.queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspId, orgId]);
-  if (!insp) throw { status: 404, message: 'Inspection not found' };
+  if (!insp) throw new AppError(404, 'Inspection not found');
   insp.defects = await db.queryAll(
     'SELECT * FROM defects WHERE inspection_id = $1 ORDER BY severity DESC, created_at ASC', [insp.id]
   );
@@ -58,7 +58,7 @@ async function inspectionPdf(inspId, orgId) {
 async function invoicePdf(invoiceId, orgId) {
   const db = require('../db');
   const invoice = await db.queryOne('SELECT * FROM invoices WHERE id = $1 AND org_id = $2', [invoiceId, orgId]);
-  if (!invoice) throw { status: 404, message: 'Invoice not found' };
+  if (!invoice) throw new AppError(404, 'Invoice not found');
   const lines = await db.queryAll('SELECT * FROM invoice_lines WHERE invoice_id = $1 ORDER BY id ASC', [invoiceId]);
   const branding = await getOrgBranding(orgId);
   const orgSettings = await db.queryOne('SELECT * FROM org_settings WHERE org_id = $1', [orgId]);
@@ -71,7 +71,7 @@ async function invoicePdf(invoiceId, orgId) {
 async function jobPdf(jobId, orgId) {
   const db = require('../db');
   const job = await db.queryOne('SELECT * FROM jobs WHERE id = $1 AND org_id = $2', [jobId, orgId]);
-  if (!job) throw { status: 404, message: 'Job not found' };
+  if (!job) throw new AppError(404, 'Job not found');
   const insp = await db.queryOne(
     'SELECT * FROM inspections WHERE job_id = $1 AND org_id = $2 ORDER BY created_at DESC LIMIT 1',
     [jobId, orgId]

@@ -47,10 +47,10 @@ function brakesFail(brakeTestData) {
   if (!brakeTestData) return false;
   const axles = brakeTestData.axles ? Object.values(brakeTestData.axles) : [];
   if (axles.some(b => !b.pass)) return true;
-  const sbe = parseFloat(brakeTestData.sbe);
-  const sbe2 = parseFloat(brakeTestData.sbe2);
-  const pbe = parseFloat(brakeTestData.pbe);
-  return (!isNaN(sbe) && sbe < 50) || (!isNaN(sbe2) && sbe2 < 50) || (!isNaN(pbe) && pbe < 16);
+  const sbe = Number.parseFloat(brakeTestData.sbe);
+  const sbe2 = Number.parseFloat(brakeTestData.sbe2);
+  const pbe = Number.parseFloat(brakeTestData.pbe);
+  return (!Number.isNaN(sbe) && sbe < 50) || (!Number.isNaN(sbe2) && sbe2 < 50) || (!Number.isNaN(pbe) && pbe < 16);
 }
 
 function countFailedTyres(tyreData) {
@@ -103,7 +103,7 @@ async function createInspection(body, org) {
     status, checkItems, brakeTestData, tyreData,
     defects, nilDefect, overallMileage
   } = body;
-  if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
+  if (!vehicleReg) throw new AppError(400, 'vehicleReg is required');
 
   const result = calculateInspectionResult({ nilDefect, defects, checkItems, brakeTestData, tyreData });
   const inspId = 'INS-' + Date.now().toString().slice(-6);
@@ -161,7 +161,7 @@ async function createInspection(body, org) {
 async function updateInspection(body, org, inspectionId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspectionId, orgId]);
-  if (!existing) throw { status: 404, message: 'Inspection not found' };
+  if (!existing) throw new AppError(404, 'Inspection not found');
 
   const { result: clientResult, status, checkItems, tyreData, brakeTestData, nilDefect, notes, inspectorName, overallMileage, defects: newDefects } = body;
   const isComplete = status === 'complete';
@@ -239,7 +239,7 @@ async function updateDefect(body, org, defectId) {
      repairPhotoUrl || null,
      defectId, orgId]
   );
-  if (!defect) throw { status: 404, message: 'Defect not found' };
+  if (!defect) throw new AppError(404, 'Defect not found');
 
   // Full recalculation using all inspection inputs (defects + check items + brakes + tyres)
   if (resolved !== undefined && defect.inspection_id) {
@@ -283,7 +283,7 @@ async function getDefects(org, queryParams) {
 async function deleteInspection(org, inspectionId) {
   const orgId = org.id || org.org_id;
   const existing = await queryOne('SELECT id FROM inspections WHERE id = $1 AND org_id = $2', [inspectionId, orgId]);
-  if (!existing) throw { status: 404, message: 'Inspection not found' };
+  if (!existing) throw new AppError(404, 'Inspection not found');
   await query('DELETE FROM inspections WHERE id = $1 AND org_id = $2', [inspectionId, orgId]);
   await logActivity(orgId, 'INSPECT', 'INSPECTION_DELETED', 'Inspection #' + inspectionId + ' deleted');
   return { deleted: true };
@@ -291,7 +291,7 @@ async function deleteInspection(org, inspectionId) {
 
 async function bulkDeleteInspections(org, ids) {
   const orgId = org.id || org.org_id;
-  if (!Array.isArray(ids) || !ids.length) throw { status: 400, message: 'ids array required' };
+  if (!Array.isArray(ids) || !ids.length) throw new AppError(400, 'ids array required');
   const result = await query('DELETE FROM inspections WHERE id = ANY($1::int[]) AND org_id = $2', [ids, orgId]);
   await logActivity(orgId, 'INSPECT', 'INSPECTIONS_BULK_DELETED', `${result.rowCount} inspections deleted`);
   return { deleted: result.rowCount };
@@ -300,7 +300,7 @@ async function bulkDeleteInspections(org, ids) {
 async function receiveAssignedJob(body, org) {
   const orgId = org.id || org.org_id;
   const { vehicleReg, inspectionType, technicianName, workshopJobId, jobId } = body;
-  if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
+  if (!vehicleReg) throw new AppError(400, 'vehicleReg is required');
   const jobRef = workshopJobId || jobId;
   if (jobRef) {
     const exists = await queryOne('SELECT id, inspection_id FROM inspections WHERE job_id = $1 AND org_id = $2', [jobRef, orgId]);
@@ -322,8 +322,8 @@ async function receiveAssignedJob(body, org) {
 async function raiseDefects(body, org) {
   const orgId = org.id || org.org_id;
   const { vehicleReg, workshopJobId, inspectionId, defects = [] } = body;
-  if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
-  if (!Array.isArray(defects) || defects.length === 0) throw { status: 400, message: 'defects array is required' };
+  if (!vehicleReg) throw new AppError(400, 'vehicleReg is required');
+  if (!Array.isArray(defects) || defects.length === 0) throw new AppError(400, 'defects array is required');
   const reg = vehicleReg.toUpperCase().trim();
   const raised = [];
   for (const defect of defects) {
@@ -370,9 +370,9 @@ async function getInspectionParts(org, inspectionId) {
 async function addInspectionPart(body, org) {
   const orgId = org.id || org.org_id;
   const { inspectionId, partId, partName, quantity, unitCost } = body;
-  if (!inspectionId || !partName) throw { status: 400, message: 'inspectionId and partName required' };
-  const qty = parseInt(quantity || 1);
-  const cost = parseFloat(unitCost || 0);
+  if (!inspectionId || !partName) throw new AppError(400, 'inspectionId and partName required');
+  const qty = Number.parseInt(quantity || 1);
+  const cost = Number.parseFloat(unitCost || 0);
   const lineTotal = Math.round(qty * cost * 100) / 100;
 
   const row = await queryOne(
@@ -399,10 +399,10 @@ async function removeInspectionPart(org, id) {
 async function calculateInspectionCosts(org, inspectionId) {
   const orgId = org.id || org.org_id;
   const insp = await queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspectionId, orgId]);
-  if (!insp) throw { status: 404, message: 'Inspection not found' };
+  if (!insp) throw new AppError(404, 'Inspection not found');
 
   const usedParts = await queryAll('SELECT * FROM inspection_parts WHERE inspection_id = $1 AND org_id = $2', [inspectionId, orgId]);
-  const partsCost = usedParts.reduce((sum, p) => sum + parseFloat(p.line_total || 0), 0);
+  const partsCost = usedParts.reduce((sum, p) => sum + Number.parseFloat(p.line_total || 0), 0);
 
   // Labour: time from created_at to completed_at, or fallback to 1 hour
   let labourHours = 1;

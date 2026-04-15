@@ -89,25 +89,25 @@ async function getOverview(org) {
 
   return {
     workshop: {
-      active: parseInt(workshopStats.active),
-      onFloor: parseInt(workshopStats.on_floor),
-      urgent: parseInt(workshopStats.urgent),
-      total: parseInt(workshopStats.total)
+      active: Number.parseInt(workshopStats.active),
+      onFloor: Number.parseInt(workshopStats.on_floor),
+      urgent: Number.parseInt(workshopStats.urgent),
+      total: Number.parseInt(workshopStats.total)
     },
     inspect: {
-      total: parseInt(inspectStats.total),
-      passed: parseInt(inspectStats.passed),
-      failed: parseInt(inspectStats.failed),
-      advisory: parseInt(inspectStats.advisory),
-      inProgress: parseInt(inspectStats.in_progress),
-      queued: parseInt(inspectStats.queued)
+      total: Number.parseInt(inspectStats.total),
+      passed: Number.parseInt(inspectStats.passed),
+      failed: Number.parseInt(inspectStats.failed),
+      advisory: Number.parseInt(inspectStats.advisory),
+      inProgress: Number.parseInt(inspectStats.in_progress),
+      queued: Number.parseInt(inspectStats.queued)
     },
     parts: {
-      pending: parseInt(partsStats.pending),
-      ordered: parseInt(partsStats.ordered),
-      ready: parseInt(partsStats.ready),
-      total: parseInt(partsStats.total),
-      spendMtd: parseFloat(partsStats.spend_mtd || 0).toFixed(2)
+      pending: Number.parseInt(partsStats.pending),
+      ordered: Number.parseInt(partsStats.ordered),
+      ready: Number.parseInt(partsStats.ready),
+      total: Number.parseInt(partsStats.total),
+      spendMtd: Number.parseFloat(partsStats.spend_mtd || 0).toFixed(2)
     },
     alerts,
     alertCount: alerts.length,
@@ -121,8 +121,8 @@ async function getOverview(org) {
 
 async function getActivity(org, queryParams) {
   const orgId = org.id || org.org_id;
-  const limit = parseInt(queryParams.limit || '50');
-  const offset = parseInt(queryParams.offset || '0');
+  const limit = Number.parseInt(queryParams.limit || '50');
+  const offset = Number.parseInt(queryParams.offset || '0');
 
   const activities = await queryAll(
     `SELECT * FROM activity_log WHERE org_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
@@ -130,7 +130,7 @@ async function getActivity(org, queryParams) {
   );
   const countResult = await queryOne(`SELECT COUNT(*) as count FROM activity_log WHERE org_id = $1`, [orgId]);
 
-  return { activity: activities, total: parseInt(countResult.count), limit, offset };
+  return { activity: activities, total: Number.parseInt(countResult.count), limit, offset };
 }
 
 // ═══════════════════════════════════════════════

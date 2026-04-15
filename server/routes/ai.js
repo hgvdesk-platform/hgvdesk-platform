@@ -59,10 +59,10 @@ function buildUserPrompt({ zone, severity, vehicleType, vehicleReg, partialText 
 
 async function defectSuggestion(body) {
   if (!client) {
-    throw { status: 503, message: 'AI assistant not configured (ANTHROPIC_API_KEY missing)' };
+    throw new AppError(503, 'AI assistant not configured (ANTHROPIC_API_KEY missing)');
   }
   const { zone, severity, vehicleType, vehicleReg, partialText } = body || {};
-  if (!zone) throw { status: 400, message: 'zone is required' };
+  if (!zone) throw new AppError(400, 'zone is required');
 
   const message = await client.messages.create({
     model: 'claude-haiku-4-5',
@@ -96,9 +96,9 @@ const REPAIR_SYSTEM_PROMPT = [
 ].join('\n');
 
 async function repairSuggestion(body) {
-  if (!client) throw { status: 503, message: 'AI assistant not configured' };
+  if (!client) throw new AppError(503, 'AI assistant not configured');
   const { defectDescription, zone, severity } = body || {};
-  if (!defectDescription) throw { status: 400, message: 'defectDescription is required' };
+  if (!defectDescription) throw new AppError(400, 'defectDescription is required');
 
   const prompt = [
     `Original defect: ${defectDescription}`,
@@ -218,10 +218,10 @@ function buildPredictionPrompt({ vehicleReg, inspections }) {
 
 async function maintenancePrediction({ vehicleReg, inspections }) {
   if (!client) {
-    throw { status: 503, message: 'AI assistant not configured (ANTHROPIC_API_KEY missing)' };
+    throw new AppError(503, 'AI assistant not configured (ANTHROPIC_API_KEY missing)');
   }
-  if (!vehicleReg) throw { status: 400, message: 'vehicleReg is required' };
-  if (!Array.isArray(inspections)) throw { status: 400, message: 'inspections must be an array' };
+  if (!vehicleReg) throw new AppError(400, 'vehicleReg is required');
+  if (!Array.isArray(inspections)) throw new AppError(400, 'inspections must be an array');
 
   const message = await client.messages.create({
     model: 'claude-haiku-4-5',
@@ -355,8 +355,8 @@ function todayIso() {
 }
 
 async function nlSearchInterpret({ query }) {
-  if (!client) throw { status: 503, message: 'AI assistant not configured (ANTHROPIC_API_KEY missing)' };
-  if (!query || !query.trim()) throw { status: 400, message: 'query is required' };
+  if (!client) throw new AppError(503, 'AI assistant not configured (ANTHROPIC_API_KEY missing)');
+  if (!query || !query.trim()) throw new AppError(400, 'query is required');
 
   const message = await client.messages.create({
     model: 'claude-haiku-4-5',
@@ -376,7 +376,7 @@ async function nlSearchInterpret({ query }) {
   } catch (e) {
     // Try to extract the first {...} block if the model wrapped it.
     const braceMatch = raw.match(/\{[\s\S]*\}/);
-    if (!braceMatch) throw { status: 502, message: 'AI returned unparseable JSON: ' + raw.slice(0, 200) };
+    if (!braceMatch) throw new AppError(502, 'AI returned unparseable JSON: ' + raw.slice(0, 200));
     parsed = JSON.parse(braceMatch[0]);
   }
   return { parsed, model: message.model, usage: message.usage };
@@ -420,9 +420,9 @@ function fragmentFor(column, cfg, value) {
 }
 
 function validateAndBuildQuery(parsed, orgId) {
-  if (!parsed || typeof parsed !== 'object') throw { status: 502, message: 'AI returned invalid shape' };
+  if (!parsed || typeof parsed !== 'object') throw new AppError(502, 'AI returned invalid shape');
   const def = SEARCH_SCHEMA[parsed.entity];
-  if (!def) throw { status: 400, message: `Unknown entity: ${parsed.entity}` };
+  if (!def) throw new AppError(400, `Unknown entity: ${parsed.entity}`);
 
   const filters = (parsed.filters && typeof parsed.filters === 'object') ? parsed.filters : {};
   const where = ['org_id = $1'];
@@ -577,9 +577,9 @@ function buildContextPrefix(context) {
 }
 
 async function technicalAssistant(body) {
-  if (!client) throw { status: 503, message: 'AI assistant not configured' };
+  if (!client) throw new AppError(503, 'AI assistant not configured');
   const { message, history, context } = body || {};
-  if (!message) throw { status: 400, message: 'message is required' };
+  if (!message) throw new AppError(400, 'message is required');
 
   const messages = buildHistoryMessages(history);
   const prefix = messages.length === 0 ? buildContextPrefix(context) : '';
