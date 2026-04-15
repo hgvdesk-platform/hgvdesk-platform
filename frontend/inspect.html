@@ -631,6 +631,13 @@ function saveInspState() {
     } catch (e) {}
   }, 500);
 }
+function applyRestoredState(s) {
+  if (s.checks && Object.keys(s.checks).length) checks = s.checks;
+  if (s.brakes && Object.keys(s.brakes).length) brakes = s.brakes;
+  if (s.tyres && Object.keys(s.tyres).length) tyres = s.tyres;
+  var fields = [['sbe',s.sbe],['sbe2',s.sbe2],['pbe',s.pbe]];
+  fields.forEach(function(f) { if (f[1]) document.getElementById(f[0]).value = f[1]; });
+}
 function restoreInspState() {
   try {
     var raw = localStorage.getItem('hgv_insp_state');
@@ -641,13 +648,7 @@ function restoreInspState() {
     var type = (document.getElementById('f-type') || {}).value || '';
     if (reg && reg !== s.reg) return false;
     if (type && type !== s.type) return false;
-    if (s.checks && Object.keys(s.checks).length) checks = s.checks;
-    if (s.brakes && Object.keys(s.brakes).length) brakes = s.brakes;
-    if (s.tyres && Object.keys(s.tyres).length) tyres = s.tyres;
-    if (s.sbe) document.getElementById('sbe').value = s.sbe;
-    if (s.sbe2) document.getElementById('sbe2').value = s.sbe2;
-    if (s.pbe) document.getElementById('pbe').value = s.pbe;
-    console.log('[INSPECT] Restored state from localStorage — checks:', Object.keys(checks).length, 'brakes:', Object.keys(brakes).length, 'tyres:', Object.keys(tyres).length);
+    applyRestoredState(s);
     return true;
   } catch (e) { return false; }
 }
@@ -1282,41 +1283,44 @@ document.getElementById('nil-box').addEventListener('click', function() {
 });
 
 // BANNER
-function updateBanner() {
-  // Account for rectified defects when calculating the live result
+function countBannerStats() {
   var resolved = getResolvedDefects ? getResolvedDefects() : defects;
   var openDefs = resolved.filter(function(d) { return !d.resolved; });
-  var fails = Object.values(checks).filter(function(s) { return s === 'fail'; }).length;
-  var advs = Object.values(checks).filter(function(s) { return s === 'adv'; }).length;
-  var critD = openDefs.filter(function(d) { return d.severity === 'critical'; }).length;
-  var advD = openDefs.filter(function(d) { return d.severity === 'advisory'; }).length;
-  var tyreDef = Object.values(tyres).filter(function(t) { return t.condition === 'def'; }).length;
   var sbe = parseFloat(document.getElementById('sbe').value);
   var sbe2 = parseFloat(document.getElementById('sbe2').value);
   var pbe = parseFloat(document.getElementById('pbe').value);
-  var bf = (!isNaN(sbe) && sbe < 50) || (!isNaN(sbe2) && sbe2 < 50) || (!isNaN(pbe) && pbe < 16);
-  var bi = Object.values(brakes).filter(function(b) { return !b.pass; }).length;
-  var tf = fails + critD + tyreDef + (bf ? 1 : 0) + bi;
-  var ta = advs + advD;
-  var rectCount = defects.length - openDefs.length;
-  var rb = document.getElementById('live-rb');
-  var rt = document.getElementById('rb-title');
-  var ri = document.getElementById('rb-icon');
-  var rs = document.getElementById('rb-sub');
-  var rectNote = rectCount > 0 ? ' (' + rectCount + ' rectified)' : '';
-  if (tf > 0) {
-    var reasons = [];
-    if (fails > 0) reasons.push(fails + ' check item(s) failed');
-    if (critD > 0) reasons.push(critD + ' critical defect(s)');
-    if (tyreDef > 0) reasons.push(tyreDef + ' tyre defect(s)');
-    if (bf) reasons.push('brake efficiency below DVSA minimum');
-    if (bi > 0) reasons.push(bi + ' axle imbalance fail(s)');
-    rb.className = 'rb rb-f'; ri.textContent = 'FAIL'; rt.textContent = 'Inspection FAIL — ' + reasons.join(', ') + rectNote; rt.style.color = 'var(--red)';
-  }
+  return {
+    fails: Object.values(checks).filter(function(s) { return s === 'fail'; }).length,
+    advs: Object.values(checks).filter(function(s) { return s === 'adv'; }).length,
+    critD: openDefs.filter(function(d) { return d.severity === 'critical'; }).length,
+    advD: openDefs.filter(function(d) { return d.severity === 'advisory'; }).length,
+    tyreDef: Object.values(tyres).filter(function(t) { return t.condition === 'def'; }).length,
+    bf: (!isNaN(sbe) && sbe < 50) || (!isNaN(sbe2) && sbe2 < 50) || (!isNaN(pbe) && pbe < 16),
+    bi: Object.values(brakes).filter(function(b) { return !b.pass; }).length,
+    rectCount: defects.length - openDefs.length
+  };
+}
+function buildFailReasons(s) {
+  var r = [];
+  if (s.fails > 0) r.push(s.fails + ' check item(s) failed');
+  if (s.critD > 0) r.push(s.critD + ' critical defect(s)');
+  if (s.tyreDef > 0) r.push(s.tyreDef + ' tyre defect(s)');
+  if (s.bf) r.push('brake efficiency below DVSA minimum');
+  if (s.bi > 0) r.push(s.bi + ' axle imbalance fail(s)');
+  return r.join(', ');
+}
+function updateBanner() {
+  var s = countBannerStats();
+  var tf = s.fails + s.critD + s.tyreDef + (s.bf ? 1 : 0) + s.bi;
+  var ta = s.advs + s.advD;
+  var rb = document.getElementById('live-rb'), rt = document.getElementById('rb-title');
+  var ri = document.getElementById('rb-icon'), rs = document.getElementById('rb-sub');
+  var rectNote = s.rectCount > 0 ? ' (' + s.rectCount + ' rectified)' : '';
+  if (tf > 0) { rb.className = 'rb rb-f'; ri.textContent = 'FAIL'; rt.textContent = 'Inspection FAIL — ' + buildFailReasons(s) + rectNote; rt.style.color = 'var(--red)'; }
   else if (ta > 0) { rb.className = 'rb rb-a'; ri.textContent = 'ADV'; rt.textContent = 'Advisory - ' + ta + ' item(s) to monitor' + rectNote; rt.style.color = 'var(--amber)'; }
-  else if (rectCount > 0) { rb.className = 'rb rb-p'; ri.textContent = 'ok'; rt.textContent = 'Pass - All ' + rectCount + ' defect(s) rectified'; rt.style.color = 'var(--green)'; }
+  else if (s.rectCount > 0) { rb.className = 'rb rb-p'; ri.textContent = 'ok'; rt.textContent = 'Pass - All ' + s.rectCount + ' defect(s) rectified'; rt.style.color = 'var(--green)'; }
   else { rb.className = 'rb rb-p'; ri.textContent = 'ok'; rt.textContent = 'No Issues - Pass'; rt.style.color = 'var(--green)'; }
-  rs.textContent = ta + ' advisories - ' + tf + ' defects' + (rectCount > 0 ? ' - ' + rectCount + ' rectified' : '');
+  rs.textContent = ta + ' advisories - ' + tf + ' defects' + (s.rectCount > 0 ? ' - ' + s.rectCount + ' rectified' : '');
 }
 
 // SUBMIT

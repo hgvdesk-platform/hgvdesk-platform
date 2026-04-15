@@ -211,8 +211,8 @@ const PAGES = {
   '/privacy': 'privacy.html',
   '/terms': 'terms.html',
   '/contact': 'contact.html',
-  '/forgot-password': 'forgot-password.html',
-  '/reset-password': 'reset-password.html',
+  '/forgot-password': 'forgot-password.html', // NOSONAR — URL path, not a credential
+  '/reset-password': 'reset-password.html', // NOSONAR — URL path, not a credential
   '/settings': 'settings.html',
   '/vehicles': 'vehicles.html',
 };
@@ -525,57 +525,52 @@ async function handleAdmin(ctx, res) {
   return false;
 }
 
+async function routeJobById(method, id, ctx, res) {
+  if (method === 'GET') { ok(res, await workshop.getJob(ctx.req, ctx.caller, id)); return true; }
+  if (method === 'PUT') { ok(res, await workshop.updateJob(ctx.body, ctx.caller, id)); return true; }
+  if (method === 'DELETE') { ok(res, await workshop.deleteJob(ctx.caller, id)); return true; }
+  return false;
+}
+
 async function handleWorkshop(ctx, res) {
   const { p, method, body, caller, qs } = ctx;
-  const req = ctx.req;
-
-  if (p === '/api/jobs' && method === 'GET') { ok(res, await workshop.getJobs(req, caller, qs)); return true; }
+  if (p === '/api/jobs' && method === 'GET') { ok(res, await workshop.getJobs(ctx.req, caller, qs)); return true; }
   if (p === '/api/jobs' && method === 'POST') { created(res, await workshop.createJob(body, caller)); return true; }
-
+  if (p === '/api/jobs/bulk' && method === 'DELETE') { ok(res, await workshop.bulkDeleteJobs(caller, body.ids)); return true; }
+  if (p === '/api/sync/parts-update' && method === 'POST') { ok(res, await workshop.receivePartsUpdate(body, caller)); return true; }
   const jobIdMatch = p.match(/^\/api\/jobs\/(\d+)$/);
-  if (jobIdMatch) {
-    const id = parseInt(jobIdMatch[1]);
-    if (method === 'GET') { ok(res, await workshop.getJob(req, caller, id)); return true; }
-    if (method === 'PUT') { ok(res, await workshop.updateJob(body, caller, id)); return true; }
-    if (method === 'DELETE') { ok(res, await workshop.deleteJob(caller, id)); return true; }
-  }
-
+  if (jobIdMatch) return routeJobById(method, parseInt(jobIdMatch[1]), ctx, res);
   const sendMatch = p.match(/^\/api\/jobs\/(\d+)\/send$/);
   if (sendMatch && method === 'POST') { ok(res, await workshop.sendToFloor(body, caller, parseInt(sendMatch[1]))); return true; }
+  return false;
+}
 
-  if (p === '/api/sync/parts-update' && method === 'POST') { ok(res, await workshop.receivePartsUpdate(body, caller)); return true; }
-  if (p === '/api/jobs/bulk' && method === 'DELETE') { ok(res, await workshop.bulkDeleteJobs(caller, body.ids)); return true; }
+async function routeInspById(method, id, body, caller, res) {
+  if (method === 'PUT') { ok(res, await inspect.updateInspection(body, caller, id)); return true; }
+  if (method === 'DELETE') { ok(res, await inspect.deleteInspection(caller, id)); return true; }
+  return false;
+}
 
+async function routeInspParts(method, id, body, caller, res) {
+  if (method === 'GET') { ok(res, await inspect.getInspectionParts(caller, id)); return true; }
+  if (method === 'POST') { created(res, await inspect.addInspectionPart({ ...body, inspectionId: id }, caller)); return true; }
   return false;
 }
 
 async function handleInspections(ctx, res) {
   const { p, method, body, caller, qs } = ctx;
-
   if (p === '/api/inspections' && method === 'GET') { ok(res, await inspect.getInspections(caller, qs)); return true; }
   if (p === '/api/inspections' && method === 'POST') { created(res, await inspect.createInspection(body, caller)); return true; }
   if (p === '/api/inspections/bulk' && method === 'DELETE') { ok(res, await inspect.bulkDeleteInspections(caller, body.ids)); return true; }
-
-  const inspIdMatch = p.match(/^\/api\/inspections\/(\d+)$/);
-  if (inspIdMatch) {
-    const id = parseInt(inspIdMatch[1]);
-    if (method === 'PUT') { ok(res, await inspect.updateInspection(body, caller, id)); return true; }
-    if (method === 'DELETE') { ok(res, await inspect.deleteInspection(caller, id)); return true; }
-  }
-
   if (p === '/api/sync/assigned-job' && method === 'POST') { ok(res, await inspect.receiveAssignedJob(body, caller)); return true; }
-
-  // Inspection parts (parts used during inspection)
+  const inspIdMatch = p.match(/^\/api\/inspections\/(\d+)$/);
+  if (inspIdMatch) return routeInspById(method, parseInt(inspIdMatch[1]), body, caller, res);
   const inspPartsMatch = p.match(/^\/api\/inspections\/(\d+)\/parts$/);
-  if (inspPartsMatch && method === 'GET') { ok(res, await inspect.getInspectionParts(caller, parseInt(inspPartsMatch[1]))); return true; }
-  if (inspPartsMatch && method === 'POST') { created(res, await inspect.addInspectionPart({ ...body, inspectionId: parseInt(inspPartsMatch[1]) }, caller)); return true; }
-
+  if (inspPartsMatch) return routeInspParts(method, parseInt(inspPartsMatch[1]), body, caller, res);
   const inspPartDelMatch = p.match(/^\/api\/inspection-parts\/(\d+)$/);
   if (inspPartDelMatch && method === 'DELETE') { ok(res, await inspect.removeInspectionPart(caller, parseInt(inspPartDelMatch[1]))); return true; }
-
   const inspCostMatch = p.match(/^\/api\/inspections\/(\d+)\/costs$/);
   if (inspCostMatch && method === 'POST') { ok(res, await inspect.calculateInspectionCosts(caller, parseInt(inspCostMatch[1]))); return true; }
-
   return false;
 }
 

@@ -175,14 +175,9 @@ function tyreCard(posName, d) {
   </div></td>`;
 }
 
-function buildTyreSection(tyres, inspectionType) {
-  if (!tyres || typeof tyres !== 'object' || !Object.keys(tyres).length) {
-    return `<tr><td colspan="4" style="padding:10px 0;${BODY_S}color:${C.muted};font-style:italic;">No tyre data recorded.</td></tr>`;
-  }
+const NO_TYRE_MSG = `<tr><td colspan="4" style="padding:10px 0;${BODY_S}color:${C.muted};font-style:italic;">No tyre data recorded.</td></tr>`;
 
-  const tyreAxles = inspectionType === 'T60' ? TYRE_AXLES_T60 : TYRE_AXLES_T50;
-
-  // Group tyres by axle index, filter to only filled positions
+function groupTyresByAxle(tyres) {
   const grouped = {};
   for (const [key, data] of Object.entries(tyres)) {
     const d = typeof data === 'object' ? data : { depth: data };
@@ -193,32 +188,29 @@ function buildTyreSection(tyres, inspectionType) {
     if (!grouped[ai]) grouped[ai] = [];
     grouped[ai].push({ key, posIdx: parseInt(m[2]), data: d });
   }
+  return grouped;
+}
 
+function renderTyreAxleRow(axleDef, positions) {
+  let h = `<tr><td colspan="4" style="padding:12px 0 4px;"><div style="${LBL}color:${C.muted};font-size:9px;">${esc(axleDef.label.toUpperCase())}</div></td></tr>`;
+  h += '<tr>';
+  for (const p of positions) h += tyreCard(axleDef.pos[p.posIdx] || p.key, p.data);
+  for (let pad = positions.length; pad < 4; pad++) h += '<td></td>';
+  h += '</tr>';
+  return h;
+}
+
+function buildTyreSection(tyres, inspectionType) {
+  if (!tyres || typeof tyres !== 'object' || !Object.keys(tyres).length) return NO_TYRE_MSG;
+  const tyreAxles = inspectionType === 'T60' ? TYRE_AXLES_T60 : TYRE_AXLES_T50;
+  const grouped = groupTyresByAxle(tyres);
   const axleKeys = Object.keys(grouped).map(Number).sort((a, b) => a - b);
-  if (!axleKeys.length) {
-    return `<tr><td colspan="4" style="padding:10px 0;${BODY_S}color:${C.muted};font-style:italic;">No tyre data recorded.</td></tr>`;
-  }
-
+  if (!axleKeys.length) return NO_TYRE_MSG;
   let h = secTitle('Tyre Data');
   for (const ai of axleKeys) {
-    const axleDef = tyreAxles[ai];
-    if (!axleDef) continue;
-    const positions = grouped[ai].sort((a, b) => a.posIdx - b.posIdx);
-
-    // Axle group header
-    h += `<tr><td colspan="4" style="padding:12px 0 4px;"><div style="${LBL}color:${C.muted};font-size:9px;">${esc(axleDef.label.toUpperCase())}</div></td></tr>`;
-
-    // Cards in a row
-    h += '<tr>';
-    for (const p of positions) {
-      const posName = axleDef.pos[p.posIdx] || p.key;
-      h += tyreCard(posName, p.data);
-    }
-    // Pad empty cells if fewer than 4
-    for (let pad = positions.length; pad < 4; pad++) h += '<td></td>';
-    h += '</tr>';
+    if (!tyreAxles[ai]) continue;
+    h += renderTyreAxleRow(tyreAxles[ai], grouped[ai].sort((a, b) => a.posIdx - b.posIdx));
   }
-
   h += `<tr><td colspan="4" style="padding:6px 0;"><div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};">HGV legal minimum: 1mm across ¾ width. Advisory threshold: &lt;3mm.</div></td></tr>`;
   return h;
 }

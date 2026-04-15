@@ -40,6 +40,24 @@ async function sendAlertEmail(to, subject, body) {
   }
 }
 
+function motSeverityAndTitle(reg, days) {
+  if (days < 0) return { severity: 'critical', title: reg + ' MOT EXPIRED (' + Math.abs(days) + ' days ago)' };
+  if (days <= 7) return { severity: 'urgent', title: reg + ' MOT expires in ' + days + ' day(s)' };
+  return { severity: 'warning', title: reg + ' MOT expires in ' + days + ' days' };
+}
+
+async function emailMotAlert(n, severity, title, v) {
+  if (!n || (severity !== 'critical' && severity !== 'urgent')) return;
+  const admin = await getOrgAdmin(v.org_id);
+  if (!admin) return;
+  const color = severity === 'critical' ? '#ff3b30' : '#ff9500';
+  await sendAlertEmail(admin.email, title,
+    '<p style="font-size:14px;color:' + color + ';font-weight:700;">' + title + '</p>' +
+    '<p>' + (v.make || '') + ' ' + (v.model || '') + '</p>' +
+    '<p style="margin-top:12px;"><a href="https://hgvdesk.co.uk/vehicles" style="background:#ff5500;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View Vehicles</a></p>');
+  await query('UPDATE notifications SET emailed=true WHERE id=$1', [n.id]);
+}
+
 async function checkMotAlerts() {
   const results = [];
   const vehicles = await queryAll(`
@@ -51,34 +69,10 @@ async function checkMotAlerts() {
   for (const v of vehicles) {
     const days = Math.floor((new Date(v.mot_expiry) - new Date()) / 86400000);
     if (days > 30) continue;
-
-    let severity, title;
-    if (days < 0) {
-      severity = 'critical';
-      title = v.registration + ' MOT EXPIRED (' + Math.abs(days) + ' days ago)';
-    } else if (days <= 7) {
-      severity = 'urgent';
-      title = v.registration + ' MOT expires in ' + days + ' day(s)';
-    } else {
-      severity = 'warning';
-      title = v.registration + ' MOT expires in ' + days + ' days';
-    }
-
-    const n = await createNotification(v.org_id, 'mot_expiry', severity, title,
-      (v.make || '') + ' ' + (v.model || '') + ' — MOT: ' + new Date(v.mot_expiry).toLocaleDateString('en-GB'),
-      'vehicle', v.id, '/vehicles');
-
-    if (n && (severity === 'critical' || severity === 'urgent')) {
-      const admin = await getOrgAdmin(v.org_id);
-      if (admin) {
-        const color = severity === 'critical' ? '#ff3b30' : '#ff9500';
-        await sendAlertEmail(admin.email, title,
-          '<p style="font-size:14px;color:' + color + ';font-weight:700;">' + title + '</p>' +
-          '<p>' + (v.make || '') + ' ' + (v.model || '') + '</p>' +
-          '<p style="margin-top:12px;"><a href="https://hgvdesk.co.uk/vehicles" style="background:#ff5500;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">View Vehicles</a></p>');
-        await query('UPDATE notifications SET emailed=true WHERE id=$1', [n.id]);
-      }
-    }
+    const { severity, title } = motSeverityAndTitle(v.registration, days);
+    const detail = (v.make || '') + ' ' + (v.model || '') + ' — MOT: ' + new Date(v.mot_expiry).toLocaleDateString('en-GB');
+    const n = await createNotification(v.org_id, 'mot_expiry', severity, title, detail, 'vehicle', v.id, '/vehicles');
+    await emailMotAlert(n, severity, title, v);
     results.push({ type: 'mot', vehicle: v.registration, severity, days });
   }
   return results;
