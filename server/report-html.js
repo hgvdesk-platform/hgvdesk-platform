@@ -282,20 +282,36 @@ function buildBrakeSection(brakes) {
   return h;
 }
 
+function buildPhotoHtml(url, caption) {
+  if (!url) return '';
+  return `<div style="margin-top:8px;"><div style="${LBL}color:${C.muted};margin-bottom:4px;">${esc(caption)}</div><img src="${url}" style="max-width:200px;max-height:150px;border-radius:6px;border:1px solid ${C.border};object-fit:cover;" alt="${esc(caption)}"></div>`;
+}
+
+function buildRectifiedBlock(d) {
+  let h = `<div style="background:${C.repairBg};padding:12px 18px;border-top:1px solid #c8e0a8;">`;
+  h += `<div style="${LBL}color:${C.repairGreen};margin-bottom:4px;">RECTIFIED</div>`;
+  if (d.resolved_by) h += `<div style="font-family:'Barlow',sans-serif;font-size:12px;color:${C.text};">By: <strong>${esc(d.resolved_by)}</strong></div>`;
+  if (d.resolution_notes) h += `<div style="font-family:'Barlow',sans-serif;font-size:12px;color:${C.text};margin-top:4px;line-height:1.5;background:#fff;padding:8px 12px;border-radius:4px;border:1px solid #c8e0a8;">${esc(d.resolution_notes)}</div>`;
+  h += buildPhotoHtml(d.repair_photo_url, 'Repair Evidence');
+  if (d.resolved_at) h += `<div style="font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};margin-top:6px;">${fmtDateTime(d.resolved_at)}</div>`;
+  h += '</div>';
+  return h;
+}
+
 function buildDefectCard(d) {
   const borderColor = d.resolved ? C.repairGreen : (d.severity==='critical'?C.failRed:C.advAmber);
-  return `<tr><td colspan="4" style="padding:6px 0;">
-    <div style="border:1px solid ${C.border};border-left:4px solid ${borderColor};border-radius:6px;overflow:hidden;">
-      <div style="padding:14px 18px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <span style="${HEAD_S}font-size:14px;color:${C.text};">${esc(d.title||d.description||'Defect')}</span>
-          ${sevBadge(d.severity)}
-        </div>
-        ${d.description&&d.description!==d.title ? '<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.muted+';line-height:1.5;">'+esc(d.description)+'</div>' : ''}
-      </div>
-      ${d.resolved ? '<div style="background:'+C.repairBg+';padding:12px 18px;border-top:1px solid #c8e0a8;"><div style="'+LBL+'color:'+C.repairGreen+';margin-bottom:4px;">RECTIFIED</div>'+(d.resolved_by?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';">By: <strong>'+esc(d.resolved_by)+'</strong></div>':'')+(d.resolution_notes?'<div style="font-family:\'Barlow\',sans-serif;font-size:12px;color:'+C.text+';margin-top:2px;">'+esc(d.resolution_notes)+'</div>':'')+(d.resolved_at?'<div style="font-family:\'Barlow\',sans-serif;font-size:10px;color:'+C.muted+';margin-top:4px;">'+fmtDateTime(d.resolved_at)+'</div>':'')+'</div>' : ''}
-    </div>
-  </td></tr>`;
+  let body = `<div style="padding:14px 18px;">`;
+  body += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">`;
+  body += `<span style="${HEAD_S}font-size:14px;color:${C.text};">${esc(d.title||d.description||'Defect')}</span>`;
+  body += sevBadge(d.severity);
+  body += `</div>`;
+  if (d.description && d.description !== d.title) {
+    body += `<div style="font-family:'Barlow',sans-serif;font-size:12px;color:${C.muted};line-height:1.5;">${esc(d.description)}</div>`;
+  }
+  body += buildPhotoHtml(d.photo_url, 'Defect Photo');
+  body += `</div>`;
+  if (d.resolved) body += buildRectifiedBlock(d);
+  return `<tr><td colspan="4" style="padding:6px 0;"><div style="border:1px solid ${C.border};border-left:4px solid ${borderColor};border-radius:6px;overflow:hidden;">${body}</div></td></tr>`;
 }
 
 function buildDefectsSection(defects) {

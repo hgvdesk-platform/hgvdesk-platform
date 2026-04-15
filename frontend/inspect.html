@@ -1564,15 +1564,22 @@ async function saveRectifications(inspectorName) {
 }
 
 function getResolvedDefects() {
-  // Build defects array with rectification checkbox state applied
   return defects.map(function(d) {
+    var obj = Object.assign({}, d);
+    var dPhotos = defectPhotos[d.id];
+    if (dPhotos && dPhotos.length) obj.photoUrl = dPhotos[0].data;
     var cb = document.getElementById('rect-cb-' + d.id);
     if (cb && cb.checked) {
       var by = (document.getElementById('rect-by-' + d.id) || {}).value || '';
       var notes = (document.getElementById('rect-notes-' + d.id) || {}).value || '';
-      return Object.assign({}, d, { resolved: true, resolvedBy: by, resolutionNotes: notes, resolvedAt: new Date().toISOString() });
+      obj.resolved = true;
+      obj.resolvedBy = by;
+      obj.resolutionNotes = notes;
+      obj.resolvedAt = new Date().toISOString();
+      var rPhotos = rectPhotos[d.id];
+      if (rPhotos && rPhotos.length) obj.repairPhotoUrl = rPhotos[0].data;
     }
-    return d;
+    return obj;
   });
 }
 

@@ -74,9 +74,9 @@ async function insertInspectionDefects(orgId, inspectionId, jobId, vehicleReg, d
     await query(
       `INSERT INTO defects
         (org_id, inspection_id, job_id, vehicle_reg, title, description, category,
-         severity, part_name, estimated_cost, photo_url, resolved, resolved_by,
+         severity, part_name, estimated_cost, photo_url, repair_photo_url, resolved, resolved_by,
          resolved_at, resolution_notes, part_raised)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
       [orgId, inspectionId, jobId || null,
        vehicleReg.toUpperCase().trim(),
        d.title || d.description || 'Defect',
@@ -86,6 +86,7 @@ async function insertInspectionDefects(orgId, inspectionId, jobId, vehicleReg, d
        d.partName || d.part_name || null,
        d.estimatedCost || d.estimated_cost || null,
        d.photoUrl || d.photo_url || null,
+       d.repairPhotoUrl || d.repair_photo_url || null,
        d.resolved || false,
        d.resolvedBy || d.resolved_by || null,
        d.resolvedAt || d.resolved_at || null,
@@ -208,7 +209,7 @@ async function updateInspection(body, org, inspectionId) {
 
 async function updateDefect(body, org, defectId) {
   const orgId = org.id || org.org_id;
-  const { resolved, resolvedBy, resolvedAt, resolutionNotes, photoUrl } = body;
+  const { resolved, resolvedBy, resolvedAt, resolutionNotes, photoUrl, repairPhotoUrl } = body;
   const defect = await queryOne(
     `UPDATE defects SET
       resolved = COALESCE($1, resolved),
@@ -216,13 +217,15 @@ async function updateDefect(body, org, defectId) {
       resolved_at = COALESCE($3, resolved_at),
       resolution_notes = COALESCE($4, resolution_notes),
       photo_url = COALESCE($5, photo_url),
+      repair_photo_url = COALESCE($6, repair_photo_url),
       updated_at = NOW()
-    WHERE id = $6 AND org_id = $7 RETURNING *`,
+    WHERE id = $7 AND org_id = $8 RETURNING *`,
     [resolved !== undefined ? resolved : null,
      resolvedBy || null,
      resolvedAt || null,
      resolutionNotes || null,
      photoUrl || null,
+     repairPhotoUrl || null,
      defectId, orgId]
   );
   if (!defect) throw { status: 404, message: 'Defect not found' };
