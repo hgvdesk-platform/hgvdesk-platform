@@ -346,7 +346,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
       </div>
     </div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="idash-sa" onclick="toggleAllInsp('dash-tb','idash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Vehicle</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Time</th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="idash-sa" onchange="toggleAllInsp('dash-tb','idash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Vehicle</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Time</th></tr></thead>
       <tbody id="dash-tb"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr></tbody>
     </table>
   </div>
@@ -361,7 +361,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">Inspections</div><span class="badge bg-b" id="list-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="ilist-sa" onclick="toggleAllInsp('list-tb','ilist-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Vehicle</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Date</th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="ilist-sa" onchange="toggleAllInsp('list-tb','ilist-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Vehicle</th><th>Type</th><th>Inspector</th><th>Result</th><th>Status</th><th>Date</th></tr></thead>
       <tbody id="list-tb"><tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No inspections yet</td></tr></tbody>
     </table>
   </div>
@@ -733,7 +733,7 @@ function loadData() {
       var cls = r === 'pass' ? 'c-p' : r === 'advisory' ? 'c-a' : r === 'fail' ? 'c-f' : 'c-q';
       var mins = Math.floor((Date.now() - new Date(i.created_at)) / 60000);
       var ago = mins < 1 ? 'just now' : mins < 60 ? mins + 'm ago' : Math.floor(mins/60) + 'h ago';
-      return '<tr data-id="'+i.id+'"><td><input type="checkbox" class="row-cb" data-id="'+i.id+'" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td><b style="font-family:monospace;">' + i.vehicle_reg + '</b></td><td>' + i.inspection_type + '</td><td>' + (i.inspector_name || '') + '</td><td><span class="chip ' + cls + '">' + r + '</span></td><td>' + i.status + '</td><td style="font-size:11px;color:var(--t5);">' + ago + '</td><td onclick="event.stopPropagation();deleteInspection('+i.id+')" style="cursor:pointer;color:#ff3b30;font-size:11px;font-weight:600;">Delete</td><td onclick="event.stopPropagation();openRM('+i.id+',\''+i.vehicle_reg+'\')" style="cursor:pointer;color:#0071e3;font-size:11px;font-weight:600;padding:0 8px;">Report</td><td onclick="event.stopPropagation();previewReport('+i.id+')" style="cursor:pointer;color:#636366;font-size:11px;font-weight:600;padding:0 8px;">Preview</td></tr>';
+      return '<tr data-id="'+i.id+'"><td><input type="checkbox" class="row-cb" data-id="'+i.id+'" onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td><b style="font-family:monospace;">' + i.vehicle_reg + '</b></td><td>' + i.inspection_type + '</td><td>' + (i.inspector_name || '') + '</td><td><span class="chip ' + cls + '">' + r + '</span></td><td>' + i.status + '</td><td style="font-size:11px;color:var(--t5);">' + ago + '</td><td onchange="event.stopPropagation();deleteInspection('+i.id+')" style="cursor:pointer;color:#ff3b30;font-size:11px;font-weight:600;">Delete</td><td onchange="event.stopPropagation();openRM('+i.id+',\''+i.vehicle_reg+'\')" style="cursor:pointer;color:#0071e3;font-size:11px;font-weight:600;padding:0 8px;">Report</td><td onchange="event.stopPropagation();previewReport('+i.id+')" style="cursor:pointer;color:#636366;font-size:11px;font-weight:600;padding:0 8px;">Preview</td></tr>';
     }).join('');
     document.getElementById('dash-tb').innerHTML = rows || empty;
     document.getElementById('list-tb').innerHTML = rows || empty;
@@ -1820,7 +1820,7 @@ window.loadData = function() {
       var cls = r==='pass'?'c-p':r==='advisory'?'c-a':r==='fail'?'c-f':'c-q';
       var mins = Math.floor((Date.now()-new Date(i.created_at))/60000);
       var ag = mins<1?'just now':mins<60?mins+'m ago':Math.floor(mins/60)+'h ago';
-      return '<tr data-id="'+i.id+'"><td><input type="checkbox" class="row-cb" data-id="'+i.id+'" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td onclick="openInspRow('+i.id+')" style="cursor:pointer;"><b style="font-family:monospace;">'+i.vehicle_reg+'</b></td><td>'+i.inspection_type+'</td><td>'+(i.inspector_name||'')+'</td><td><span class="chip '+cls+'">'+r+'</span></td><td>'+i.status+'</td><td style="font-size:11px;color:var(--t5);">'+ag+'</td><td onclick="event.stopPropagation();deleteInspection('+i.id+')" style="cursor:pointer;color:#ff3b30;font-size:11px;font-weight:600;">Delete</td><td onclick="event.stopPropagation();openRM('+i.id+',\''+i.vehicle_reg+'\')" style="cursor:pointer;color:#0071e3;font-size:11px;font-weight:600;padding:0 8px;">Report</td><td onclick="event.stopPropagation();previewReport('+i.id+')" style="cursor:pointer;color:#636366;font-size:11px;font-weight:600;padding:0 8px;">Preview</td></tr>';
+      return '<tr data-id="'+i.id+'"><td><input type="checkbox" class="row-cb" data-id="'+i.id+'" onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td onchange="openInspRow('+i.id+')" style="cursor:pointer;"><b style="font-family:monospace;">'+i.vehicle_reg+'</b></td><td>'+i.inspection_type+'</td><td>'+(i.inspector_name||'')+'</td><td><span class="chip '+cls+'">'+r+'</span></td><td>'+i.status+'</td><td style="font-size:11px;color:var(--t5);">'+ag+'</td><td onchange="event.stopPropagation();deleteInspection('+i.id+')" style="cursor:pointer;color:#ff3b30;font-size:11px;font-weight:600;">Delete</td><td onchange="event.stopPropagation();openRM('+i.id+',\''+i.vehicle_reg+'\')" style="cursor:pointer;color:#0071e3;font-size:11px;font-weight:600;padding:0 8px;">Report</td><td onchange="event.stopPropagation();previewReport('+i.id+')" style="cursor:pointer;color:#636366;font-size:11px;font-weight:600;padding:0 8px;">Preview</td></tr>';
     }).join('');
     document.getElementById('dash-tb').innerHTML = rows || empty;
     document.getElementById('list-tb').innerHTML = rows || empty;

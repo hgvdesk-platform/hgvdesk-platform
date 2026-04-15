@@ -220,7 +220,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
       </div>
     </div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="dash-sa" onclick="toggleAll('dash-tb','dash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Time</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox"\1onchange="toggleAll('dash-tb','dash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Time</th><th></th></tr></thead>
       <tbody id="dash-tb"><tr><td colspan="9" style="text-align:center;padding:40px;color:var(--t5);">No jobs yet</td></tr></tbody>
     </table>
   </div>
@@ -238,7 +238,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">Jobs</div><span class="badge bg-b" id="jobs-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="jobs-sa" onclick="toggleAll('jobs-tb','jobs-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox"\1onchange="toggleAll('jobs-tb','jobs-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
       <tbody id="jobs-tb"></tbody>
     </table>
   </div>
@@ -250,7 +250,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">Active Floor Jobs</div><div style="display:flex;gap:6px;align-items:center;"><button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="floor-del-btn" onclick="deleteSelected()">Delete (0)</button><span class="badge bg-a" id="floor-tot">0</span></div></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="floor-sa" onclick="toggleAll('floor-tb','floor-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Inspect</th><th>Parts</th><th>Time</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox"\1onchange="toggleAll('floor-tb','floor-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Inspect</th><th>Parts</th><th>Time</th><th></th></tr></thead>
       <tbody id="floor-tb"></tbody>
     </table>
   </div>
@@ -262,7 +262,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">Urgent</div><div style="display:flex;gap:6px;align-items:center;"><button class="btn" style="background:#dc2626;color:#fff;font-size:11px;padding:5px 12px;display:none;" id="urgent-del-btn" onclick="deleteSelected()">Delete (0)</button><span class="badge bg-r" id="urgent-tot">0</span></div></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="urgent-sa" onclick="toggleAll('urgent-tb','urgent-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Status</th><th>Time</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox"\1onchange="toggleAll('urgent-tb','urgent-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Registration</th><th>Type</th><th>Customer</th><th>Technician</th><th>Status</th><th>Time</th><th></th></tr></thead>
       <tbody id="urgent-tb"></tbody>
     </table>
   </div>
@@ -516,7 +516,7 @@ function renderJobs() {
   document.getElementById('urgent-tot').textContent = urgent.length;
 
   function jobRow(j, cols) {
-    var row = '<tr data-id="' + j.id + '"><td><input type="checkbox" class="row-cb" data-id="' + j.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>';
+    var row = '<tr data-id="' + j.id + '"><td><input type="checkbox"\1onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>';
     row += '<td><span class="reg">' + j.vehicle_reg + '</span>' + (j.trailer_id ? '<div style="font-size:10px;color:var(--t4);margin-top:1px;">Trailer: ' + j.trailer_id + '</div>' : '') + '</td>';
     row += '<td style="font-size:12px;">' + (j.inspection_type || '') + '</td>';
     row += '<td style="font-size:12px;">' + (j.customer_name || '') + '</td>';

@@ -96,7 +96,7 @@ tr:hover td{background:rgba(0,0,0,0.02);}
         <table>
           <thead>
             <tr>
-              <th style="width:32px;"><input type="checkbox" id="cust-sa" onclick="toggleAllCust()" style="width:16px;height:16px;cursor:pointer;"></th>
+              <th style="width:32px;"><input type="checkbox" id="cust-sa" onchange="toggleAllCust()" style="width:16px;height:16px;cursor:pointer;"></th>
               <th>Customer</th>
               <th>Contact</th>
               <th>Email</th>
@@ -221,7 +221,7 @@ function renderTable(list) {
   empty.style.display = 'none';
   tbody.innerHTML = list.map(function(c) {
     return '<tr>' +
-      '<td><input type="checkbox" class="row-cb" data-id="' + c.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>' +
+      '<td><input type="checkbox" class="row-cb" data-id="' + c.id + '" onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>' +
       '<td><div class="customer-name">' + esc(c.name) + '</div></td>' +
       '<td>' + esc(c.contact_name || '-') + '</td>' +
       '<td>' + (c.email ? '<a href="mailto:' + esc(c.email) + '" style="color:var(--blue);text-decoration:none;">' + esc(c.email) + '</a>' : '-') + '</td>' +

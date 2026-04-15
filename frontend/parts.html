@@ -175,7 +175,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
       </div>
     </div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="pdash-sa" onclick="toggleAllParts('pdash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="pdash-sa" onchange="toggleAllParts('pdash-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Date</th><th></th></tr></thead>
       <tbody id="dash-tb"><tr><td colspan="8" style="text-align:center;padding:40px;color:var(--t5);">No parts yet</td></tr></tbody>
     </table>
   </div>
@@ -187,7 +187,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">Pending</div><span class="badge bg-a" id="pending-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" onclick="toggleAllParts('pend-sa')" id="pend-sa" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Priority</th><th>Supplier</th><th>Cost</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" onchange="toggleAllParts('pend-sa')" id="pend-sa" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Priority</th><th>Supplier</th><th>Cost</th><th></th></tr></thead>
       <tbody id="pending-tb"></tbody>
     </table>
   </div>
@@ -199,7 +199,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">Ordered</div><span class="badge bg-b" id="ordered-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" onclick="toggleAllParts('ord-sa')" id="ord-sa" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Supplier</th><th>Ordered</th><th>Cost</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" onchange="toggleAllParts('ord-sa')" id="ord-sa" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Supplier</th><th>Ordered</th><th>Cost</th><th></th></tr></thead>
       <tbody id="ordered-tb"></tbody>
     </table>
   </div>
@@ -211,7 +211,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">Ready</div><span class="badge bg-g" id="ready-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" onclick="toggleAllParts('rdy-sa')" id="rdy-sa" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Received</th><th>Cost</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" onchange="toggleAllParts('rdy-sa')" id="rdy-sa" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Received</th><th>Cost</th><th></th></tr></thead>
       <tbody id="ready-tb"></tbody>
     </table>
   </div>
@@ -226,7 +226,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="card">
     <div class="card-hd"><div class="card-title">All Parts</div><span class="badge bg-i" id="all-tot">0</span></div>
     <table class="tbl">
-      <thead><tr><th style="width:32px;"><input type="checkbox" id="parts-sa" onclick="toggleAllParts('parts-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Cost</th><th>Date</th><th></th></tr></thead>
+      <thead><tr><th style="width:32px;"><input type="checkbox" id="parts-sa" onchange="toggleAllParts('parts-sa')" style="width:16px;height:16px;cursor:pointer;"></th><th>Part Name</th><th>Vehicle</th><th>Category</th><th>Priority</th><th>Status</th><th>Cost</th><th>Date</th><th></th></tr></thead>
       <tbody id="all-tb"></tbody>
     </table>
   </div>
@@ -422,7 +422,7 @@ function renderParts() {
 
   var dashRows = parts.slice(0, 20).map(function(p) {
     return '<tr data-pid="' + p.id + '">' +
-      '<td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>' +
+      '<td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>' +
       '<td style="font-weight:600;">' + p.name + '</td>' +
       '<td><span class="reg">' + p.vehicle_reg + '</span></td>' +
       '<td style="font-size:12px;">' + (p.category || '-') + '</td>' +
@@ -437,23 +437,23 @@ function renderParts() {
   document.getElementById('dash-tb').innerHTML = dashRows || '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--t5);">No parts yet</td></tr>';
 
   var pendingRows = pending.map(function(p) {
-    return '<tr data-pid="' + p.id + '"><td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td>' + priorityChip(p.priority) + '</td><td style="font-size:12px;">' + (p.supplier || '-') + '</td><td style="font-size:12px;">' + (p.unit_cost ? '£' + Number(p.unit_cost).toFixed(2) : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+    return '<tr data-pid="' + p.id + '"><td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td>' + priorityChip(p.priority) + '</td><td style="font-size:12px;">' + (p.supplier || '-') + '</td><td style="font-size:12px;">' + (p.unit_cost ? '£' + Number(p.unit_cost).toFixed(2) : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
   }).join('');
   document.getElementById('pending-tb').innerHTML = pendingRows || '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No pending parts</td></tr>';
 
   var orderedRows = ordered.map(function(p) {
-    return '<tr data-pid="' + p.id + '"><td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:12px;">' + (p.supplier || '-') + '</td><td style="font-size:11px;color:var(--t5);">' + ago(p.ordered_at) + '</td><td style="font-size:12px;">' + (p.unit_cost ? '£' + Number(p.unit_cost).toFixed(2) : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+    return '<tr data-pid="' + p.id + '"><td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:12px;">' + (p.supplier || '-') + '</td><td style="font-size:11px;color:var(--t5);">' + ago(p.ordered_at) + '</td><td style="font-size:12px;">' + (p.unit_cost ? '£' + Number(p.unit_cost).toFixed(2) : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
   }).join('');
   document.getElementById('ordered-tb').innerHTML = orderedRows || '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--t5);">No ordered parts</td></tr>';
 
   var readyRows = ready.map(function(p) {
-    return '<tr data-pid="' + p.id + '"><td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(p.received_at) + '</td><td style="font-size:12px;">' + (p.unit_cost ? '£' + Number(p.unit_cost).toFixed(2) : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
+    return '<tr data-pid="' + p.id + '"><td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td><td style="font-weight:600;">' + p.name + '</td><td><span class="reg">' + p.vehicle_reg + '</span></td><td style="font-size:11px;color:var(--t5);">' + ago(p.received_at) + '</td><td style="font-size:12px;">' + (p.unit_cost ? '£' + Number(p.unit_cost).toFixed(2) : '-') + '</td><td>' + viewBtn(p.id) + '</td></tr>';
   }).join('');
   document.getElementById('ready-tb').innerHTML = readyRows || '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--t5);">No ready parts</td></tr>';
 
   var allRows = parts.map(function(p) {
     return '<tr data-pid="' + p.id + '">' +
-      '<td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onclick="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>' +
+      '<td><input type="checkbox" class="row-cb" data-pid="' + p.id + '" onchange="event.stopPropagation()" style="width:16px;height:16px;cursor:pointer;"></td>' +
       '<td style="font-weight:600;">' + p.name + '</td>' +
       '<td><span class="reg">' + p.vehicle_reg + '</span></td>' +
       '<td style="font-size:12px;">' + (p.category || '-') + '</td>' +
