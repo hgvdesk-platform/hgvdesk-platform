@@ -175,7 +175,7 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
   <div class="pill pill-b">Inspect</div>
   <div class="pill pill-g">Parts</div>
   <span id="last-refresh" style="font-size:11px;color:var(--t5);"></span>
-  <div id="notif-bell" style="position:relative;cursor:pointer;margin-left:8px;" onclick="toggleNotifPanel()">
+  <div id="notif-bell" role="button" tabindex="0" style="position:relative;cursor:pointer;margin-left:8px;" onclick="toggleNotifPanel()" onkeydown="if(event.key==='Enter')toggleNotifPanel()">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#636366" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
     <span id="notif-count" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff3b30;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;text-align:center;line-height:16px;padding:0 4px;">0</span>
   </div>
@@ -226,21 +226,21 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
     <div class="sc g">
       <div class="sc-sys">Systems</div>
       <div style="margin-top:8px;">
-        <div class="sys-link" onclick="window.location.href='/workshop'">
+        <a class="sys-link" href="/workshop" style="text-decoration:none;color:inherit;">
           <div class="sys-icon" style="background:var(--ors);">W</div>
           <div><div class="sys-name">Workshop</div><div class="sys-desc">Job management</div></div>
           <div class="sys-arrow">→</div>
-        </div>
-        <div class="sys-link" onclick="window.location.href='/inspect'">
+        </a>
+        <a class="sys-link" href="/inspect" style="text-decoration:none;color:inherit;">
           <div class="sys-icon" style="background:var(--ts);">I</div>
           <div><div class="sys-name">Inspect</div><div class="sys-desc">Inspections</div></div>
           <div class="sys-arrow">→</div>
-        </div>
-        <div class="sys-link" onclick="window.location.href='/parts'">
+        </a>
+        <a class="sys-link" href="/parts" style="text-decoration:none;color:inherit;">
           <div class="sys-icon" style="background:rgba(88,86,214,0.1);">P</div>
           <div><div class="sys-name">Parts</div><div class="sys-desc">Parts queue</div></div>
           <div class="sys-arrow">→</div>
-        </div>
+        </a>
       </div>
     </div>
   </div>
@@ -597,7 +597,7 @@ function loadNotifList() {
       var sevColor = n.severity === 'critical' ? '#ff3b30' : n.severity === 'urgent' ? '#ff9500' : '#636366';
       var ago = Math.floor((Date.now() - new Date(n.created_at)) / 60000);
       var agoStr = ago < 60 ? ago + 'm' : Math.floor(ago/60) + 'h';
-      return '<div style="padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);background:' + bg + ';cursor:pointer;" onclick="markNotifRead(' + n.id + ',this)">' +
+      return '<div role="button" tabindex="0" style="padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.04);background:' + bg + ';cursor:pointer;" onclick="markNotifRead(' + n.id + ',this)" onkeydown="if(event.key===\'Enter\')markNotifRead(' + n.id + ',this)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;">' +
         '<div style="font-size:12px;font-weight:' + (n.read ? '400' : '600') + ';color:#1d1d1f;">' + (n.title||'') + '</div>' +
         '<div style="font-size:10px;color:#86868b;">' + agoStr + '</div></div>' +

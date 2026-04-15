@@ -143,12 +143,12 @@ nav{flex:1;padding:12px 0;overflow-y:auto;}
   <div class="report-layout">
     <!-- Category sidebar -->
     <div class="report-sidebar">
-      <div class="report-cat active" onclick="loadReport('fleet')"><span class="report-cat-icon">🚛</span> Fleet</div>
-      <div class="report-cat" onclick="loadReport('inspections')"><span class="report-cat-icon">📋</span> Inspections</div>
-      <div class="report-cat" onclick="loadReport('defects')"><span class="report-cat-icon">⚠️</span> Defects</div>
-      <div class="report-cat" onclick="loadReport('wip')"><span class="report-cat-icon">🔧</span> Work in Progress</div>
-      <div class="report-cat" onclick="loadReport('technicians')"><span class="report-cat-icon">👷</span> Technicians</div>
-      <div class="report-cat" onclick="loadReport('parts')"><span class="report-cat-icon">📦</span> Parts</div>
+      <div class="report-cat active" role="tab" tabindex="0" onclick="loadReport('fleet')" onkeydown="if(event.key==='Enter')loadReport('fleet')"><span class="report-cat-icon">🚛</span> Fleet</div>
+      <div class="report-cat" role="tab" tabindex="0" onclick="loadReport('inspections')" onkeydown="if(event.key==='Enter')loadReport('inspections')"><span class="report-cat-icon">📋</span> Inspections</div>
+      <div class="report-cat" role="tab" tabindex="0" onclick="loadReport('defects')" onkeydown="if(event.key==='Enter')loadReport('defects')"><span class="report-cat-icon">⚠️</span> Defects</div>
+      <div class="report-cat" role="tab" tabindex="0" onclick="loadReport('wip')" onkeydown="if(event.key==='Enter')loadReport('wip')"><span class="report-cat-icon">🔧</span> Work in Progress</div>
+      <div class="report-cat" role="tab" tabindex="0" onclick="loadReport('technicians')" onkeydown="if(event.key==='Enter')loadReport('technicians')"><span class="report-cat-icon">👷</span> Technicians</div>
+      <div class="report-cat" role="tab" tabindex="0" onclick="loadReport('parts')" onkeydown="if(event.key==='Enter')loadReport('parts')"><span class="report-cat-icon">📦</span> Parts</div>
     </div>
 
     <!-- Report content -->

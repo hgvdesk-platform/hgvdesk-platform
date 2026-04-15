@@ -71,12 +71,12 @@ tr:hover td{background:rgba(0,0,0,0.02);}
       <div><div class="brand-name">HGVDesk</div><div class="brand-sub">Fleet Platform</div></div>
     </div>
     <nav class="nav">
-      <div class="sbi" onclick="location.href='/workshop'">Workshop</div>
-      <div class="sbi" onclick="location.href='/inspect'">Inspect</div>
-      <div class="sbi" onclick="location.href='/parts'">Parts</div>
+      <a class="sbi" href="/workshop">Workshop</a>
+      <a class="sbi" href="/inspect">Inspect</a>
+      <a class="sbi" href="/parts">Parts</a>
       <div class="sbi active">Customers</div>
-      <div class="sbi" onclick="location.href='/invoices'">Invoices</div>
-      <div class="sbi" onclick="location.href='/reports'">Reports</div>
+      <a class="sbi" href="/invoices">Invoices</a>
+      <a class="sbi" href="/reports">Reports</a>
     </nav>
   </div>
   <div class="main">
@@ -120,7 +120,7 @@ tr:hover td{background:rgba(0,0,0,0.02);}
 </div>
 
 <!-- Modal -->
-<div class="modal-overlay" id="modal" style="display:none;" onclick="if(event.target===this)closeModal()">
+<div class="modal-overlay" id="modal" role="dialog" style="display:none;" onclick="if(event.target===this)closeModal()" onkeydown="if(event.key==='Escape')closeModal()">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="modal-title">Add Customer</div>

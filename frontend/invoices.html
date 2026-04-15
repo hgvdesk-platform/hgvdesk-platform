@@ -149,11 +149,11 @@ tr:hover td{background:rgba(0,0,0,0.015);cursor:pointer;}
   </div>
 
   <div class="tabs">
-    <div class="tab active" onclick="filterInvoices('all', this)">All</div>
-    <div class="tab" onclick="filterInvoices('draft', this)">Draft</div>
-    <div class="tab" onclick="filterInvoices('sent', this)">Sent</div>
-    <div class="tab" onclick="filterInvoices('paid', this)">Paid</div>
-    <div class="tab" onclick="filterInvoices('overdue', this)">Overdue</div>
+    <div class="tab active" role="tab" tabindex="0" onclick="filterInvoices('all', this)" onkeydown="if(event.key==='Enter')filterInvoices('all', this)">All</div>
+    <div class="tab" role="tab" tabindex="0" onclick="filterInvoices('draft', this)" onkeydown="if(event.key==='Enter')filterInvoices('draft', this)">Draft</div>
+    <div class="tab" role="tab" tabindex="0" onclick="filterInvoices('sent', this)" onkeydown="if(event.key==='Enter')filterInvoices('sent', this)">Sent</div>
+    <div class="tab" role="tab" tabindex="0" onclick="filterInvoices('paid', this)" onkeydown="if(event.key==='Enter')filterInvoices('paid', this)">Paid</div>
+    <div class="tab" role="tab" tabindex="0" onclick="filterInvoices('overdue', this)" onkeydown="if(event.key==='Enter')filterInvoices('overdue', this)">Overdue</div>
   </div>
 
   <div class="table-wrap">

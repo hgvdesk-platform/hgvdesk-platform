@@ -167,11 +167,11 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
     <li><div class="sbi" data-href="/inspect">Inspect</div></li>
     <li><div class="sbi" id="nav-techs" data-page="techs">Technicians</div></li>
     <li><div class="sbi" data-href="/parts">Parts</div></li>
-    <li><div class="sbi" onclick="window.location.href='/customers'">Customers</div></li>
-    <li><div class="sbi" onclick="window.location.href='/invoices'">Invoices</div></li>
-    <li><div class="sbi" onclick="window.location.href='/reports'">Reports</div></li>
+    <li><a class="sbi" href="/customers">Customers</a></li>
+    <li><a class="sbi" href="/invoices">Invoices</a></li>
+    <li><a class="sbi" href="/reports">Reports</a></li>
     <li><div class="sbi" data-href="/command">Command</div></li>
-    <li><div class="sbi" onclick="window.location.href='/settings'">Settings</div></li>
+    <li><a class="sbi" href="/settings">Settings</a></li>
   </ul>
   <div class="sb-foot">
     <div style="padding:8px 10px;font-size:11px;color:var(--t5);">API: <span id="api-st" style="color:var(--amber);">Connecting...</span></div>
@@ -712,7 +712,7 @@ document.getElementById('jm-sh-search').addEventListener('input', function() {
   if (!matches.length) { res.style.display = 'none'; return; }
   res.style.display = 'block';
   res.innerHTML = matches.map(function(j) {
-    return '<div onclick="addJobLine(' + j.id + ')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bg);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background=\"#f5f5f7\"" onmouseout="this.style.background=\"\"">' +
+    return '<div role="button" tabindex="0" onclick="addJobLine(' + j.id + ')" onkeydown="if(event.key===\'Enter\')addJobLine(' + j.id + ')" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bg);display:flex;justify-content:space-between;align-items:center;" onmouseover="this.style.background=\'#f5f5f7\'" onmouseout="this.style.background=\'\'">' +
       '<div><div style="font-size:12px;font-weight:600;">' + j.name + '</div><div style="font-size:10px;color:var(--t4);">' + j.code + ' &bull; ' + j.category + '</div></div>' +
       '<div style="font-size:12px;font-weight:700;color:var(--t1);white-space:nowrap;">' + parseFloat(j.sold_hours).toFixed(2) + ' hrs</div>' +
       '</div>';

@@ -1389,7 +1389,7 @@ function updateRectificationSection() {
       '</div>' +
       defPhotoGrid +
       '<label style="font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:6px;">Repair Evidence Photos</label>' +
-      '<div class="photo-upload-area" onclick="addRectPhoto(' + d.id + ')" style="padding:10px;">' +
+      '<div class="photo-upload-area" role="button" tabindex="0" onclick="addRectPhoto(' + d.id + ')" onkeydown="if(event.key===\'Enter\')addRectPhoto(' + d.id + ')" style="padding:10px;">' +
         '<input type="file" id="rect-fi-' + d.id + '" accept="image/*" multiple style="display:none;">' +
         '<div style="font-size:12px;color:var(--t4);">📷 Tap to add repair evidence</div>' +
       '</div>' +
