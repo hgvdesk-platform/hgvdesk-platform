@@ -1,6 +1,15 @@
 node_modules/
 server/.env
+server/.env.bak*
 *.sql
+*.bak
+*.bak.*
+*.key
+*.pem
 /var/backups/
 .env
 CLAUDE.md
+coverage/
+test-results/
+.puppeteer-cache/
+server/.puppeteer-cache/
