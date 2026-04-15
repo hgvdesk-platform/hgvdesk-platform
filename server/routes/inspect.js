@@ -163,8 +163,11 @@ async function updateInspection(body, org, inspectionId) {
   const existing = await queryOne('SELECT * FROM inspections WHERE id = $1 AND org_id = $2', [inspectionId, orgId]);
   if (!existing) throw { status: 404, message: 'Inspection not found' };
 
-  const { result, status, checkItems, tyreData, brakeTestData, nilDefect, notes, inspectorName, overallMileage } = body;
+  const { result: clientResult, status, checkItems, tyreData, brakeTestData, nilDefect, notes, inspectorName, overallMileage, defects: newDefects } = body;
   const isComplete = status === 'complete';
+  const result = isComplete
+    ? calculateInspectionResult({ nilDefect, defects: newDefects || [], checkItems, brakeTestData, tyreData })
+    : clientResult;
 
   const inspection = await queryOne(
     `UPDATE inspections SET
@@ -191,7 +194,11 @@ async function updateInspection(body, org, inspectionId) {
      inspectionId, orgId]
   );
 
-  if (result === 'fail') {
+  if (isComplete && newDefects && newDefects.length) {
+    await insertInspectionDefects(orgId, inspection.id, existing.job_id, inspection.vehicle_reg, newDefects);
+  }
+
+  if (isComplete && result === 'fail') {
     sendFailedInspectionAlert({
       vehicleReg: inspection.vehicle_reg,
       inspectorName: inspection.inspector_name,
@@ -202,7 +209,11 @@ async function updateInspection(body, org, inspectionId) {
     }).catch(() => {});
   }
 
-  await logActivity(orgId, 'INSPECT', 'INSPECTION_UPDATED',
+  if (isComplete) {
+    try { await calculateInspectionCosts(org, inspection.id); } catch (e) { console.error('[INSPECT] cost calc error:', e.message); }
+  }
+
+  await logActivity(orgId, 'INSPECT', isComplete ? 'INSPECTION_COMPLETED' : 'INSPECTION_UPDATED',
     inspection.vehicle_reg + ' — result: ' + (result || inspection.result), 'inspection', inspection.id);
   return { inspection };
 }

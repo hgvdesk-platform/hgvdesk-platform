@@ -1608,7 +1608,7 @@ function submitInspection() {
   var defectsToSend = getResolvedDefects();
   var result = calculateResultClient();
   toast('saving', 'Saving inspection...');
-  api('POST', '/inspections', {
+  var payload = {
     vehicleReg: reg, inspectionType: type,
     inspectorName: document.getElementById('f-insp').value,
     status: 'complete', result: result,
@@ -1618,7 +1618,10 @@ function submitInspection() {
     tyreData: tyres, defects: defectsToSend, nilDefect: nilDef,
     notes: document.getElementById('f-notes').value,
     signature: document.getElementById('f-sig').value
-  }).then(function(res) {
+  };
+  var method = window._currentInspId ? 'PUT' : 'POST';
+  var path = window._currentInspId ? '/inspections/' + window._currentInspId : '/inspections';
+  api(method, path, payload).then(function(res) {
     var insp = res && (res.inspection || (res.data && res.data.inspection));
     if (insp) {
       var inspName = document.getElementById('f-insp').value;
@@ -1822,6 +1825,61 @@ window.loadData = function() {
 
 window._currentJobId = null;
 window._currentInspId = null;
+function parseJsonField(val) {
+  if (!val) return null;
+  if (typeof val === 'object') return val;
+  try { return JSON.parse(val); } catch(e) { return null; }
+}
+
+function restoreInspFromDb(insp) {
+  var ci = parseJsonField(insp.check_items);
+  checks = (ci && typeof ci === 'object') ? ci : {};
+
+  var bd = parseJsonField(insp.brake_test_data);
+  if (bd && bd.axles) brakes = bd.axles;
+  else brakes = {};
+  if (bd) {
+    if (bd.sbe != null) document.getElementById('sbe').value = bd.sbe;
+    if (bd.sbe2 != null) document.getElementById('sbe2').value = bd.sbe2;
+    if (bd.pbe != null) document.getElementById('pbe').value = bd.pbe;
+  }
+
+  var td = parseJsonField(insp.tyre_data);
+  tyres = (td && typeof td === 'object') ? td : {};
+
+  nilDef = !!insp.nil_defect;
+  document.getElementById('nil-box').classList.toggle('on', nilDef);
+  document.getElementById('nil-chk').textContent = nilDef ? 'check' : '';
+
+  var dd = insp.defects_data;
+  if (typeof dd === 'string') try { dd = JSON.parse(dd); } catch(e) { dd = null; }
+  defects = [];
+  defectPhotos = {};
+  rectPhotos = {};
+  if (Array.isArray(dd)) {
+    defects = dd.map(function(d) {
+      return {
+        id: d.id, zoneId: (d.category || '').replace(/\s/g,'_').toLowerCase(),
+        zoneLabel: d.category || d.title || 'Defect',
+        severity: d.severity || 'advisory',
+        description: d.description || d.title || '',
+        part: d.part_name || '',
+        resolved: !!d.resolved,
+        resolvedBy: d.resolved_by || '',
+        resolutionNotes: d.resolution_notes || '',
+        resolvedAt: d.resolved_at || ''
+      };
+    });
+  }
+
+  if (insp.notes) {
+    var notesEl = document.getElementById('f-notes');
+    if (notesEl) notesEl.value = insp.notes;
+  }
+
+  console.log('[INSPECT] Restored from DB — checks:', Object.keys(checks).length, 'brakes:', Object.keys(brakes).length, 'tyres:', Object.keys(tyres).length, 'defects:', defects.length);
+}
+
 window.openInspRow = function(id) {
   var insp = (window._lastInspections || []).find(function(i){return i.id===id;});
   if (!insp) return;
@@ -1829,20 +1887,32 @@ window.openInspRow = function(id) {
   window._currentInspId = insp.id || null;
   showPage('new');
   setTimeout(function() {
-    // Clear any old dvsa panel first
     var oldPanel = document.getElementById('dvsa-panel');
     if (oldPanel) oldPanel.remove();
     document.getElementById('f-reg').value = insp.vehicle_reg || '';
     document.getElementById('f-type').value = insp.inspection_type || '';
-    _lastType = '';
-    checks = {}; brakes = {}; tyres = {}; defects = []; nilDef = false;
-    clearInspState();
-    switchType({ force: true });
+
+    var hasData = insp.check_items || insp.tyre_data || insp.brake_test_data || insp.defects_data;
+    if (hasData) {
+      checks = {}; brakes = {}; tyres = {}; defects = []; nilDef = false;
+      restoreInspFromDb(insp);
+      _lastType = '';
+      switchType({ force: true, keepData: true });
+    } else {
+      checks = {}; brakes = {}; tyres = {}; defects = []; nilDef = false;
+      clearInspState();
+      _lastType = '';
+      switchType({ force: true });
+    }
+
+    renderDefects();
+    updateRectificationSection();
+    updateBanner();
+
     document.getElementById('f-insp').value = insp.inspector_name || '';
     var custEl = document.getElementById('f-cust');
     if (custEl) {
       custEl.value = insp.customer_name || '';
-      // Lock reg and customer if opened from queue (pre-populated from job)
       if (insp.job_id) {
         document.getElementById('f-reg').readOnly = true;
         document.getElementById('f-reg').style.background = '#f5f5f7';
