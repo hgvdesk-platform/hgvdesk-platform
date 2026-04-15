@@ -115,7 +115,7 @@ const SECURITY_HEADERS = {
 
 function sanitiseValue(val) {
   if (typeof val === 'string') {
-    return val.replace(/\0/g, '').trim().slice(0, 10000);
+    return val.replaceAll('\0', '').trim().slice(0, 10000);
   }
   if (Array.isArray(val)) return val.map(sanitiseValue);
   if (val && typeof val === 'object') {
@@ -380,7 +380,7 @@ async function handleContactForm(req, res) {
   const { name, company, email, phone, fleet, message } = body || {};
   if (!name || !email) { json(res, 400, { error: 'name and email required' }); return; }
   const { resendSend } = require('./mailer');
-  const rows = [['Name',name],['Company',company],['Email',email],['Phone',phone],['Fleet',fleet],['Message',(message||'').replace(/\n/g,'<br>')]];
+  const rows = [['Name',name],['Company',company],['Email',email],['Phone',phone],['Fleet',fleet],['Message',(message||'').replaceAll('\n','<br>')]];
   const tableRows = rows.map(([lbl,val]) => '<tr><td style="padding:8px;font-weight:700;color:#666;' + (lbl==='Message'?'vertical-align:top;':'') + '">' + lbl + '</td><td style="padding:8px;">' + (val||'') + '</td></tr>').join('');
   await resendSend({
     from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk',

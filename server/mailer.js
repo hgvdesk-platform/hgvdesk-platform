@@ -22,7 +22,7 @@ function resendSend(payload) {
       res.on('data', d => data += d);
       res.on('end', () => {
         try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch(e) { resolve({ status: res.statusCode, body: data }); }
+        catch(e) { console.error('[MAILER] JSON parse failed:', e.message); resolve({ status: res.statusCode, body: data }); }
       });
     });
     req.on('error', reject);
@@ -75,7 +75,7 @@ const { buildInspectionReportHtml } = require('./report-html');
 
 function escapeHtml(s) {
   if (s == null) return '';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 }
 
 function resultColor(r) {

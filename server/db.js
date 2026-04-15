@@ -331,7 +331,7 @@ async function seedInitialData() {
   const { v4: uuidv4 } = require('uuid');
   const bcrypt = require('bcryptjs');
 
-  const apiKey = uuidv4().replace(/-/g, '');
+  const apiKey = uuidv4().replaceAll('-', '');
   const orgResult = await queryOne(`
     INSERT INTO organisations (name, slug, plan, api_key)
     VALUES ($1, $2, $3, $4)

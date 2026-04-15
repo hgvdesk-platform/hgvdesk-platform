@@ -41,7 +41,7 @@ const LOGO_SVG_SM = `<svg width="80" height="20" viewBox="0 0 120 28" fill="none
   <text x="48" y="19" font-family="Barlow Condensed,sans-serif" font-weight="700" font-size="16" fill="${C.muted}" letter-spacing="0.5">HGVDesk</text>
 </svg>`;
 
-function esc(s) { return s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s) { return s == null ? '' : String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
 
 // Map internal tyre key (t0_0) to human-readable position name
 const TYRE_AXLES_T50 = [
@@ -55,7 +55,7 @@ const TYRE_AXLES_T60 = [
   { label: 'Trailer Axle 3', pos: ['Axle 3 NS', 'Axle 3 OS'] },
 ];
 function tyrePositionName(key, inspectionType) {
-  const m = key.match(/^t(\d+)_(\d+)$/);
+  const m = /^t(\d+)_(\d+)$/.exec(key);
   if (!m) return key;
   const axles = inspectionType === 'T60' ? TYRE_AXLES_T60 : TYRE_AXLES_T50;
   const axle = axles[Number.parseInt(m[1])];
@@ -64,7 +64,11 @@ function tyrePositionName(key, inspectionType) {
 }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'}) : '—'; }
 function fmtShort(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'; }
-function fmtDateTime(d) { if(!d) return '—'; const dt=new Date(d); return fmtShort(d)+' '+dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDateTime(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return fmtShort(d) + ' ' + dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
 function fmtMoney(n) { return '£' + Number(n||0).toFixed(2); }
 
 function badge(label, bg, color) {
@@ -166,7 +170,10 @@ function hasTyreData(d) {
 function tyreCard(posName, d) {
   const depth = d.depth || d.tread || '—';
   const depthNum = Number.parseFloat(depth);
-  const depthColor = !Number.isNaN(depthNum) && depthNum < 1 ? C.failRed : (!Number.isNaN(depthNum) && depthNum < 3 ? C.advAmber : C.text);
+  const isValid = !Number.isNaN(depthNum);
+  let depthColor = C.text;
+  if (isValid && depthNum < 1) depthColor = C.failRed;
+  else if (isValid && depthNum < 3) depthColor = C.advAmber;
   return `<td style="padding:4px;"><div style="background:${C.surface};border:1px solid ${C.border};border-radius:6px;padding:10px 12px;text-align:center;">
     <div style="${LBL}color:${C.orange};margin-bottom:6px;font-size:9px;">${esc(posName)}</div>
     <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;color:${depthColor};">${esc(String(depth))}<span style="font-size:11px;font-weight:400;color:${C.muted};"> mm</span></div>
@@ -182,7 +189,7 @@ function groupTyresByAxle(tyres) {
   for (const [key, data] of Object.entries(tyres)) {
     const d = typeof data === 'object' ? data : { depth: data };
     if (!hasTyreData(d)) continue;
-    const m = key.match(/^t(\d+)_(\d+)$/);
+    const m = /^t(\d+)_(\d+)$/.exec(key);
     if (!m) continue;
     const ai = Number.parseInt(m[1]);
     if (!grouped[ai]) grouped[ai] = [];
@@ -228,7 +235,7 @@ function buildChecklistSection(checks) {
       const [name, state] = e;
       const st = (state||'').toLowerCase();
       let b; if (st==='pass') b=badge('PASS',C.passBg,C.passGreen); else if (st==='fail') b=badge('FAIL',C.failBg,C.failRed); else b=badge(st.toUpperCase()||'—',C.advBg,C.advAmber);
-      h += `<td style="width:33%;padding:6px 10px;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'Barlow',sans-serif;font-size:11px;color:${C.text};">${esc(name.replace(/_/g,' '))}</span>${b}</div></td>`;
+      h += `<td style="width:33%;padding:6px 10px;"><div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-family:'Barlow',sans-serif;font-size:11px;color:${C.text};">${esc(name.replaceAll('_',' '))}</span>${b}</div></td>`;
     }
     h += '</tr>';
   }

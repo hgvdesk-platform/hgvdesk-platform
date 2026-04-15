@@ -108,7 +108,7 @@ async function createInvoice(body, org) {
 
   // Pull org settings for defaults
   const orgSettings = await queryOne('SELECT * FROM org_settings WHERE org_id = $1', [orgId]);
-  const terms = paymentTerms || (customer && customer.payment_terms) || (orgSettings && orgSettings.payment_terms) || 30;
+  const terms = paymentTerms || customer?.payment_terms || orgSettings?.payment_terms || 30;
   const issue = issueDate ? new Date(issueDate) : new Date();
   const due = new Date(issue);
   due.setDate(due.getDate() + terms);
@@ -116,7 +116,7 @@ async function createInvoice(body, org) {
   // Calculate totals
   let subtotal = 0;
   lines.forEach(function(l) { subtotal += Number.parseFloat(l.lineTotal || (l.quantity * l.unitPrice) || 0); });
-  const vatAmount = Math.round(subtotal * 0.20 * 100) / 100;
+  const vatAmount = Math.round(subtotal * 0.2 * 100) / 100;
   const total = Math.round((subtotal + vatAmount) * 100) / 100;
 
   const invoice = await queryOne(
@@ -202,7 +202,7 @@ async function generateFromJob(body, org) {
       [orgId, '%' + job.customer_name.toLowerCase() + '%']);
   }
 
-  const labourRate = customer ? Number.parseFloat(customer.labour_rate || 65) : 65.00;
+  const labourRate = customer ? Number.parseFloat(customer.labour_rate || 65) : 65;
 
   const jobLines = await queryAll(
     'SELECT * FROM job_lines WHERE job_id = $1 AND org_id = $2 ORDER BY created_at ASC', [jobId, orgId]
