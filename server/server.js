@@ -26,6 +26,7 @@ const command = require('./routes/command');
 const ai = require('./routes/ai');
 const stripeRoutes = require('./routes/stripe');
 const pdf = require('./routes/pdf');
+const settings = require('./routes/settings');
 
 const PORT = process.env.PORT || 3000;
 const FRONTEND = path.join(__dirname, '..', 'frontend');
@@ -120,6 +121,7 @@ const PAGES = {
   '/contact': 'contact.html',
   '/forgot-password': 'forgot-password.html',
   '/reset-password': 'reset-password.html',
+  '/settings': 'settings.html',
 };
 
 function servePage(res, filename) {
@@ -775,10 +777,17 @@ async function handleInvoices(ctx, res) {
 // ROUTER
 // ══════════════════════════════════════════════
 
+async function handleSettings(ctx, res) {
+  const { p, method, body, caller } = ctx;
+  if (p === '/api/settings' && method === 'GET') { ok(res, await settings.getSettings(caller)); return true; }
+  if (p === '/api/settings' && method === 'POST') { ok(res, await settings.saveSettings(body, caller)); return true; }
+  return false;
+}
+
 const AUTHED_HANDLERS = [
   handleAdmin, handleWorkshop, handleInspect, handleAi, handlePdf, handleBranding, handleBilling,
   handleParts, handleCommand, handleInspectionReports, handleTechnicians,
-  handleJobLibrary, handleCustomers, handleInvoices,
+  handleJobLibrary, handleCustomers, handleInvoices, handleSettings,
 ];
 
 async function router(req, res) {

@@ -412,18 +412,32 @@ function buildInspectionReportHtml(insp, opts={}) {
 // INVOICE
 // ══════════════════════════════════════════════
 
+function cleanDesc(s) { return (s || '').replace(/\s*\(PRT-\w+\)/g, '').replace(/\s*PRT-\w+/g, ''); }
+
 function buildInvoiceHtml(invoice, lines, opts={}) {
-  const { orgName } = opts;
+  const { orgName, orgSettings } = opts;
+  const os = orgSettings || {};
   let h = '';
   h += wrap(700);
-  h += docHeader('INVOICE', invoice.invoice_number||'', fmtShort(invoice.issue_date), {logoDark: opts.logoDark});
 
-  // Orange bar
-  const statusBadge = invoice.status==='paid' ? badge('PAID',C.passBg,C.passGreen) : badge((invoice.status||'DRAFT').toUpperCase(),C.advBg,C.advAmber);
-  h += `<tr><td style="background:${C.orange};padding:16px 32px;">
+  // Clean white header
+  h += `<tr><td style="background:#fff;padding:24px 32px 16px;">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
-      <td><div style="${HEAD_S}font-size:26px;color:#fff;">${esc(invoice.invoice_number)}</div><div style="font-family:'Barlow',sans-serif;font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;">${esc(invoice.customer_name||'')}</div></td>
-      <td style="text-align:right;"><div style="font-family:'Barlow',sans-serif;font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:3px;">Due: ${fmtShort(invoice.due_date)}</div>${statusBadge}</td>
+      <td style="vertical-align:top;"><div style="${HEAD_S}font-size:18px;color:${C.text};">${esc(os.company_name || orgName || 'HGVDesk')}</div>
+        <div style="font-family:'Barlow',sans-serif;font-size:11px;color:#999;margin-top:3px;white-space:pre-line;">${esc(os.company_address || '')}</div>
+        ${os.vat_number ? '<div style="font-family:\'Barlow\',sans-serif;font-size:11px;color:#999;margin-top:2px;">VAT: '+esc(os.vat_number)+'</div>' : ''}
+      </td>
+      <td style="text-align:right;vertical-align:top;"><div style="font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#bbb;">Invoice</div>
+        <div style="${HEAD_S}font-size:22px;color:${C.text};margin-top:2px;">${esc(invoice.invoice_number)}</div></td>
+    </tr></table>
+  </td></tr>`;
+
+  // Light grey band
+  const statusBadge = invoice.status==='paid' ? badge('PAID',C.passBg,C.passGreen) : badge((invoice.status||'DRAFT').toUpperCase(),C.advBg,C.advAmber);
+  h += `<tr><td style="background:#f7f7f7;padding:14px 32px;border-top:1px solid #eee;border-bottom:1px solid #eee;">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="font-family:'Barlow',sans-serif;font-size:13px;"><strong>${esc(invoice.customer_name||'')}</strong>${invoice.customer_email ? ' · <span style="color:#888;">'+esc(invoice.customer_email)+'</span>' : ''}</td>
+      <td style="text-align:right;font-family:'Barlow',sans-serif;font-size:12px;color:#888;">Due: <strong style="color:${C.text};">${fmtShort(invoice.due_date)}</strong> ${statusBadge}</td>
     </tr></table>
   </td></tr>`;
 
@@ -457,7 +471,7 @@ function buildInvoiceHtml(invoice, lines, opts={}) {
   h += `<tr style="background:${C.surface};"><th ${th} style="${LBL}text-align:left;padding:10px 12px;width:8%;">#</th><th ${th} style="${LBL}text-align:left;width:52%;">Description</th><th ${th} style="${LBL}text-align:center;width:10%;">Qty</th><th ${th} style="${LBL}text-align:right;width:15%;">Unit Price</th><th ${th} style="${LBL}text-align:right;width:15%;">Total</th></tr>`;
   for (let i=0; i<(lines||[]).length; i++) {
     const l = lines[i]; const bg = i%2 ? C.surface : C.card;
-    h += `<tr style="background:${bg};"><td style="padding:10px 12px;font-family:'Barlow',sans-serif;font-size:12px;color:${C.muted};">${i+1}</td><td style="padding:10px 12px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:500;">${esc(l.description||l.name)}</td><td style="padding:10px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;">${l.quantity||1}</td><td style="padding:10px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:13px;">${fmtMoney(l.unit_price)}</td><td style="padding:10px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;">${fmtMoney(l.line_total)}</td></tr>`;
+    h += `<tr style="background:${bg};"><td style="padding:10px 12px;font-family:'Barlow',sans-serif;font-size:12px;color:${C.muted};">${i+1}</td><td style="padding:10px 12px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:500;">${esc(cleanDesc(l.description||l.name))}</td><td style="padding:10px 12px;text-align:center;font-family:'Barlow',sans-serif;font-size:13px;">${l.quantity||1}</td><td style="padding:10px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:13px;">${fmtMoney(l.unit_price)}</td><td style="padding:10px 12px;text-align:right;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;">${fmtMoney(l.line_total)}</td></tr>`;
   }
   h += '</table></td></tr>';
 
@@ -470,16 +484,15 @@ function buildInvoiceHtml(invoice, lines, opts={}) {
   </table></td></tr>`;
 
   // Payment details
-  h += secTitleWide('Payment Details');
-  h += `<tr><td colspan="10"><div style="background:${C.surface};border:1px solid ${C.border};border-radius:6px;padding:16px;font-family:'Barlow',sans-serif;font-size:12px;line-height:1.8;color:${C.text};">
-    Bank: <strong>Barclays Business</strong><br>Sort Code: <strong>20-45-45</strong><br>Account: <strong>73024689</strong><br>Reference: <strong>${esc(invoice.invoice_number)}</strong>
-  </div></td></tr>`;
+  h += `<tr><td colspan="10" style="padding:24px 0 0;border-top:1px solid #eee;font-family:'Barlow',sans-serif;font-size:12px;color:#888;line-height:1.8;">
+    <strong style="color:${C.text};">Payment Details</strong><br>
+    Bank: <strong>${esc(os.bank_name || 'Not set')}</strong> · Sort Code: <strong>${esc(os.sort_code || '—')}</strong> · Account: <strong>${esc(os.account_number || '—')}</strong><br>
+    Reference: <strong>${esc(invoice.invoice_number)}</strong>
+  </td></tr>`;
 
-  // Terms
-  h += `<tr><td colspan="10" style="padding:16px 0 0;font-family:'Barlow',sans-serif;font-size:10px;color:${C.muted};line-height:1.6;">Payment is due within 30 days of the invoice date. Late payments may incur interest at 8% above the Bank of England base rate under the Late Payment of Commercial Debts Act 1998. All amounts are in GBP.</td></tr>`;
+  h += `<tr><td colspan="10" style="padding:16px 0 0;font-family:'Barlow',sans-serif;font-size:10px;color:#bbb;line-height:1.6;">${esc(os.invoice_footer || 'Payment is due within 30 days of the invoice date.')}</td></tr>`;
 
-  // Thank you
-  h += `<tr><td colspan="10" style="padding:20px 0 0;text-align:center;"><div style="${HEAD_S}font-size:18px;color:${C.dark};">Thank you for your business</div><div style="font-family:'Barlow',sans-serif;font-size:12px;color:${C.muted};margin-top:4px;">hgvdesk.co.uk · hello@hgvdesk.co.uk</div></td></tr>`;
+  h += `<tr><td colspan="10" style="padding:20px 0 0;text-align:center;border-top:1px solid #eee;"><div style="font-family:'Barlow',sans-serif;font-size:11px;color:#bbb;margin-top:8px;">Thank you for your business · ${esc(os.company_email || 'hello@hgvdesk.co.uk')}</div></td></tr>`;
 
   h += '</table></td></tr>';
   h += docFooter(invoice.invoice_number||'', orgName||'HGVDesk', {logoLight: opts.logoLight});

@@ -106,8 +106,9 @@ async function createInvoice(body, org) {
   const count = await queryOne('SELECT COUNT(*) as c FROM invoices WHERE org_id = $1', [orgId]);
   const invoiceNum = 'INV-' + String(parseInt(count.c) + 1).padStart(4, '0');
 
-  // Calculate due date
-  const terms = paymentTerms || (customer && customer.payment_terms) || 30;
+  // Pull org settings for defaults
+  const orgSettings = await queryOne('SELECT * FROM org_settings WHERE org_id = $1', [orgId]);
+  const terms = paymentTerms || (customer && customer.payment_terms) || (orgSettings && orgSettings.payment_terms) || 30;
   const issue = issueDate ? new Date(issueDate) : new Date();
   const due = new Date(issue);
   due.setDate(due.getDate() + terms);

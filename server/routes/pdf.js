@@ -61,7 +61,8 @@ async function invoicePdf(invoiceId, orgId) {
   if (!invoice) throw { status: 404, message: 'Invoice not found' };
   const lines = await db.queryAll('SELECT * FROM invoice_lines WHERE invoice_id = $1 ORDER BY id ASC', [invoiceId]);
   const branding = await getOrgBranding(orgId);
-  const html = buildInvoiceHtml(invoice, lines, { orgName: branding.name||'HGVDesk', logoLight: branding.logo_light, logoDark: branding.logo_dark });
+  const orgSettings = await db.queryOne('SELECT * FROM org_settings WHERE org_id = $1', [orgId]);
+  const html = buildInvoiceHtml(invoice, lines, { orgName: branding.name||'HGVDesk', logoLight: branding.logo_light, logoDark: branding.logo_dark, orgSettings: orgSettings || {} });
   const pdf = await htmlToPdf(html);
   const filename = `${(invoice.invoice_number || 'INV').replace(/\s/g, '_')}.pdf`;
   return { pdf, filename };

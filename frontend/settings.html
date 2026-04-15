@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGVDesk - Organisation Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<script src="/config.js"></script>
+<script src="/branding.js" defer></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--orange:#FF6B00;--green:#34c759;--red:#ff3b30;--sw:230px;}
+body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:200;}
+.sb-top{padding:20px 16px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sb-icon{width:36px;height:36px;border-radius:9px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-name{font-size:14px;font-weight:700;color:var(--t1);}
+.sb-sub{font-size:11px;color:var(--t4);}
+.sb-sect{padding:16px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--t4);}
+.sb-nav{list-style:none;padding:0 8px;}
+.sbi{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--t3);cursor:pointer;margin-bottom:1px;transition:all 0.12s;text-decoration:none;}
+.sbi:hover{background:rgba(0,0,0,0.04);color:var(--t1);}
+.sbi.on{background:rgba(255,107,0,0.1);color:var(--orange);font-weight:600;}
+.sb-foot{margin-top:auto;border-top:1px solid var(--border);padding:12px 8px;}
+.main{margin-left:var(--sw);flex:1;padding:32px;max-width:800px;}
+.topbar{height:52px;position:sticky;top:0;z-index:100;background:rgba(245,245,247,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;margin:-32px -32px 28px;width:calc(100% + 64px);}
+.tb-title{font-size:16px;font-weight:600;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+.card-hd{padding:16px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.card-hd span{font-size:10px;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.06em;}
+.card-body{padding:20px;}
+.fg{margin-bottom:16px;}
+.fl{font-size:12px;font-weight:600;color:var(--t3);display:block;margin-bottom:5px;}
+.fi,.fsel,.fta{width:100%;padding:10px 12px;border:1.5px solid var(--bs);border-radius:8px;font-size:13px;font-family:inherit;color:var(--t1);background:var(--surface);outline:none;transition:border-color 0.2s;}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--orange);box-shadow:0 0 0 3px rgba(255,107,0,0.1);}
+.fta{min-height:80px;resize:vertical;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:980px;font-size:13px;font-weight:600;font-family:inherit;border:none;cursor:pointer;transition:all 0.2s;}
+.btn-p{background:var(--orange);color:#fff;}
+.btn-p:hover{background:#e05f00;}
+.saved{color:var(--green);font-size:13px;font-weight:600;margin-left:12px;opacity:0;transition:opacity 0.3s;}
+.saved.on{opacity:1;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1d1d1f;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;z-index:9999;transition:transform 0.3s ease;display:flex;align-items:center;gap:8px;}
+.toast.v{transform:translateX(-50%) translateY(0);}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}.main{margin-left:0;padding:20px;}.fr{grid-template-columns:1fr;}
+  input,select,textarea{font-size:16px;}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<div class="sidebar">
+  <div class="sb-top">
+    <div class="sb-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+    <div><div class="sb-name">HGVDesk</div><div class="sb-sub">Fleet Platform</div></div>
+  </div>
+  <div class="sb-sect">Systems</div>
+  <ul class="sb-nav">
+    <li><a class="sbi" href="/command">Dashboard</a></li>
+    <li><a class="sbi" href="/workshop">Workshop</a></li>
+    <li><a class="sbi" href="/inspect">Inspect</a></li>
+    <li><a class="sbi" href="/parts">Parts</a></li>
+    <li><a class="sbi" href="/customers">Customers</a></li>
+    <li><a class="sbi" href="/invoices">Invoices</a></li>
+  </ul>
+  <div class="sb-sect">Admin</div>
+  <ul class="sb-nav">
+    <li><a class="sbi on" href="/settings">Settings</a></li>
+  </ul>
+  <div class="sb-foot"><a class="sbi" href="/login" style="color:var(--red);">Log out</a></div>
+</div>
+<div class="main">
+  <div class="topbar"><div class="tb-title">Organisation Settings</div></div>
+
+  <div class="card">
+    <div class="card-hd">Company Details</div>
+    <div class="card-body">
+      <div class="fg"><label class="fl">Company Name</label><input class="fi" id="s-name" placeholder="e.g. Midlands Transport Ltd"></div>
+      <div class="fg"><label class="fl">Company Address</label><textarea class="fta" id="s-address" rows="3" placeholder="Unit 4, Industrial Estate&#10;Birmingham B12 0QY"></textarea></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">VAT Number</label><input class="fi" id="s-vat" placeholder="e.g. GB 123 4567 89"></div>
+        <div class="fg"><label class="fl">Company Registration</label><input class="fi" id="s-reg" placeholder="e.g. 12345678" disabled style="opacity:0.5;"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Email</label><input class="fi" id="s-email" type="email" placeholder="accounts@company.co.uk"></div>
+        <div class="fg"><label class="fl">Phone</label><input class="fi" id="s-phone" placeholder="e.g. 0121 000 0000"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">Bank Details <span>(shown on invoices)</span></div>
+    <div class="card-body">
+      <div class="fg"><label class="fl">Bank Name</label><input class="fi" id="s-bank" placeholder="e.g. Barclays Business"></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Sort Code</label><input class="fi" id="s-sort" placeholder="e.g. 20-45-45" maxlength="8"></div>
+        <div class="fg"><label class="fl">Account Number</label><input class="fi" id="s-acct" placeholder="e.g. 73024689" maxlength="10"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hd">Invoice Defaults</div>
+    <div class="card-body">
+      <div class="fg"><label class="fl">Payment Terms (days)</label><input class="fi" id="s-terms" type="number" min="0" max="120" value="30"></div>
+      <div class="fg"><label class="fl">Invoice Footer / Legal Text</label><textarea class="fta" id="s-footer" rows="3" placeholder="Late Payment of Commercial Debts Act wording..."></textarea></div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;margin-top:8px;">
+    <button class="btn btn-p" id="btn-save">Save Settings</button>
+    <span class="saved" id="saved-msg">Settings saved</span>
+  </div>
+
+</div>
+</div>
+<div class="toast" id="toast"><span id="ti"></span><span id="tm"></span></div>
+
+<script>
+var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
+
+function api(method, path, body) {
+  var opts = {method: method, headers: {'Content-Type': 'application/json', 'X-API-Key': KEY}};
+  if (body) opts.body = JSON.stringify(body);
+  return fetch('/api' + path, opts).then(function(r) { return r.json(); }).catch(function() { return null; });
+}
+
+var tt;
+function toast(icon, msg) {
+  document.getElementById('ti').textContent = icon;
+  document.getElementById('tm').textContent = msg;
+  var t = document.getElementById('toast');
+  t.classList.add('v');
+  clearTimeout(tt);
+  tt = setTimeout(function() { t.classList.remove('v'); }, 3200);
+}
+
+function load() {
+  api('GET', '/settings').then(function(d) {
+    var s = d && (d.data && d.data.settings || d.settings);
+    if (!s) return;
+    document.getElementById('s-name').value = s.company_name || '';
+    document.getElementById('s-address').value = s.company_address || '';
+    document.getElementById('s-vat').value = s.vat_number || '';
+    document.getElementById('s-email').value = s.company_email || '';
+    document.getElementById('s-phone').value = s.phone || '';
+    document.getElementById('s-bank').value = s.bank_name || '';
+    document.getElementById('s-sort').value = s.sort_code || '';
+    document.getElementById('s-acct').value = s.account_number || '';
+    document.getElementById('s-terms').value = s.payment_terms || 30;
+    document.getElementById('s-footer').value = s.invoice_footer || '';
+  });
+}
+
+document.getElementById('btn-save').addEventListener('click', function() {
+  var body = {
+    companyName: document.getElementById('s-name').value.trim(),
+    companyAddress: document.getElementById('s-address').value.trim(),
+    vatNumber: document.getElementById('s-vat').value.trim(),
+    companyEmail: document.getElementById('s-email').value.trim(),
+    phone: document.getElementById('s-phone').value.trim(),
+    bankName: document.getElementById('s-bank').value.trim(),
+    sortCode: document.getElementById('s-sort').value.trim(),
+    accountNumber: document.getElementById('s-acct').value.trim(),
+    paymentTerms: parseInt(document.getElementById('s-terms').value) || 30,
+    invoiceFooter: document.getElementById('s-footer').value.trim()
+  };
+  api('POST', '/settings', body).then(function(d) {
+    if (d && d.success) {
+      var m = document.getElementById('saved-msg');
+      m.classList.add('on');
+      setTimeout(function() { m.classList.remove('on'); }, 2500);
+      toast('Done', 'Settings saved');
+    } else {
+      toast('Error', 'Save failed');
+    }
+  });
+});
+
+load();
+</script>
+</body>
+</html>

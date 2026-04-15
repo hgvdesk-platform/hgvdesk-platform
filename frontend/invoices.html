@@ -243,8 +243,8 @@ tr:hover td{background:rgba(0,0,0,0.015);cursor:pointer;}
     <div class="modal-body">
       <p style="font-size:13px;color:var(--t3);margin-bottom:16px;">Auto-generates an invoice from a completed job — pulls in hours worked and parts used.</p>
       <div class="fg">
-        <label class="fl">Job ID</label>
-        <input class="fi" id="gen-job-id" type="number" placeholder="Enter job ID...">
+        <label class="fl">Select Job</label>
+        <select class="fi" id="gen-job-id" style="padding:10px 12px;"><option value="">Loading jobs...</option></select>
       </div>
     </div>
     <div class="modal-footer">
@@ -374,8 +374,16 @@ function showNewInvoice() {
 }
 
 function showNewFromJob() {
-  document.getElementById('gen-job-id').value = '';
+  var sel = document.getElementById('gen-job-id');
+  sel.innerHTML = '<option value="">Loading...</option>';
   document.getElementById('job-modal').classList.add('open');
+  api('GET', '/jobs').then(function(d) {
+    var jobs = (d.data ? d.data.jobs : d.jobs) || [];
+    var eligible = jobs.filter(function(j) { return j.status === 'complete' || j.status === 'on_floor' || j.status === 'done'; });
+    sel.innerHTML = '<option value="">Select a job...</option>' + eligible.map(function(j) {
+      return '<option value="' + j.id + '">' + j.job_number + ' — ' + j.vehicle_reg + ' — ' + (j.customer_name || '') + '</option>';
+    }).join('');
+  });
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -466,7 +474,7 @@ function saveInvoice() {
 
 function generateFromJob() {
   var jobId = parseInt(document.getElementById('gen-job-id').value);
-  if (!jobId) { alert('Enter a job ID'); return; }
+  if (!jobId) { alert('Select a job'); return; }
   api('POST', '/invoices/generate-from-job', { jobId: jobId }).then(function(d) {
     if (d.data || d.invoice) {
       closeModal('job-modal');
@@ -501,51 +509,55 @@ function showDetail(id) {
     if (inv.status==='sent'||inv.status==='overdue') h += '<button class="btn btn-green btn-sm" onclick="markStatus('+id+',\'paid\');closeModal(\'detail-modal\')">Mark as Paid</button>';
     h += '<button class="btn btn-secondary btn-sm" onclick="window.open(\'/api/invoices/'+id+'/pdf\',\'_blank\')">Download PDF</button>';
     h += '</div>';
-    // Premium invoice
-    h += '<div style="border-radius:8px;overflow:hidden;border:1px solid #e8e8e8;">';
-    // Navy header
-    h += '<div style="background:#0a1929;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ff5500;">';
-    h += '<div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:16px;color:#fff;">HGV<span style="color:#ff5500;">Desk</span></div>';
-    h += '<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;">INVOICE</div>';
+    // Clean invoice template
+    h += '<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;background:#fff;">';
+    // White header
+    h += '<div style="padding:24px 28px 16px;display:flex;justify-content:space-between;align-items:flex-start;">';
+    h += '<div><div style="font-size:18px;font-weight:700;color:#1a1a1a;">'+ esc(window._orgSettings && window._orgSettings.company_name || 'HGVDesk') +'</div>';
+    h += '<div style="font-size:11px;color:#999;margin-top:3px;white-space:pre-line;">'+ esc(window._orgSettings && window._orgSettings.company_address || '') +'</div>';
+    var vat = window._orgSettings && window._orgSettings.vat_number;
+    if (vat) h += '<div style="font-size:11px;color:#999;margin-top:2px;">VAT: '+ esc(vat) +'</div>';
     h += '</div>';
-    // Orange bar
-    h += '<div style="background:#ff5500;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cc4400;">';
-    h += '<div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:22px;color:#fff;">'+inv.invoice_number+'</div><div style="font-size:12px;color:rgba(255,255,255,0.8);">'+esc(inv.customer_name||'')+'</div></div>';
-    h += '<div style="text-align:right;"><div style="font-size:11px;color:rgba(255,255,255,0.7);">Due: '+fmt(inv.due_date)+'</div>'+chip+'</div>';
+    h += '<div style="text-align:right;"><div style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#bbb;">Invoice</div><div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-top:2px;">'+esc(inv.invoice_number)+'</div></div>';
+    h += '</div>';
+    // Light grey band
+    h += '<div style="background:#f7f7f7;padding:14px 28px;border-top:1px solid #eee;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">';
+    h += '<div style="font-size:13px;"><strong>'+esc(inv.customer_name||'')+'</strong>'+(inv.customer_email?' · <span style="color:#888;">'+esc(inv.customer_email)+'</span>':'')+'</div>';
+    h += '<div style="font-size:12px;color:#888;">Due: <strong style="color:#1a1a1a;">'+fmt(inv.due_date)+'</strong> '+chip+'</div>';
     h += '</div>';
     // Body
-    h += '<div style="background:#fff;padding:24px;">';
-    // Bill To + Details
-    h += '<div style="display:flex;gap:16px;margin-bottom:20px;">';
-    h += '<div style="flex:1;background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;"><div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;margin-bottom:6px;">Bill To</div><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:15px;">'+esc(inv.customer_name||'—')+'</div>'+(inv.customer_email?'<div style="font-size:12px;color:#6b7280;margin-top:2px;">'+esc(inv.customer_email)+'</div>':'')+'</div>';
-    h += '<div style="flex:1;background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;"><div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;margin-bottom:6px;">Details</div><div style="font-size:12px;line-height:2;">Invoice: <strong>'+esc(inv.invoice_number)+'</strong><br>Issued: '+fmt(inv.issue_date)+'<br>Due: '+fmt(inv.due_date)+'<br>Terms: 30 days net</div></div>';
+    h += '<div style="padding:24px 28px;">';
+    // Details row
+    h += '<div style="display:flex;gap:20px;margin-bottom:20px;font-size:12px;color:#888;">';
+    h += '<div>Issued: <strong style="color:#1a1a1a;">'+fmt(inv.issue_date)+'</strong></div>';
+    h += '<div>Terms: <strong style="color:#1a1a1a;">30 days net</strong></div>';
+    if (inv.vehicle_reg) h += '<div>Vehicle: <strong style="color:#1a1a1a;">'+esc(inv.vehicle_reg)+'</strong></div>';
     h += '</div>';
-    // Line items section title
-    h += '<div style="padding:16px 0 8px;border-bottom:1px solid #e8e8e8;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;">Line Items</div>';
-    h += '<table style="width:100%;border-collapse:collapse;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;margin:8px 0;">';
-    h += '<thead><tr style="background:#f8f8f8;"><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:left;width:8%;">#</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:left;">Description</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:center;">Qty</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:right;">Unit</th><th style="padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8694a5;text-align:right;">Total</th></tr></thead><tbody>';
+    // Line items
+    var thS = 'padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:#aaa;border-bottom:2px solid #eee;';
+    h += '<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">';
+    h += '<thead><tr><th style="'+thS+'text-align:left;width:6%;">#</th><th style="'+thS+'text-align:left;">Description</th><th style="'+thS+'text-align:center;width:10%;">Qty</th><th style="'+thS+'text-align:right;width:14%;">Unit Price</th><th style="'+thS+'text-align:right;width:14%;">Total</th></tr></thead><tbody>';
     lines.forEach(function(l,i) {
-      var bg = i%2?'#f8f8f8':'#fff';
-      h += '<tr style="background:'+bg+';border-bottom:1px solid #e8e8e8;"><td style="padding:10px 12px;font-size:12px;color:#6b7280;">'+(i+1)+'</td><td style="padding:10px 12px;font-size:13px;font-weight:500;">'+esc(l.description)+'</td><td style="padding:10px 12px;text-align:center;">'+l.quantity+'</td><td style="padding:10px 12px;text-align:right;">'+fmtMoney(l.unit_price)+'</td><td style="padding:10px 12px;text-align:right;font-weight:600;">'+fmtMoney(l.line_total)+'</td></tr>';
+      var desc = (l.description || '').replace(/\s*\(PRT-\w+\)/g, '').replace(/\s*PRT-\w+/g, '');
+      h += '<tr style="border-bottom:1px solid #f0f0f0;"><td style="padding:10px 12px;font-size:12px;color:#bbb;">'+(i+1)+'</td><td style="padding:10px 12px;font-size:13px;color:#333;">'+esc(desc)+'</td><td style="padding:10px 12px;text-align:center;font-size:12px;color:#666;">'+l.quantity+'</td><td style="padding:10px 12px;text-align:right;font-size:12px;color:#666;">'+fmtMoney(l.unit_price)+'</td><td style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;color:#1a1a1a;">'+fmtMoney(l.line_total)+'</td></tr>';
     });
     h += '</tbody></table>';
     // Totals
-    h += '<div style="display:flex;justify-content:flex-end;margin-top:12px;"><div style="width:250px;">';
-    h += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#6b7280;"><span>Subtotal</span><span>'+fmtMoney(inv.subtotal)+'</span></div>';
-    h += '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#6b7280;"><span>VAT (20%)</span><span>'+fmtMoney(inv.vat_amount)+'</span></div>';
-    h += '<div style="display:flex;justify-content:space-between;padding:10px 0 4px;border-top:2px solid #0a1929;font-family:Barlow Condensed,sans-serif;"><span style="font-weight:700;font-size:15px;">Total Due</span><span style="font-weight:700;font-size:22px;color:#ff5500;">'+fmtMoney(inv.total)+'</span></div>';
+    h += '<div style="display:flex;justify-content:flex-end;"><div style="width:240px;">';
+    h += '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:#888;"><span>Subtotal</span><span style="color:#333;">'+fmtMoney(inv.subtotal)+'</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:#888;"><span>VAT (20%)</span><span style="color:#333;">'+fmtMoney(inv.vat_amount)+'</span></div>';
+    h += '<div style="display:flex;justify-content:space-between;padding:10px 0 4px;border-top:2px solid #1a1a1a;margin-top:6px;"><span style="font-weight:700;font-size:14px;color:#1a1a1a;">Total Due</span><span style="font-weight:700;font-size:20px;color:#1a1a1a;">'+fmtMoney(inv.total)+'</span></div>';
     h += '</div></div>';
-    // Payment details
-    h += '<div style="padding:16px 0 8px;border-bottom:1px solid #e8e8e8;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ff5500;margin-top:16px;">Payment Details</div>';
-    h += '<div style="background:#f8f8f8;border:1px solid #e8e8e8;border-radius:6px;padding:14px;font-size:12px;line-height:1.8;margin-top:8px;">Bank: <strong>Barclays Business</strong><br>Sort Code: <strong>20-45-45</strong><br>Account: <strong>73024689</strong><br>Reference: <strong>'+esc(inv.invoice_number)+'</strong></div>';
-    // Terms
-    h += '<div style="font-size:10px;color:#6b7280;line-height:1.6;margin-top:14px;">Payment is due within 30 days of the invoice date. Late payments may incur interest at 8% above the Bank of England base rate under the Late Payment of Commercial Debts Act 1998.</div>';
-    // Thank you
-    h += '<div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #e8e8e8;"><div style="font-family:Barlow Condensed,sans-serif;font-weight:700;font-size:18px;color:#0a1929;">Thank you for your business</div><div style="font-size:12px;color:#6b7280;margin-top:4px;">hgvdesk.co.uk · hello@hgvdesk.co.uk</div></div>';
-    h += '</div>';
-    // Orange footer line
-    h += '<div style="height:4px;background:#ff5500;"></div>';
-    h += '</div>';
+    // Payment
+    var bank = window._orgSettings || {};
+    h += '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888;line-height:1.8;">';
+    h += '<strong style="color:#1a1a1a;">Payment Details</strong><br>';
+    h += 'Bank: <strong>'+ esc(bank.bank_name || 'Not set') +'</strong> · Sort Code: <strong>'+ esc(bank.sort_code || '—') +'</strong> · Account: <strong>'+ esc(bank.account_number || '—') +'</strong><br>';
+    h += 'Reference: <strong>'+esc(inv.invoice_number)+'</strong></div>';
+    // Footer
+    h += '<div style="font-size:10px;color:#bbb;line-height:1.6;margin-top:16px;">'+ esc(bank.invoice_footer || 'Payment is due within 30 days of the invoice date.') +'</div>';
+    h += '<div style="text-align:center;margin-top:20px;padding-top:14px;border-top:1px solid #eee;font-size:11px;color:#bbb;">Thank you for your business · '+ esc(bank.company_email || 'hello@hgvdesk.co.uk') +'</div>';
+    h += '</div></div>';
     if (inv.notes) h += '<div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--t3);">'+esc(inv.notes)+'</div>';
     document.getElementById('detail-body').innerHTML = h;
     document.getElementById('detail-footer').innerHTML =
@@ -573,7 +585,14 @@ function deleteSelectedInvoices() {
   api('DELETE', '/invoices/bulk', { ids: ids }).then(function() { loadData(); updateInvDelCount(); });
 }
 
-window.addEventListener('load', loadData);
+window._orgSettings = {};
+window.addEventListener('load', function() {
+  api('GET', '/settings').then(function(d) {
+    var s = d && (d.data && d.data.settings || d.settings);
+    if (s) window._orgSettings = s;
+  });
+  loadData();
+});
 </script>
 </body>
 </html>
