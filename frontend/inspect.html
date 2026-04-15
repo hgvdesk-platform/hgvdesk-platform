@@ -1338,6 +1338,20 @@ function updateRectificationSection() {
   sec.style.display = 'block';
   if (nilBox) nilBox.style.display = 'none';
 
+  var saved = {};
+  defects.forEach(function(d) {
+    var cb = document.getElementById('rect-cb-' + d.id);
+    var by = document.getElementById('rect-by-' + d.id);
+    var notes = document.getElementById('rect-notes-' + d.id);
+    if (cb || by || notes) {
+      saved[d.id] = {
+        checked: cb ? cb.checked : false,
+        by: by ? by.value : '',
+        notes: notes ? notes.value : ''
+      };
+    }
+  });
+
   list.innerHTML = defects.map(function(d) {
     var sevColor = d.severity === 'critical' ? 'var(--red)' : 'var(--amber)';
     var dPhotos = defectPhotos[d.id] || [];
@@ -1377,6 +1391,18 @@ function updateRectificationSection() {
       rectPhotoGrid +
     '</div>';
   }).join('');
+
+  defects.forEach(function(d) {
+    var s = saved[d.id];
+    if (!s) return;
+    var cb = document.getElementById('rect-cb-' + d.id);
+    var by = document.getElementById('rect-by-' + d.id);
+    var notes = document.getElementById('rect-notes-' + d.id);
+    if (cb) cb.checked = s.checked;
+    if (by) by.value = s.by;
+    if (notes) notes.value = s.notes;
+  });
+  checkRectComplete();
 }
 
 // ── PARTS USED ──
