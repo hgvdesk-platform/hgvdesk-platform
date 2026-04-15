@@ -329,6 +329,7 @@ function ago(iso) {
 }
 
 function statusChip(s) {
+  if (s === 'fitted') return '<span class="chip c-p">Fitted</span>';
   if (s === 'ready' || s === 'received') return '<span class="chip c-p">Ready</span>';
   if (s === 'ordered') return '<span class="chip c-q">Ordered</span>';
   if (s === 'pending') return '<span class="chip c-a">Pending</span>';
@@ -505,18 +506,26 @@ function openPartModal(part) {
     readyBtn.addEventListener('click', function() { updatePartStatus(part.id, 'ready'); });
     actions.appendChild(readyBtn);
   }
+  if (part.status === 'ready' || part.status === 'received') {
+    var usedBtn = document.createElement('button');
+    usedBtn.className = 'btn btn-g';
+    usedBtn.textContent = 'Mark Fitted';
+    usedBtn.addEventListener('click', function() { updatePartStatus(part.id, 'fitted'); });
+    actions.appendChild(usedBtn);
+  }
 
   document.getElementById('part-modal').classList.add('on');
 }
 
 function updatePartStatus(id, status) {
   api('PUT', '/parts/' + id, {status: status}).then(function(res) {
-    if (res && res.part) {
+    var part = res && (res.part || (res.data && res.data.part));
+    if (part) {
       toast('Done', 'Part marked as ' + status);
       document.getElementById('part-modal').classList.remove('on');
       loadParts();
     } else {
-      toast('Error', 'Update failed');
+      toast('Error', (res && res.error) || 'Update failed');
     }
   });
 }
@@ -541,7 +550,8 @@ document.getElementById('btn-create').addEventListener('click', function() {
   };
   toast('Adding', 'Adding part...');
   api('POST', '/parts', body).then(function(res) {
-    if (res && res.part) {
+    var part = res && (res.part || (res.data && res.data.part));
+    if (part) {
       toast('Done', name + ' added to queue');
       ['f-name','f-reg','f-supplier','f-partno','f-notes'].forEach(function(id) { document.getElementById(id).value = ''; });
       document.getElementById('f-qty').value = '1';
