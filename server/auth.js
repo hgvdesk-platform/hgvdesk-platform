@@ -101,6 +101,10 @@ async function login(email, password) {
   const valid = await bcrypt.compare(password, user.password_hash);
   if (!valid) throw { status: 401, message: 'Invalid email or password' };
 
+  if (user.email_verified === false && user.verify_token) {
+    throw { status: 403, message: 'Please verify your email before logging in. Check your inbox or request a new verification link.' };
+  }
+
   // Update last login
   await query(`UPDATE users SET last_login = NOW() WHERE id = $1`, [user.id]);
 

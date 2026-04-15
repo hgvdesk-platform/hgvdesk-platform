@@ -14,6 +14,27 @@ const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
 
+// ══════════════════════════════════════════════
+// ERROR MONITORING
+// ══════════════════════════════════════════════
+
+const ERROR_LOG = '/var/log/hgv-errors.log';
+
+function logError(source, err) {
+  const entry = `[${new Date().toISOString()}] [${source}] ${err.message || err}\n${err.stack || ''}\n---\n`;
+  try { fs.appendFileSync(ERROR_LOG, entry); } catch (e) { console.error('[LOG WRITE FAIL]', e.message); }
+}
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+  logError('UNHANDLED_REJECTION', reason instanceof Error ? reason : new Error(String(reason)));
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err);
+  logError('UNCAUGHT_EXCEPTION', err);
+});
+
 const { requireAuth, requireApiKey } = require('./auth');
 const admin = require('./routes/admin');
 const workshop = require('./routes/workshop');
@@ -27,9 +48,74 @@ const ai = require('./routes/ai');
 const stripeRoutes = require('./routes/stripe');
 const pdf = require('./routes/pdf');
 const settings = require('./routes/settings');
+const vehicles = require('./routes/vehicles');
 
 const PORT = process.env.PORT || 3000;
 const FRONTEND = path.join(__dirname, '..', 'frontend');
+
+// ══════════════════════════════════════════════
+// RATE LIMITING (in-memory sliding window)
+// ══════════════════════════════════════════════
+
+const rateBuckets = {};
+const RATE_CLEANUP_INTERVAL = 60000;
+setInterval(() => {
+  const now = Date.now();
+  for (const ip of Object.keys(rateBuckets)) {
+    const b = rateBuckets[ip];
+    for (const tier of Object.keys(b)) {
+      b[tier] = b[tier].filter(t => now - t < 60000);
+      if (!b[tier].length) delete b[tier];
+    }
+    if (!Object.keys(b).length) delete rateBuckets[ip];
+  }
+}, RATE_CLEANUP_INTERVAL);
+
+function rateLimit(ip, tier, limit) {
+  if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') return true;
+  if (!rateBuckets[ip]) rateBuckets[ip] = {};
+  if (!rateBuckets[ip][tier]) rateBuckets[ip][tier] = [];
+  const now = Date.now();
+  const window = rateBuckets[ip][tier].filter(t => now - t < 60000);
+  rateBuckets[ip][tier] = window;
+  if (window.length >= limit) return false;
+  window.push(now);
+  return true;
+}
+
+function getRateTier(path) {
+  if (path.startsWith('/api/auth/login') || path.startsWith('/api/auth/signup')) return { tier: 'auth', limit: 10 };
+  return { tier: 'api', limit: 100 };
+}
+
+// ══════════════════════════════════════════════
+// SECURITY HEADERS
+// ══════════════════════════════════════════════
+
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+};
+
+// ══════════════════════════════════════════════
+// INPUT SANITISATION
+// ══════════════════════════════════════════════
+
+function sanitiseValue(val) {
+  if (typeof val === 'string') {
+    return val.replace(/\0/g, '').trim().slice(0, 10000);
+  }
+  if (Array.isArray(val)) return val.map(sanitiseValue);
+  if (val && typeof val === 'object') {
+    const out = {};
+    for (const k of Object.keys(val)) out[k] = sanitiseValue(val[k]);
+    return out;
+  }
+  return val;
+}
 
 // ══════════════════════════════════════════════
 // HELPERS
@@ -39,9 +125,14 @@ function readBody(req) {
   return new Promise((resolve, reject) => {
     if (req.method === 'GET') return resolve({});
     let body = '';
-    req.on('data', chunk => body += chunk);
+    let size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > 10 * 1024 * 1024) { req.destroy(); reject(new Error('Body too large')); return; }
+      body += chunk;
+    });
     req.on('end', () => {
-      try { resolve(JSON.parse(body || '{}')); }
+      try { resolve(sanitiseValue(JSON.parse(body || '{}'))); }
       catch (e) { resolve({}); }
     });
     req.on('error', reject);
@@ -122,6 +213,7 @@ const PAGES = {
   '/forgot-password': 'forgot-password.html',
   '/reset-password': 'reset-password.html',
   '/settings': 'settings.html',
+  '/vehicles': 'vehicles.html',
 };
 
 function servePage(res, filename) {
@@ -305,6 +397,27 @@ async function handlePublicAuth(ctx, res) {
     res.end();
     return true;
   }
+  if (p === '/api/auth/resend-verification' && method === 'POST') {
+    const body = await readBody(ctx.req);
+    const email = (body.email || '').toLowerCase().trim();
+    if (!email) { json(res, 400, { error: 'email required' }); return true; }
+    const db = require('./db');
+    const crypto = require('crypto');
+    const user = await db.queryOne('SELECT id, email_verified, verify_token FROM users WHERE email = $1 AND active = true', [email]);
+    if (user && !user.email_verified) {
+      const token = crypto.randomBytes(32).toString('hex');
+      await db.query('UPDATE users SET verify_token = $1 WHERE id = $2', [token, user.id]);
+      const { resendSend } = require('./mailer');
+      const origin = process.env.PUBLIC_BASE_URL || 'https://hgvdesk.co.uk';
+      await resendSend({
+        from: process.env.FROM_EMAIL || 'noreply@hgvdesk.co.uk', to: [email],
+        subject: 'HGVDesk — Verify Your Email',
+        html: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;"><h2 style="color:#0a1929;">Verify your email</h2><p>Click below to verify your account.</p><a href="' + origin + '/api/auth/verify-email?token=' + token + '" style="display:inline-block;padding:12px 24px;background:#ff5500;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Verify email</a></div>'
+      }).catch(() => {});
+    }
+    ok(res, { sent: true });
+    return true;
+  }
   if (p === '/api/contact' && method === 'POST') { await handleContactForm(ctx.req, res); return true; }
   return false;
 }
@@ -393,6 +506,17 @@ async function handleAdmin(ctx, res) {
 
   const userIdMatch = p.match(/^\/api\/admin\/users\/(\d+)$/);
   if (userIdMatch && method === 'PUT') { ok(res, await admin.updateUser(body, caller, parseInt(userIdMatch[1]))); return true; }
+
+  if (p === '/api/admin/errors' && method === 'GET') {
+    try {
+      const log = fs.readFileSync(ERROR_LOG, 'utf8');
+      const entries = log.split('---\n').filter(Boolean).slice(-50).reverse();
+      ok(res, { entries, count: entries.length });
+    } catch (e) {
+      ok(res, { entries: [], count: 0 });
+    }
+    return true;
+  }
 
   return false;
 }
@@ -777,6 +901,21 @@ async function handleInvoices(ctx, res) {
 // ROUTER
 // ══════════════════════════════════════════════
 
+async function handleVehicles(ctx, res) {
+  const { p, method, body, caller, qs } = ctx;
+  if (p === '/api/vehicles' && method === 'GET') { ok(res, await vehicles.getVehicles(caller, qs)); return true; }
+  if (p === '/api/vehicles' && method === 'POST') { created(res, await vehicles.createVehicle(body, caller)); return true; }
+  if (p === '/api/vehicles/mot-alerts' && method === 'GET') { ok(res, await vehicles.getMotAlerts(caller)); return true; }
+  const vIdMatch = p.match(/^\/api\/vehicles\/(\d+)$/);
+  if (vIdMatch) {
+    const id = parseInt(vIdMatch[1]);
+    if (method === 'GET') { ok(res, await vehicles.getVehicle(caller, id)); return true; }
+    if (method === 'PUT') { ok(res, await vehicles.updateVehicle(body, caller, id)); return true; }
+    if (method === 'DELETE') { ok(res, await vehicles.deleteVehicle(caller, id)); return true; }
+  }
+  return false;
+}
+
 async function handleSettings(ctx, res) {
   const { p, method, body, caller } = ctx;
   if (p === '/api/settings' && method === 'GET') { ok(res, await settings.getSettings(caller)); return true; }
@@ -787,7 +926,7 @@ async function handleSettings(ctx, res) {
 const AUTHED_HANDLERS = [
   handleAdmin, handleWorkshop, handleInspect, handleAi, handlePdf, handleBranding, handleBilling,
   handleParts, handleCommand, handleInspectionReports, handleTechnicians,
-  handleJobLibrary, handleCustomers, handleInvoices, handleSettings,
+  handleJobLibrary, handleCustomers, handleInvoices, handleSettings, handleVehicles,
 ];
 
 async function router(req, res) {
@@ -831,6 +970,20 @@ async function router(req, res) {
 // ══════════════════════════════════════════════
 
 const server = http.createServer(async (req, res) => {
+  // Security headers on all responses
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+
+  // Rate limiting
+  const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const urlPath = (req.url || '').split('?')[0];
+  if (urlPath.startsWith('/api/')) {
+    const { tier, limit } = getRateTier(urlPath);
+    if (!rateLimit(clientIp, tier, limit)) {
+      json(res, 429, { success: false, error: 'Too many requests. Please wait a moment and try again.' });
+      return;
+    }
+  }
+
   try {
     await router(req, res);
   } catch (e) {
