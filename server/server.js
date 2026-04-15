@@ -505,19 +505,25 @@ function getErrorLogEntries() {
   }
 }
 
-async function handleAdmin(ctx, res) {
+async function handleAdminOrgsUsers(ctx, res) {
   const { p, method, body, caller } = ctx;
   if (p === '/api/admin/organisations' && method === 'GET') { ok(res, await admin.getOrganisations(caller)); return true; }
   if (p === '/api/admin/organisations' && method === 'POST') { ok(res, await admin.createOrganisation(body, caller)); return true; }
   if (p === '/api/admin/users' && method === 'GET') { ok(res, await admin.getUsers(caller)); return true; }
   if (p === '/api/admin/users' && method === 'POST') { ok(res, await admin.createUser(body, caller)); return true; }
-  if (p === '/api/admin/alerts' && method === 'GET') { ok(res, await alerts.getActiveAlerts(caller)); return true; }
-  if (p === '/api/admin/run-alerts' && method === 'POST') { ok(res, await alerts.runAllChecks()); return true; }
-  if (p === '/api/admin/errors' && method === 'GET') { ok(res, getErrorLogEntries()); return true; }
   const orgIdMatch = p.match(/^\/api\/admin\/organisations\/(\d+)$/);
   if (orgIdMatch && method === 'PUT') { ok(res, await admin.updateOrganisation(body, caller, parseInt(orgIdMatch[1]))); return true; }
   const userIdMatch = p.match(/^\/api\/admin\/users\/(\d+)$/);
   if (userIdMatch && method === 'PUT') { ok(res, await admin.updateUser(body, caller, parseInt(userIdMatch[1]))); return true; }
+  return false;
+}
+
+async function handleAdmin(ctx, res) {
+  if (await handleAdminOrgsUsers(ctx, res)) return true;
+  const { p, method, caller } = ctx;
+  if (p === '/api/admin/alerts' && method === 'GET') { ok(res, await alerts.getActiveAlerts(caller)); return true; }
+  if (p === '/api/admin/run-alerts' && method === 'POST') { ok(res, await alerts.runAllChecks()); return true; }
+  if (p === '/api/admin/errors' && method === 'GET') { ok(res, getErrorLogEntries()); return true; }
   return false;
 }
 
