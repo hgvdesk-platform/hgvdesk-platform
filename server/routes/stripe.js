@@ -194,7 +194,13 @@ async function handleEvent(event) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object;
-      if (session.mode === 'subscription' && session.customer) {
+      if (session.metadata?.invoice_id) {
+        await query(
+          "UPDATE invoices SET status = 'paid', paid_at = NOW(), updated_at = NOW() WHERE id = $1",
+          [Number.parseInt(session.metadata.invoice_id)]
+        );
+        console.log('[STRIPE] Invoice payment received:', session.metadata.invoice_id);
+      } else if (session.mode === 'subscription' && session.customer) {
         await setOrgActiveByCustomer(session.customer, true, 'active', session.subscription);
       }
       break;
@@ -224,7 +230,6 @@ async function handleEvent(event) {
       break;
     }
     default:
-      // Unhandled event type — log and ack.
       console.log('[STRIPE] unhandled event type:', event.type);
   }
 }
@@ -261,6 +266,44 @@ async function enforceVehicleLimit(orgId, planKey, candidateReg) {
   }
 }
 
+// ── Invoice Payment Links ────────────────────────────────────────
+
+async function generateInvoicePaymentLink(invoiceId, orgId) {
+  ensureStripe();
+  const invoice = await queryOne(
+    'SELECT * FROM invoices WHERE id = $1 AND org_id = $2', [invoiceId, orgId]
+  );
+  if (!invoice) throw new AppError(404, 'Invoice not found');
+  if (invoice.stripe_payment_link_url) return { paymentLinkUrl: invoice.stripe_payment_link_url };
+
+  const totalPence = Math.round(Number.parseFloat(invoice.total) * 100);
+  if (totalPence <= 0) throw new AppError(400, 'Invoice total must be greater than zero');
+
+  const appUrl = process.env.PUBLIC_BASE_URL || 'https://hgvdesk.co.uk';
+
+  const price = await stripe.prices.create({
+    currency: 'gbp',
+    unit_amount: totalPence,
+    product_data: { name: `Invoice ${invoice.invoice_number}` },
+  });
+
+  const link = await stripe.paymentLinks.create({
+    line_items: [{ price: price.id, quantity: 1 }],
+    after_completion: {
+      type: 'redirect',
+      redirect: { url: `${appUrl}/payment-complete?invoice=${invoiceId}` },
+    },
+    metadata: { invoice_id: String(invoiceId), org_id: String(orgId) },
+  });
+
+  await query(
+    'UPDATE invoices SET stripe_payment_link_id = $1, stripe_payment_link_url = $2, updated_at = NOW() WHERE id = $3',
+    [link.id, link.url, invoiceId]
+  );
+
+  return { paymentLinkUrl: link.url, paymentLinkId: link.id };
+}
+
 module.exports = {
   PLANS,
   publicPlans,
@@ -269,4 +312,5 @@ module.exports = {
   getMyBilling,
   webhook,
   enforceVehicleLimit,
+  generateInvoicePaymentLink,
 };

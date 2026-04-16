@@ -223,6 +223,7 @@ const PAGES = {
   '/reset-password': 'reset-password.html', // NOSONAR — URL path, not a credential
   '/settings': 'settings.html',
   '/vehicles': 'vehicles.html',
+  '/payment-complete': 'payment-complete.html',
 };
 
 function servePage(res, filename) {
@@ -902,6 +903,22 @@ async function handleInvoices(ctx, res) {
 
   const invStatusMatch = p.match(/^\/api\/invoices\/(\d+)\/status$/);
   if (invStatusMatch && method === 'PUT') { ok(res, await billing.updateInvoiceStatus(body, caller, Number.parseInt(invStatusMatch[1]))); return true; }
+
+  const payLinkMatch = p.match(/^\/api\/invoices\/(\d+)\/payment-link$/);
+  if (payLinkMatch && method === 'POST') {
+    const orgId = caller.org_id || caller.id;
+    ok(res, await stripeRoutes.generateInvoicePaymentLink(Number.parseInt(payLinkMatch[1]), orgId));
+    return true;
+  }
+
+  const payStatusMatch = p.match(/^\/api\/invoices\/(\d+)\/payment-status$/);
+  if (payStatusMatch && method === 'GET') {
+    const orgId = caller.org_id || caller.id;
+    const inv = await require('./db').queryOne('SELECT id, status, stripe_payment_link_url, paid_at FROM invoices WHERE id = $1 AND org_id = $2', [Number.parseInt(payStatusMatch[1]), orgId]);
+    if (!inv) { json(res, 404, { success: false, error: 'Invoice not found' }); return true; }
+    ok(res, { invoiceId: inv.id, status: inv.status, paymentLinkUrl: inv.stripe_payment_link_url, paidAt: inv.paid_at });
+    return true;
+  }
 
   return false;
 }

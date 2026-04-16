@@ -486,6 +486,20 @@ function generateFromJob() {
   });
 }
 
+function genPaymentLink(id) {
+  api('POST', '/invoices/' + id + '/payment-link').then(function(d) {
+    var data = d && (d.data || d);
+    if (data && data.paymentLinkUrl) {
+      alert('Payment link created! URL copied to clipboard.');
+      navigator.clipboard.writeText(data.paymentLinkUrl).catch(function(){});
+      closeModal('detail-modal');
+      loadData();
+    } else {
+      alert('Failed to generate payment link: ' + ((d && d.error) || 'Unknown error'));
+    }
+  });
+}
+
 function markStatus(id, status) {
   api('PUT', '/invoices/' + id + '/status', { status: status }).then(function() { loadData(); });
 }
@@ -508,7 +522,17 @@ function showDetail(id) {
     if (inv.status==='draft') h += '<button class="btn btn-primary btn-sm" onclick="markStatus('+id+',\'sent\');closeModal(\'detail-modal\')">Mark as Sent</button>';
     if (inv.status==='sent'||inv.status==='overdue') h += '<button class="btn btn-green btn-sm" onclick="markStatus('+id+',\'paid\');closeModal(\'detail-modal\')">Mark as Paid</button>';
     h += '<button class="btn btn-secondary btn-sm" onclick="window.open(\'/api/invoices/'+id+'/pdf\',\'_blank\')">Download PDF</button>';
+    if (inv.stripe_payment_link_url) {
+      h += '<button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(\''+inv.stripe_payment_link_url+'\').then(function(){alert(\'Payment link copied!\')})">Copy Payment Link</button>';
+    } else if (inv.status !== 'paid') {
+      h += '<button class="btn btn-primary btn-sm" onclick="genPaymentLink('+id+')">Generate Payment Link</button>';
+    }
     h += '</div>';
+    if (inv.stripe_payment_link_url) {
+      h += '<div style="background:#f0f7ff;border:1px solid #b3d4f5;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:12px;display:flex;align-items:center;justify-content:space-between;">';
+      h += '<div><strong>Customer Payment Link:</strong> <a href="'+inv.stripe_payment_link_url+'" target="_blank" style="color:#0071e3;">'+inv.stripe_payment_link_url+'</a></div>';
+      h += '</div>';
+    }
     // Clean invoice template
     h += '<div style="border-radius:8px;overflow:hidden;border:1px solid #e0e0e0;background:#fff;">';
     // White header

@@ -151,6 +151,16 @@ async function createInvoice(body, org) {
   }
 
   await logActivity(orgId, 'INVOICES', 'INVOICE_CREATED', invoiceNum, 'invoice', invoice.id);
+
+  // Auto-generate Stripe payment link if total > 0
+  if (total > 0) {
+    try {
+      const { generateInvoicePaymentLink } = require('./stripe');
+      const linkResult = await generateInvoicePaymentLink(invoice.id, orgId);
+      invoice.stripe_payment_link_url = linkResult.paymentLinkUrl;
+    } catch (e) { console.error('[BILLING] Payment link generation failed:', e.message); }
+  }
+
   return { invoice, invoiceNumber: invoiceNum };
 }
 
