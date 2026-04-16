@@ -18,6 +18,12 @@ const { signToken } = require('../auth');
 const SECRET = process.env.STRIPE_SECRET_KEY;
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const stripe = SECRET ? new Stripe(SECRET) : null;
+const STRIPE_MODE = SECRET ? (SECRET.startsWith('sk_live_') ? 'live' : 'test') : 'unconfigured';
+if (stripe) console.log(`[STRIPE] ${STRIPE_MODE.toUpperCase()} mode`);
+
+function getBillingMode() {
+  return { mode: STRIPE_MODE, ready: !!stripe };
+}
 
 // Plan catalog. Single source of truth — read by signup, frontend, and limit enforcement.
 const PLANS = {
@@ -313,4 +319,5 @@ module.exports = {
   webhook,
   enforceVehicleLimit,
   generateInvoicePaymentLink,
+  getBillingMode,
 };

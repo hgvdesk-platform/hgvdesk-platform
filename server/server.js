@@ -8,6 +8,15 @@
  * DVLA      → /api/dvla/lookup
  */
 
+// Sentry error tracking (initialise before all other code)
+try {
+  const Sentry = require('@sentry/node');
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({ dsn: process.env.SENTRY_DSN, environment: process.env.NODE_ENV || 'production', tracesSampleRate: 0.1 });
+    console.log('[SENTRY] Error tracking initialised');
+  }
+} catch (e) { /* @sentry/node not installed — skip */ }
+
 const http = require('node:http');
 const https = require('node:https');
 const fs = require('node:fs');
@@ -293,6 +302,7 @@ async function handleStaticPublic(ctx, res) {
   if (p === '/api.js') { serveStatic(res, 'api.js', 'application/javascript'); return true; }
   if (p === '/branding.js') { serveStatic(res, 'branding.js', 'application/javascript'); return true; }
   if (p === '/arthur.js') { serveStatic(res, 'arthur.js', 'application/javascript'); return true; }
+  if (p === '/cookie-consent.js') { serveStatic(res, 'cookie-consent.js', 'application/javascript'); return true; }
   if (p === '/config.js') return serveConfigJs(res);
   if (p.startsWith('/images/')) return serveImage(ctx, res);
   return false;
@@ -329,6 +339,10 @@ async function handlePublicBilling(ctx, res) {
 
   if (p === '/api/billing/plans' && method === 'GET') {
     ok(res, { plans: stripeRoutes.publicPlans() });
+    return true;
+  }
+  if (p === '/api/billing/mode' && method === 'GET') {
+    ok(res, stripeRoutes.getBillingMode());
     return true;
   }
   if (p === '/api/auth/signup' && method === 'POST') {
@@ -952,6 +966,22 @@ async function handleVehicles(ctx, res) {
   return false;
 }
 
+async function handleOnboarding(ctx, res) {
+  const { p, method, caller } = ctx;
+  const orgId = caller.org_id || caller.id;
+  if (p === '/api/onboarding/status' && method === 'GET') {
+    const org = await require('./db').queryOne('SELECT onboarding_completed FROM organisations WHERE id = $1', [orgId]);
+    ok(res, { completed: org ? org.onboarding_completed : false });
+    return true;
+  }
+  if (p === '/api/onboarding/complete' && method === 'POST') {
+    await require('./db').query('UPDATE organisations SET onboarding_completed = true WHERE id = $1', [orgId]);
+    ok(res, { completed: true });
+    return true;
+  }
+  return false;
+}
+
 async function handleSettings(ctx, res) {
   const { p, method, body, caller } = ctx;
   if (p === '/api/settings' && method === 'GET') { ok(res, await settings.getSettings(caller)); return true; }
@@ -962,7 +992,7 @@ async function handleSettings(ctx, res) {
 const AUTHED_HANDLERS = [
   handleAdmin, handleWorkshop, handleInspect, handleAi, handlePdf, handleBranding, handleBilling,
   handleParts, handleCommand, handleInspectionReports, handleTechnicians,
-  handleJobLibrary, handleCustomers, handleInvoices, handleSettings, handleVehicles, handleNotifications,
+  handleJobLibrary, handleCustomers, handleInvoices, handleSettings, handleVehicles, handleNotifications, handleOnboarding,
 ];
 
 async function router(req, res) {
