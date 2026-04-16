@@ -538,60 +538,147 @@ function buildLabourTable(jobLines) {
   return h;
 }
 
-function buildJobSheetHtml(job, opts={}) {
-  const { inspection, parts, jobLines, orgName } = opts;
-  let h = '';
-  h += wrap(700);
-  h += docHeader('WORKSHOP JOB SHEET', job.job_number||'', fmtDateTime(job.created_at), {logoDark: opts.logoDark});
+function jobSheetSectionTitle(title) {
+  return `<tr><td colspan="4" style="padding:18px 0 6px;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;border-bottom:1px solid #e5e7eb;">${esc(title)}</td></tr>`;
+}
 
-  const statusBadge = job.status==='complete'||job.status==='invoiced' ? badge(job.status.toUpperCase(),C.passBg,C.passGreen) : badge((job.status||'PENDING').toUpperCase(),C.advBg,C.advAmber);
-  const displayReg = (job.vehicle_reg||'') + (job.trailer_id ? ' / ' + job.trailer_id : '');
-  h += vehicleBar(displayReg, [job.customer_name, job.inspection_type].filter(Boolean).join(' · '), statusBadge);
+function jobSheetMetric(label, value, extra) {
+  return `<td style="padding:10px 0;vertical-align:top;"><div style="font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:3px;">${esc(label)}</div><div style="font-size:13px;font-weight:600;color:${extra || '#111827'};">${esc(value)}</div></td>`;
+}
 
-  h += `<tr><td style="background:${C.card};padding:28px 32px;">`;
-  h += `<table width="100%" cellpadding="0" cellspacing="0">`;
-
-  h += secTitle('Job Details');
-  h += '<tr>';
-  h += metricBox('Job Number', job.job_number||'—');
-  h += metricBox('Technician', job.technician_name||'Unassigned');
-  h += metricBox('Priority', (job.priority||'normal').toUpperCase(), {color: job.priority==='urgent'?C.failRed:C.text});
-  h += metricBox('Status', (job.status||'pending').toUpperCase());
-  h += '</tr>';
-  if (job.trailer_id) {
-    h += '<tr>';
-    h += metricBox('Trailer ID', job.trailer_id);
-    h += '<td colspan="3"></td>';
+function jobSheetPartsRows(parts) {
+  const thS = 'padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:#9ca3af;border-bottom:1px solid #e5e7eb;';
+  let h = `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0;">`;
+  h += `<tr><th style="${thS}text-align:left;">#</th><th style="${thS}text-align:left;">Part</th><th style="${thS}text-align:left;">Category</th><th style="${thS}text-align:center;">Status</th><th style="${thS}text-align:right;">Cost</th></tr>`;
+  let total = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    const cost = Number(p.unit_cost || 0) * Number(p.qty || 1);
+    total += cost;
+    const statusColor = p.status === 'ready' ? '#059669' : '#d97706';
+    h += `<tr style="border-bottom:1px solid #f3f4f6;"><td style="padding:8px 12px;font-size:12px;color:#9ca3af;">${i + 1}</td><td style="padding:8px 12px;font-size:13px;color:#111827;">${esc(p.name)}</td><td style="padding:8px 12px;font-size:12px;color:#6b7280;">${esc(p.category || '')}</td><td style="padding:8px 12px;text-align:center;font-size:11px;font-weight:600;color:${statusColor};">${(p.status || 'pending').toUpperCase()}</td><td style="padding:8px 12px;text-align:right;font-size:13px;font-weight:600;">${cost > 0 ? fmtMoney(cost) : '—'}</td></tr>`;
   }
-  h += '</tr>';
-
-  if (job.notes) {
-    h += secTitle('Reported Fault');
-    h += `<tr><td colspan="4" style="padding:10px 0;${BODY_S}">${esc(job.notes)}</td></tr>`;
-  }
-
-  if (parts && parts.length) h += buildPartsTable(parts);
-  if (jobLines && jobLines.length) h += buildLabourTable(jobLines);
-
-  if (inspection) {
-    h += secTitle('Linked Inspection — ' + (inspection.inspection_id||''));
-    h += `<tr><td colspan="4" style="padding:8px 0;">`;
-    h += buildInspectionReportHtml(inspection, { orgName }).replace(/<!DOCTYPE[\s\S]*?<body[^>]*>/,'').replace(/<\/body[\s\S]*$/,'');
-    h += `</td></tr>`;
-  }
-
-  h += secTitle('Technician Sign-Off');
-  h += '<tr>';
-  h += metricBox('Technician', job.technician_name||'—');
-  h += metricBox('Date Received', fmtShort(job.created_at));
-  h += metricBox('Completed', fmtDateTime(job.completed_at));
-  h += metricBox('Hours Worked', (job.hours_worked||job.sold_hours||'—')+' hrs');
-  h += '</tr>';
-
+  h += `<tr><td colspan="4" style="padding:10px 12px;text-align:right;font-size:12px;color:#6b7280;">Parts Total</td><td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:700;color:#111827;border-top:2px solid #111827;">${total > 0 ? fmtMoney(total) : '—'}</td></tr>`;
   h += '</table></td></tr>';
-  h += docFooter(job.job_number||'', orgName||'HGVDesk', {logoLight: opts.logoLight});
-  h += '</table>';
-  return pageShell('Job Sheet — '+(job.vehicle_reg||''), h);
+  return { html: h, total };
+}
+
+function buildJobSheetHtml(job, opts={}) {
+  const { inspection, parts, jobLines, orgName, orgSettings } = opts;
+  const os = orgSettings || {};
+  const F = "font-family:'Helvetica Neue',Arial,sans-serif;";
+  const displayReg = (job.vehicle_reg || '') + (job.trailer_id ? ' / ' + job.trailer_id : '');
+  const statusText = (job.status || 'pending').toUpperCase();
+  const statusColor = (job.status === 'complete' || job.status === 'invoiced') ? '#059669' : '#d97706';
+
+  let h = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Job Sheet — ${esc(displayReg)}</title>
+<style>@page{size:A4;margin:15mm;}body{${F}font-size:13px;color:#111827;margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head><body>
+<div style="max-width:700px;margin:0 auto;padding:20px;">`;
+
+  // Header
+  h += `<table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="vertical-align:top;"><div style="${F}font-size:18px;font-weight:700;color:#111827;">${esc(os.company_name || orgName || 'HGVDesk')}</div><div style="${F}font-size:11px;color:#9ca3af;margin-top:2px;">hgvdesk.co.uk</div></td>
+    <td style="text-align:right;vertical-align:top;"><div style="${F}font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;">Workshop Job Sheet</div><div style="${F}font-size:16px;font-weight:700;color:#111827;margin-top:2px;">${esc(job.job_number || '')}</div><div style="${F}font-size:11px;color:#9ca3af;margin-top:2px;">${fmtDateTime(job.created_at)}</div></td>
+  </tr></table>`;
+  h += `<div style="border-top:2px solid #111827;margin:12px 0 20px;"></div>`;
+
+  // Vehicle + Customer
+  h += `<table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="width:50%;vertical-align:top;padding-right:12px;"><div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">
+      <div style="${F}font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">Vehicle</div>
+      <div style="${F}font-size:20px;font-weight:700;color:#111827;font-family:monospace;letter-spacing:1px;">${esc(displayReg)}</div>
+      <div style="${F}font-size:12px;color:#6b7280;margin-top:4px;">${esc(job.inspection_type || 'T50')}${job.trailer_id ? ' · Trailer: ' + esc(job.trailer_id) : ''}</div>
+    </div></td>
+    <td style="width:50%;vertical-align:top;"><div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">
+      <div style="${F}font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">Customer</div>
+      <div style="${F}font-size:15px;font-weight:700;color:#111827;">${esc(job.customer_name || '—')}</div>
+    </div></td>
+  </tr></table>`;
+
+  // Job Details
+  h += `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">`;
+  h += jobSheetSectionTitle('Job Details');
+  h += '<tr>';
+  h += jobSheetMetric('Job Number', job.job_number || '—');
+  h += jobSheetMetric('Technician', job.technician_name || 'Unassigned');
+  h += jobSheetMetric('Priority', (job.priority || 'normal').toUpperCase(), job.priority === 'urgent' ? '#dc2626' : '#111827');
+  h += jobSheetMetric('Status', statusText, statusColor);
+  h += '</tr>';
+
+  // Reported fault
+  if (job.notes) {
+    h += jobSheetSectionTitle('Reported Fault');
+    h += `<tr><td colspan="4" style="padding:10px 0;${F}font-size:13px;color:#374151;line-height:1.6;">${esc(job.notes)}</td></tr>`;
+  }
+
+  // Parts
+  let partsTotal = 0;
+  if (parts && parts.length) {
+    h += jobSheetSectionTitle('Parts Used (' + parts.length + ')');
+    const pr = jobSheetPartsRows(parts);
+    h += pr.html;
+    partsTotal = pr.total;
+  }
+
+  // Labour
+  let labourTotal = 0;
+  if (jobLines && jobLines.length) {
+    h += jobSheetSectionTitle('Labour / Sold Hours');
+    const thS = 'padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:#9ca3af;border-bottom:1px solid #e5e7eb;';
+    h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0;">`;
+    h += `<tr><th style="${thS}text-align:left;">Description</th><th style="${thS}text-align:center;">Qty</th><th style="${thS}text-align:right;">Hours</th><th style="${thS}text-align:right;">Total</th></tr>`;
+    let totalHrs = 0;
+    for (const l of jobLines) {
+      const hrs = Number(l.sold_hours || 0) * Number(l.quantity || 1);
+      totalHrs += hrs;
+      h += `<tr style="border-bottom:1px solid #f3f4f6;"><td style="padding:8px 12px;font-size:13px;">${esc(l.name || l.description)}</td><td style="padding:8px 12px;text-align:center;font-size:12px;">${Number(l.quantity || 1).toFixed(1)}</td><td style="padding:8px 12px;text-align:right;font-size:12px;">${Number(l.sold_hours || 0).toFixed(2)}</td><td style="padding:8px 12px;text-align:right;font-size:13px;font-weight:600;">${hrs.toFixed(2)}</td></tr>`;
+    }
+    h += `<tr><td colspan="3" style="padding:10px 12px;text-align:right;font-size:12px;color:#6b7280;">Total Hours</td><td style="padding:10px 12px;text-align:right;font-size:14px;font-weight:700;border-top:2px solid #111827;">${totalHrs.toFixed(2)} hrs</td></tr>`;
+    h += '</table></td></tr>';
+    labourTotal = totalHrs * 65;
+  }
+
+  // Cost summary
+  const soldHrs = Number.parseFloat(job.sold_hours || 0);
+  if (partsTotal > 0 || labourTotal > 0 || soldHrs > 0) {
+    const labour = labourTotal > 0 ? labourTotal : soldHrs * 65;
+    const subtotal = partsTotal + labour;
+    const vat = Math.round(subtotal * 0.2 * 100) / 100;
+    const total = subtotal + vat;
+    h += `<tr><td colspan="4"><table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
+      <tr><td></td><td style="text-align:right;padding:4px 12px;font-size:12px;color:#6b7280;width:120px;">Parts</td><td style="text-align:right;padding:4px 0;font-size:13px;width:90px;">${fmtMoney(partsTotal)}</td></tr>
+      <tr><td></td><td style="text-align:right;padding:4px 12px;font-size:12px;color:#6b7280;">Labour</td><td style="text-align:right;padding:4px 0;font-size:13px;">${fmtMoney(labour)}</td></tr>
+      <tr><td></td><td style="text-align:right;padding:4px 12px;font-size:12px;color:#6b7280;">Subtotal</td><td style="text-align:right;padding:4px 0;font-size:13px;">${fmtMoney(subtotal)}</td></tr>
+      <tr><td></td><td style="text-align:right;padding:4px 12px;font-size:12px;color:#6b7280;">VAT (20%)</td><td style="text-align:right;padding:4px 0;font-size:13px;">${fmtMoney(vat)}</td></tr>
+      <tr><td></td><td style="text-align:right;padding:10px 12px 4px;font-size:14px;font-weight:700;border-top:2px solid #111827;">Total</td><td style="text-align:right;padding:10px 0 4px;font-size:18px;font-weight:700;border-top:2px solid #111827;">${fmtMoney(total)}</td></tr>
+    </table></td></tr>`;
+  }
+
+  // Sign-off
+  h += jobSheetSectionTitle('Technician Sign-Off');
+  h += '<tr>';
+  h += jobSheetMetric('Technician', job.technician_name || '—');
+  h += jobSheetMetric('Date Received', fmtShort(job.created_at));
+  h += jobSheetMetric('Completed', fmtDateTime(job.completed_at));
+  h += jobSheetMetric('Hours', (job.hours_worked || job.sold_hours || '—') + ' hrs');
+  h += '</tr>';
+
+  // Signature lines
+  h += `<tr><td colspan="4" style="padding:30px 0 10px;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="width:50%;padding-right:20px;"><div style="font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:8px;">Technician Signature</div><div style="border-bottom:1px solid #d1d5db;height:30px;"></div><div style="font-size:10px;color:#9ca3af;margin-top:4px;">Date: _______________</div></td>
+      <td style="width:50%;"><div style="font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:#9ca3af;margin-bottom:8px;">Customer Signature</div><div style="border-bottom:1px solid #d1d5db;height:30px;"></div><div style="font-size:10px;color:#9ca3af;margin-top:4px;">Date: _______________</div></td></tr>
+    </table>
+  </td></tr>`;
+
+  // Footer
+  h += `<tr><td colspan="4" style="padding:20px 0 0;border-top:1px solid #e5e7eb;text-align:center;">
+    <div style="${F}font-size:10px;color:#9ca3af;line-height:1.6;">This job sheet is prepared in accordance with DVSA roadworthiness standards. All data is recorded as completed by the assigned technician.</div>
+    <div style="${F}font-size:10px;color:#d1d5db;margin-top:8px;">${esc(os.company_name || orgName || 'HGVDesk')} · hgvdesk.co.uk</div>
+  </td></tr>`;
+
+  h += '</table></div></body></html>';
+  return h;
 }
 
 module.exports = {

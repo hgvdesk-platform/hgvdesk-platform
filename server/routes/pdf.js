@@ -82,7 +82,8 @@ async function jobPdf(jobId, orgId) {
   const parts = await db.queryAll('SELECT * FROM parts WHERE job_id = $1 AND org_id = $2', [jobId, orgId]);
   const jobLines = await db.queryAll('SELECT * FROM job_lines WHERE job_id = $1 AND org_id = $2 ORDER BY created_at ASC', [jobId, orgId]);
   const branding = await getOrgBranding(orgId);
-  const html = buildJobSheetHtml(job, { inspection: insp || null, parts, jobLines, orgName: branding.name||'HGVDesk', logoLight: branding.logo_light, logoDark: branding.logo_dark });
+  const orgSettings = await db.queryOne('SELECT * FROM org_settings WHERE org_id = $1', [orgId]);
+  const html = buildJobSheetHtml(job, { inspection: insp || null, parts, jobLines, orgName: branding.name||'HGVDesk', logoLight: branding.logo_light, logoDark: branding.logo_dark, orgSettings: orgSettings || {} });
   const filename = `${(job.job_number || 'JOB').replace(/\s/g, '_')}-${(job.vehicle_reg || '').replace(/\s/g, '')}.pdf`;
   const pdf = await htmlToPdf(html);
   return { pdf, filename };
