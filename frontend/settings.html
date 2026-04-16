@@ -6,7 +6,9 @@
 <title>HGVDesk - Organisation Settings</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <script src="/config.js"></script>
+<script src="/shared.js"></script>
 <script src="/branding.js" defer></script>
+<link rel="stylesheet" href="/shared.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--orange:#FF6B00;--green:#34c759;--red:#ff3b30;--sw:230px;}
@@ -119,24 +121,6 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <div class="toast" id="toast"><span id="ti"></span><span id="tm"></span></div>
 
 <script>
-var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
-
-function api(method, path, body) {
-  var opts = {method: method, headers: {'Content-Type': 'application/json', 'X-API-Key': KEY}};
-  if (body) opts.body = JSON.stringify(body);
-  return fetch('/api' + path, opts).then(function(r) { return r.json(); }).catch(function() { return null; });
-}
-
-var tt;
-function toast(icon, msg) {
-  document.getElementById('ti').textContent = icon;
-  document.getElementById('tm').textContent = msg;
-  var t = document.getElementById('toast');
-  t.classList.add('v');
-  clearTimeout(tt);
-  tt = setTimeout(function() { t.classList.remove('v'); }, 3200);
-}
-
 function load() {
   api('GET', '/settings').then(function(d) {
     var s = d && (d.data && d.data.settings || d.settings);

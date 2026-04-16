@@ -303,6 +303,8 @@ async function handleStaticPublic(ctx, res) {
   if (p === '/branding.js') { serveStatic(res, 'branding.js', 'application/javascript'); return true; }
   if (p === '/arthur.js') { serveStatic(res, 'arthur.js', 'application/javascript'); return true; }
   if (p === '/cookie-consent.js') { serveStatic(res, 'cookie-consent.js', 'application/javascript'); return true; }
+  if (p === '/shared.css') { serveStatic(res, 'shared.css', 'text/css'); return true; }
+  if (p === '/shared.js') { serveStatic(res, 'shared.js', 'application/javascript'); return true; }
   if (p === '/config.js') return serveConfigJs(res);
   if (p.startsWith('/images/')) return serveImage(ctx, res);
   return false;

@@ -6,8 +6,10 @@
 <title>HGVDesk - Vehicles</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <script src="/config.js"></script>
+<script src="/shared.js"></script>
 <script src="/branding.js" defer></script>
 <script src="/arthur.js" defer></script>
+<link rel="stylesheet" href="/shared.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{--bg:#f5f5f7;--surface:#fff;--border:rgba(0,0,0,0.08);--bs:rgba(0,0,0,0.12);--t1:#1d1d1f;--t2:#3a3a3c;--t3:#636366;--t4:#86868b;--t5:#aeaeb2;--orange:#FF6B00;--green:#34c759;--red:#ff3b30;--amber:#ff9500;--sw:230px;}
@@ -117,27 +119,6 @@ body{font-family:"DM Sans",-apple-system,sans-serif;background:var(--bg);color:v
 <div class="toast" id="toast"><span id="ti"></span><span id="tm"></span></div>
 
 <script>
-var KEY = (window.HGV_CONFIG && window.HGV_CONFIG.apiKey) || '';
-function api(method, path, body) {
-  var opts = {method: method, headers: {'Content-Type': 'application/json', 'X-API-Key': KEY}};
-  if (body) opts.body = JSON.stringify(body);
-  return fetch('/api' + path, opts).then(function(r){return r.json();}).catch(function(){return null;});
-}
-var tt;
-function toast(i,m){document.getElementById('ti').textContent=i;document.getElementById('tm').textContent=m;var t=document.getElementById('toast');t.classList.add('v');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('v');},3200);}
-
-function motChip(expiry) {
-  if (!expiry) return '<span style="font-size:11px;color:var(--t5);">Not set</span>';
-  var d = new Date(expiry);
-  var now = new Date(); now.setHours(0,0,0,0);
-  var days = Math.floor((d - now) / 86400000);
-  var fmt = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  if (days < 0) return '<span class="chip c-r">EXPIRED ' + fmt + '</span>';
-  if (days < 7) return '<span class="chip c-r">' + fmt + ' (' + days + 'd)</span>';
-  if (days < 30) return '<span class="chip c-a">' + fmt + ' (' + days + 'd)</span>';
-  return '<span class="chip c-g">' + fmt + '</span>';
-}
-
 function statusChip(s) {
   if (s === 'active') return '<span class="chip c-g">Active</span>';
   if (s === 'off-road') return '<span class="chip c-a">Off Road</span>';
