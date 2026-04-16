@@ -902,31 +902,19 @@ async function handleCustomers(ctx, res) {
   return false;
 }
 
-async function handleInvoices(ctx, res) {
-  const { p, method, body, caller, qs } = ctx;
+async function routeInvoiceById(method, id, body, caller, res) {
+  if (method === 'GET') { ok(res, await billing.getInvoice(caller, id)); return true; }
+  if (method === 'DELETE') { ok(res, await billing.deleteInvoice(caller, id)); return true; }
+  return false;
+}
 
-  if (p === '/api/invoices' && method === 'GET') { ok(res, await billing.getInvoices(caller, qs)); return true; }
-  if (p === '/api/invoices' && method === 'POST') { created(res, await billing.createInvoice(body, caller)); return true; }
-  if (p === '/api/invoices/generate-from-job' && method === 'POST') { created(res, await billing.generateFromJob(body, caller)); return true; }
-  if (p === '/api/invoices/bulk' && method === 'DELETE') { ok(res, await billing.bulkDeleteInvoices(caller, body.ids)); return true; }
-
-  const invMatch = p.match(/^\/api\/invoices\/(\d+)$/);
-  if (invMatch) {
-    const id = Number.parseInt(invMatch[1]);
-    if (method === 'GET') { ok(res, await billing.getInvoice(caller, id)); return true; }
-    if (method === 'DELETE') { ok(res, await billing.deleteInvoice(caller, id)); return true; }
-  }
-
-  const invStatusMatch = p.match(/^\/api\/invoices\/(\d+)\/status$/);
-  if (invStatusMatch && method === 'PUT') { ok(res, await billing.updateInvoiceStatus(body, caller, Number.parseInt(invStatusMatch[1]))); return true; }
-
+async function routeInvoicePayment(p, method, caller, res) {
   const payLinkMatch = p.match(/^\/api\/invoices\/(\d+)\/payment-link$/);
   if (payLinkMatch && method === 'POST') {
     const orgId = caller.org_id || caller.id;
     ok(res, await stripeRoutes.generateInvoicePaymentLink(Number.parseInt(payLinkMatch[1]), orgId));
     return true;
   }
-
   const payStatusMatch = p.match(/^\/api\/invoices\/(\d+)\/payment-status$/);
   if (payStatusMatch && method === 'GET') {
     const orgId = caller.org_id || caller.id;
@@ -935,7 +923,20 @@ async function handleInvoices(ctx, res) {
     ok(res, { invoiceId: inv.id, status: inv.status, paymentLinkUrl: inv.stripe_payment_link_url, paidAt: inv.paid_at });
     return true;
   }
+  return false;
+}
 
+async function handleInvoices(ctx, res) {
+  const { p, method, body, caller, qs } = ctx;
+  if (p === '/api/invoices' && method === 'GET') { ok(res, await billing.getInvoices(caller, qs)); return true; }
+  if (p === '/api/invoices' && method === 'POST') { created(res, await billing.createInvoice(body, caller)); return true; }
+  if (p === '/api/invoices/generate-from-job' && method === 'POST') { created(res, await billing.generateFromJob(body, caller)); return true; }
+  if (p === '/api/invoices/bulk' && method === 'DELETE') { ok(res, await billing.bulkDeleteInvoices(caller, body.ids)); return true; }
+  const invMatch = p.match(/^\/api\/invoices\/(\d+)$/);
+  if (invMatch) return routeInvoiceById(method, Number.parseInt(invMatch[1]), body, caller, res);
+  const invStatusMatch = p.match(/^\/api\/invoices\/(\d+)\/status$/);
+  if (invStatusMatch && method === 'PUT') { ok(res, await billing.updateInvoiceStatus(body, caller, Number.parseInt(invStatusMatch[1]))); return true; }
+  if (await routeInvoicePayment(p, method, caller, res)) return true;
   return false;
 }
 
